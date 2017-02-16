@@ -1,7 +1,8 @@
 package org.endeavourhealth.sftpreader.model.exceptions;
 
-public class SftpValidationException extends SftpReaderException
-{
+public class SftpValidationException extends SftpReaderException {
+    static final long serialVersionUID = 0L;
+
     public SftpValidationException() {
         super();
     }

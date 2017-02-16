@@ -10,14 +10,15 @@
 
    <properties>
        <eds-common.version>1.84</eds-common.version>
+       <commons-lang3.version>3.5</commons-lang3.version>
        <bouncy-castle.version>1.56</bouncy-castle.version>
        <jsch.version>0.1.53</jsch.version>
        <slf4j-log4j12.version>1.7.21</slf4j-log4j12.version>
        <javax.ws.rs-api.version>2.0.1</javax.ws.rs-api.version>
        <logback-classic.version>1.1.3</logback-classic.version>
        <commons-io.version>1.3.2</commons-io.version>
-       <commons-lang3.version>3.4</commons-lang3.version>
-       <commons-csv.version>1.3</commons-csv.version>
+
+       <commons-csv.version>1.4</commons-csv.version>
        <keycloak.version>2.0.0.Final</keycloak.version>
        <java.version>1.8</java.version>
        <httpclient.version>4.5.2</httpclient.version>
@@ -37,6 +38,26 @@
             <groupId>com.github.endeavourhealth.Common</groupId>
             <artifactId>eds-core</artifactId>
             <version>${eds-common.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpclient.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -68,26 +89,6 @@
             <artifactId>logback-classic</artifactId>
             <version>${logback-classic.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${commons-lang3.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${commons-io.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-            <version>${commons-csv.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpclient.version}</version>
-        </dependency>
 
         <!-- specifically include as excluded from eds-common -->
         <dependency>
@@ -114,6 +115,9 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <compilerArgument>-Xlint:all</compilerArgument>
+                    <showWarnings>true</showWarnings>
+                    <showDeprecation>true</showDeprecation>
                 </configuration>
             </plugin>
 

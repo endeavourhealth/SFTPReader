@@ -1,7 +1,8 @@
 package org.endeavourhealth.sftpreader.utilities.sftp;
 
-public class SftpConnectionException extends Exception
-{
+public class SftpConnectionException extends Exception {
+    static final long serialVersionUID = 0L;
+
     public SftpConnectionException() {
         super();
     }

@@ -337,7 +337,7 @@ public class SftpTask extends TimerTask
 
         Map<Batch, Integer> sortedBatchSequence = StreamExtension.sortByValue(batchSequence);
 
-        if (!new HashSet(incompleteBatches).equals(sortedBatchSequence.keySet()))
+        if (!new HashSet<>(incompleteBatches).equals(sortedBatchSequence.keySet()))
             throw new SftpValidationException("Batch sequence does not contain all unsequenced batches");
 
         for (Batch batch : sortedBatchSequence.keySet())
