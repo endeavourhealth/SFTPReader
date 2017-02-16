@@ -4,7 +4,7 @@ import org.endeavourhealth.core.postgres.PgResultSet;
 import org.endeavourhealth.core.postgres.PgStoredProc;
 import org.endeavourhealth.core.postgres.PgStoredProcException;
 import org.endeavourhealth.core.postgres.logdigest.IDBDigestLogger;
-import org.endeavourhealth.core.utility.StreamExtension;
+import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.model.db.*;
 
 import javax.sql.DataSource;

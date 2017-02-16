@@ -1,8 +1,8 @@
 package org.endeavourhealth.sftpreader;
 
 import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.core.data.config.ConfigManager;
-import org.endeavourhealth.core.data.config.ConfigManagerException;
+import org.endeavourhealth.common.config.ConfigManager;
+import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.core.postgres.PgDataSource;
 import org.endeavourhealth.core.postgres.PgStoredProcException;
 import org.endeavourhealth.core.postgres.logdigest.LogDigestAppender;
