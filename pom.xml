@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
 
    <properties>
-       <eds-common.version>1.98</eds-common.version>
+       <eds-common.version>1.99</eds-common.version>
        <commons-lang3.version>3.5</commons-lang3.version>
        <bouncy-castle.version>1.56</bouncy-castle.version>
        <jsch.version>0.1.53</jsch.version>
