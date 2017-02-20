@@ -1,6 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.emis;
 
 import org.apache.commons.lang3.Validate;
+import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchFile;
@@ -9,6 +10,7 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EmisSftpBatchValidator extends SftpBatchValidator
 {
@@ -20,6 +22,8 @@ public class EmisSftpBatchValidator extends SftpBatchValidator
         Validate.notNull(dbConfiguration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
         Validate.notEmpty(dbConfiguration.getInterfaceFileTypes(), "No interface file types configured");
 
+        checkExtractDateTimesIncrementBetweenBatches(incompleteBatches, lastCompleteBatch);
+
         for (Batch incompleteBatch : incompleteBatches)
         {
             checkFilenamesAreConsistentAcrossBatch(incompleteBatch, dbConfiguration);
@@ -29,6 +33,29 @@ public class EmisSftpBatchValidator extends SftpBatchValidator
             //
             // check that remote bytes == downloaded bytes
             // check all file attributes are complete
+        }
+    }
+
+    private void checkExtractDateTimesIncrementBetweenBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch) throws SftpValidationException {
+        if (incompleteBatches
+                .stream()
+                .map(t -> t.getBatchIdentifier())
+                .distinct()
+                .count() != incompleteBatches.size()) {
+            throw new SftpValidationException("Unsequenced batches have a duplicate extract date time");
+        }
+
+        Batch firstIncompleteBatch = incompleteBatches
+                .stream()
+                .sorted(Comparator.comparing(t -> EmisSftpFilenameParser.parseBatchIdentifier(t.getBatchIdentifier())))
+                .collect(StreamExtension.firstOrNullCollector());
+
+        if (firstIncompleteBatch != null) {
+            LocalDateTime lastCompleteBatchDateTime = EmisSftpFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
+            LocalDateTime firstIncompleteBatchDatetime = EmisSftpFilenameParser.parseBatchIdentifier(firstIncompleteBatch.getBatchIdentifier());
+
+            if ((firstIncompleteBatchDatetime.isBefore(lastCompleteBatchDateTime)) || (firstIncompleteBatchDatetime.isEqual(lastCompleteBatchDateTime)))
+                throw new SftpValidationException("First unsequenced batch extract date time is before last sequenced batch extract date time.");
         }
     }
 
