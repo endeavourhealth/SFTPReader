@@ -172,6 +172,15 @@ public class DataLayer implements IDBDigestLogger
         pgStoredProc.execute();
     }
 
+    public List<Batch> getIgnoredBatches(String instanceId) throws PgStoredProcException
+    {
+        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+                .setName("log.get_ignored_batches")
+                .addParameter("_instance_id", instanceId);
+
+        return populateBatches(pgStoredProc);
+    }
+
     public List<Batch> getIncompleteBatches(String instanceId) throws PgStoredProcException
     {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)

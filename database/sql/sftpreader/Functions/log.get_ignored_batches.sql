@@ -1,5 +1,5 @@
 
-create or replace function log.get_incomplete_batches
+create or replace function log.get_ignored_batches
 (
 	_instance_id varchar
 )
@@ -13,8 +13,7 @@ begin
 		array_agg(b.batch_id) into _batch_ids
 	from log.batch b
 	where b.instance_id = _instance_id
-	and b.is_complete = false
-	and b.ignore = false;
+	and b.ignore = true;
 
 	return query
 	select
