@@ -314,7 +314,7 @@ public class SftpTask extends TimerTask
                     .map(t -> t.getBatchIdentifier())
                     .collect(Collectors.toList())) + ".";
 
-            LOG.warn(" Skipping {} batches marked as ignore: {}", ignoredBatches, ignoredBatchIdentifiers);
+            LOG.warn(" Skipping {} batches marked as ignore: {}", ignoredBatches.size(), ignoredBatchIdentifiers);
         }
     }
 
