@@ -6,6 +6,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.endeavourhealth.common.eds.EdsSender;
+import org.endeavourhealth.common.eds.EdsSenderException;
+import org.endeavourhealth.common.eds.EdsSenderResponse;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.utility.StreamExtension;
@@ -476,20 +478,25 @@ public class SftpTask extends TimerTask
             String edsUrl = dbConfiguration.getDbConfigurationEds().getEdsUrl();
             boolean useKeycloak = dbConfiguration.getDbConfigurationEds().isUseKeycloak();
 
-            String inboundMessage = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage);
+            EdsSenderResponse edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage);
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),
                     unnotifiedBatchSplit.getBatchSplitId(),
                     dbConfiguration.getInstanceId(),
                     messageId,
                     outboundMessage,
-                    inboundMessage,
+                    edsSenderResponse.getStatusLine() + "\r\n" + edsSenderResponse.getResponseBody(),
                     true,
                     null);
         }
         catch (Exception e)
         {
-            String inboundMessage = e.getMessage();
+            String inboundMessage = null;
+
+            if (e.getClass().equals(EdsSenderException.class)) {
+                EdsSenderResponse edsSenderResponse = ((EdsSenderException)e).getEdsSenderResponse();
+                inboundMessage = edsSenderResponse.getStatusLine() + "\r\n" + edsSenderResponse.getResponseBody();
+            }
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),
                     unnotifiedBatchSplit.getBatchSplitId(),
