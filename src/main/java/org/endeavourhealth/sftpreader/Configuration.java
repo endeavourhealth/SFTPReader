@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
-public final class Configuration
-{
+public final class Configuration {
+
     // class members //
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
     private static final String PROGRAM_CONFIG_MANAGER_NAME = "sftpreader";
@@ -23,8 +23,7 @@ public final class Configuration
 
     private static Configuration instance = null;
 
-    public static Configuration getInstance() throws Exception
-    {
+    public static Configuration getInstance() throws Exception {
         if (instance == null)
             instance = new Configuration();
 
@@ -38,8 +37,7 @@ public final class Configuration
     private String postgresUsername;
     private String postgresPassword;
 
-    private Configuration() throws Exception
-    {
+    private Configuration() throws Exception {
         retrieveInstanceName();
         initialiseConfigManager();
         addHL7LogAppender();
@@ -86,13 +84,11 @@ public final class Configuration
         return PgDataSource.get(postgresUrl, postgresUsername, postgresPassword);
     }
 
-    public String getInstanceName()
-    {
+    public String getInstanceName() {
         return instanceName;
     }
 
-    public DbConfiguration getDbConfiguration()
-    {
+    public DbConfiguration getDbConfiguration() {
         return this.dbConfiguration;
     }
 }

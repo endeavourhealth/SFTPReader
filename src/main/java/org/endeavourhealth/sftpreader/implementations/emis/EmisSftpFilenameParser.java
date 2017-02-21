@@ -10,8 +10,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-public class EmisSftpFilenameParser extends SftpFilenameParser
-{
+public class EmisSftpFilenameParser extends SftpFilenameParser {
                                                                         // same as ISO pattern but switch : for . so can be used as filename
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
     private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
@@ -22,36 +21,30 @@ public class EmisSftpFilenameParser extends SftpFilenameParser
     private LocalDateTime extractDateTime;
     private UUID sharingAgreementUuid;
 
-    public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension)
-    {
+    public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
     }
 
-    public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration)
-    {
+    public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration) {
         super(filename, dbConfiguration);
     }
 
     @Override
-    public String generateBatchIdentifier()
-    {
+    public String generateBatchIdentifier() {
         return this.extractDateTime.format(BATCH_IDENTIFIER_FORMAT);
     }
 
-    public static LocalDateTime parseBatchIdentifier(String batchIdentifier)
-    {
+    public static LocalDateTime parseBatchIdentifier(String batchIdentifier) {
         return LocalDateTime.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
     }
 
     @Override
-    public String generateFileTypeIdentifier()
-    {
+    public String generateFileTypeIdentifier() {
         return schemaName + "_" + tableName;
     }
 
     @Override
-    protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException
-    {
+    protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
         String[] parts = filename.split("_");
 
         if (parts.length != 5)
@@ -95,8 +88,7 @@ public class EmisSftpFilenameParser extends SftpFilenameParser
             throw new SftpFilenameParseException("Sharing agreement UUID does not match that in configuration key value pair");
     }
 
-    private UUID getSharingAgreementUuidFromConfiguration() throws SftpFilenameParseException
-    {
+    private UUID getSharingAgreementUuidFromConfiguration() throws SftpFilenameParseException {
         for (DbConfigurationKvp dbConfigurationKvp : dbConfiguration.getDbConfigurationKvp())
             if (dbConfigurationKvp.getKey().equals(SHARING_AGREEMENT_UUID_KEY))
                 return UUID.fromString(dbConfigurationKvp.getValue());
@@ -104,18 +96,15 @@ public class EmisSftpFilenameParser extends SftpFilenameParser
         throw new SftpFilenameParseException(SHARING_AGREEMENT_UUID_KEY + " has not been configured in configuration key value pair");
     }
 
-    public ProcessingIdSet getProcessingIds()
-    {
+    public ProcessingIdSet getProcessingIds() {
         return this.processingIds;
     }
 
-    public LocalDateTime getExtractDateTime()
-    {
+    public LocalDateTime getExtractDateTime() {
         return extractDateTime;
     }
 
-    public UUID getSharingAgreementUuid()
-    {
+    public UUID getSharingAgreementUuid() {
         return sharingAgreementUuid;
     }
 }

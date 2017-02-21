@@ -14,8 +14,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
-public class SftpConnection
-{
+public class SftpConnection {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpConnection.class);
 
     private SftpConnectionDetails connectionDetails;
@@ -23,8 +22,7 @@ public class SftpConnection
     private Session session;
     private ChannelSftp channel;
 
-    public SftpConnection(SftpConnectionDetails connectionDetails)
-    {
+    public SftpConnection(SftpConnectionDetails connectionDetails) {
         Validate.notEmpty(connectionDetails.getHostname(), "hostname is empty");
         Validate.notEmpty(connectionDetails.getUsername(), "username is empty");
         Validate.isTrue(connectionDetails.getPort() > 0, "port must be positive");
@@ -32,8 +30,7 @@ public class SftpConnection
         this.connectionDetails = connectionDetails;
     }
 
-    public void open() throws JSchException, IOException, SftpConnectionException
-    {
+    public void open() throws JSchException, IOException, SftpConnectionException {
         this.jSch = new JSch();
 
         jSch.addIdentity("client-private-key", this.connectionDetails.getClientPrivateKey().getBytes(), null, this.connectionDetails.getClientPrivateKeyPassword().getBytes());
@@ -48,8 +45,7 @@ public class SftpConnection
     }
 
     @SuppressWarnings("unchecked")
-    public List<SftpRemoteFile> getFileList(String remotePath) throws SftpException
-    {
+    public List<SftpRemoteFile> getFileList(String remotePath) throws SftpException {
         Vector<ChannelSftp.LsEntry> fileList = channel.ls(remotePath);
 
         return fileList
@@ -65,13 +61,11 @@ public class SftpConnection
                 .collect(Collectors.toList());
     }
 
-    public InputStream getFile(String remotePath) throws SftpException
-    {
+    public InputStream getFile(String remotePath) throws SftpException {
         return channel.get(remotePath);
     }
 
-    public void deleteFile(String remotePath) throws SftpException
-    {
+    public void deleteFile(String remotePath) throws SftpException {
         channel.rm(remotePath);
     }
 
@@ -87,8 +81,7 @@ public class SftpConnection
         channel.mkdir(path);
     }
 
-    public void close()
-    {
+    public void close() {
         if (channel != null && channel.isConnected())
             channel.disconnect();
 
@@ -96,8 +89,7 @@ public class SftpConnection
             session.disconnect();
     }
 
-    public SftpConnectionDetails getConnectionDetails()
-    {
+    public SftpConnectionDetails getConnectionDetails() {
         return connectionDetails;
     }
 }

@@ -3,34 +3,28 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 
-public class ProcessingIdSet
-{
+public class ProcessingIdSet {
     private int processingIdStart;
     private int processingIdEnd;
 
-    public ProcessingIdSet(int processingIdStart, int processingIdEnd)
-    {
+    public ProcessingIdSet(int processingIdStart, int processingIdEnd) {
         this.processingIdStart = processingIdStart;
         this.processingIdEnd = processingIdEnd;
     }
 
-    public int getProcessingIdStart()
-    {
+    public int getProcessingIdStart() {
         return processingIdStart;
     }
 
-    public int getProcessingIdEnd()
-    {
+    public int getProcessingIdEnd() {
         return processingIdEnd;
     }
 
-    public String getBatchIdentifier()
-    {
+    public String getBatchIdentifier() {
         return Integer.toString(getProcessingIdStart()) + "-" + Integer.toString(getProcessingIdEnd());
     }
 
-    public static ProcessingIdSet parseBatchIdentifier(String batchIdentifier) throws SftpFilenameParseException
-    {
+    public static ProcessingIdSet parseBatchIdentifier(String batchIdentifier) throws SftpFilenameParseException {
         if (StringUtils.isBlank(batchIdentifier))
             throw new SftpFilenameParseException("No processing ids present");
 

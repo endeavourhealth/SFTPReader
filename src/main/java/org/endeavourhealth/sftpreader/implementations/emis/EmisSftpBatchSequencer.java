@@ -8,11 +8,10 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class EmisSftpBatchSequencer extends SftpBatchSequencer
-{
+public class EmisSftpBatchSequencer extends SftpBatchSequencer {
+
     @Override
-    public Map<Batch, Integer> determineBatchSequenceNumbers(List<Batch> incompleteBatches, int nextSequenceNumber, Batch lastCompleteBatch) throws SftpValidationException, SftpFilenameParseException
-    {
+    public Map<Batch, Integer> determineBatchSequenceNumbers(List<Batch> incompleteBatches, int nextSequenceNumber, Batch lastCompleteBatch) throws SftpValidationException, SftpFilenameParseException {
         Map<Batch, Integer> result = new HashMap<>();
 
         List<Batch> orderedIncompleteBatches = incompleteBatches

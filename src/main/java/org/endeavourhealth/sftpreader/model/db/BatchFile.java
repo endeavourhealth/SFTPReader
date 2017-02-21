@@ -1,7 +1,6 @@
 package org.endeavourhealth.sftpreader.model.db;
 
-public class BatchFile
-{
+public class BatchFile {
     private int batchId;
     private int batchFileId;
     private String fileTypeIdentifier;
@@ -14,123 +13,101 @@ public class BatchFile
     private String decryptedFilename;
     private long decryptedSizeBytes;
 
-    public int getBatchId()
-    {
+    public int getBatchId() {
         return batchId;
     }
 
-    public BatchFile setBatchId(int batchId)
-    {
+    public BatchFile setBatchId(int batchId) {
         this.batchId = batchId;
         return this;
     }
 
-    public int getBatchFileId()
-    {
+    public int getBatchFileId() {
         return batchFileId;
     }
 
-    public BatchFile setBatchFileId(int batchFileId)
-    {
+    public BatchFile setBatchFileId(int batchFileId) {
         this.batchFileId = batchFileId;
         return this;
     }
 
-    public String getFileTypeIdentifier()
-    {
+    public String getFileTypeIdentifier() {
         return fileTypeIdentifier;
     }
 
-    public BatchFile setFileTypeIdentifier(String fileTypeIdentifier)
-    {
+    public BatchFile setFileTypeIdentifier(String fileTypeIdentifier) {
         this.fileTypeIdentifier = fileTypeIdentifier;
         return this;
     }
 
-    public String getFilename()
-    {
+    public String getFilename() {
         return filename;
     }
 
-    public BatchFile setFilename(String filename)
-    {
+    public BatchFile setFilename(String filename) {
         this.filename = filename;
         return this;
     }
 
-    public long getRemoteSizeBytes()
-    {
+    public long getRemoteSizeBytes() {
         return remoteSizeBytes;
     }
 
-    public BatchFile setRemoteSizeBytes(long remoteSizeBytes)
-    {
+    public BatchFile setRemoteSizeBytes(long remoteSizeBytes) {
         this.remoteSizeBytes = remoteSizeBytes;
         return this;
     }
 
-    public boolean isDownloaded()
-    {
+    public boolean isDownloaded() {
         return isDownloaded;
     }
 
-    public BatchFile setDownloaded(boolean downloaded)
-    {
+    public BatchFile setDownloaded(boolean downloaded) {
         isDownloaded = downloaded;
         return this;
     }
 
-    public long getLocalSizeBytes()
-    {
+    public long getLocalSizeBytes() {
         return localSizeBytes;
     }
 
-    public BatchFile setLocalSizeBytes(long localSizeBytes)
-    {
+    public BatchFile setLocalSizeBytes(long localSizeBytes) {
         this.localSizeBytes = localSizeBytes;
         return this;
     }
 
-    public boolean isRequiresDecryption()
-    {
+    public boolean isRequiresDecryption() {
         return requiresDecryption;
     }
 
-    public BatchFile setRequiresDecryption(boolean requiresDecryption)
-    {
+    public BatchFile setRequiresDecryption(boolean requiresDecryption) {
         this.requiresDecryption = requiresDecryption;
         return this;
     }
 
-    public boolean isDecrypted()
-    {
+    public boolean isDecrypted() {
         return isDecrypted;
     }
 
-    public BatchFile setDecrypted(boolean decrypted)
-    {
+    public BatchFile setDecrypted(boolean decrypted) {
         isDecrypted = decrypted;
         return this;
     }
 
-    public String getDecryptedFilename()
-    {
+    public String getDecryptedFilename() {
         return decryptedFilename;
     }
 
-    public BatchFile setDecryptedFilename(String decryptedFilename)
-    {
+    public BatchFile setDecryptedFilename(String decryptedFilename) {
         this.decryptedFilename = decryptedFilename;
         return this;
     }
 
-    public long getDecryptedSizeBytes()
-    {
+    public long getDecryptedSizeBytes() {
         return decryptedSizeBytes;
     }
 
-    public BatchFile setDecryptedSizeBytes(long decryptedSizeBytes)
-    {
+    public BatchFile setDecryptedSizeBytes(long decryptedSizeBytes) {
         this.decryptedSizeBytes = decryptedSizeBytes;
         return this;
     }

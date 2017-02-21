@@ -5,8 +5,7 @@ import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.slf4j.LoggerFactory;
 
-public abstract class SftpFilenameParser
-{
+public abstract class SftpFilenameParser {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpFilenameParser.class);
 
     private boolean isFilenameValid = false;
@@ -23,17 +22,14 @@ public abstract class SftpFilenameParser
         this.dbConfiguration = dbConfiguration;
         this.fileExtension = fileExtension;
 
-        try
-        {
+        try {
             parseFilename(filename, this.fileExtension);
 
             if (!dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier()))
                 throw new SftpFilenameParseException("File type " + generateFileTypeIdentifier() + " not recognised");
 
             isFilenameValid = true;
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             isFilenameValid = false;
             LOG.error("Error parsing filename: " + filename, e);
         }
@@ -43,29 +39,25 @@ public abstract class SftpFilenameParser
     protected abstract String generateBatchIdentifier();
     protected abstract String generateFileTypeIdentifier();
 
-    public boolean isFilenameValid()
-    {
+    public boolean isFilenameValid() {
         return this.isFilenameValid;
     }
 
-    public String getBatchIdentifier()
-    {
+    public String getBatchIdentifier() {
         if (!isFilenameValid)
             return "UNKNOWN";
 
         return generateBatchIdentifier();
     }
 
-    public String getFileTypeIdentifier()
-    {
+    public String getFileTypeIdentifier() {
         if (!isFilenameValid)
             return "UNKNOWN";
 
         return generateFileTypeIdentifier();
     }
 
-    public String getFileExtension()
-    {
+    public String getFileExtension() {
         return this.fileExtension;
     }
 }

@@ -6,7 +6,6 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 
 import java.util.List;
 
-public abstract class SftpBatchValidator
-{
+public abstract class SftpBatchValidator {
     public abstract void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException;
 }

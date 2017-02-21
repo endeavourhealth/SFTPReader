@@ -13,8 +13,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class EmisSftpNotificationCreator extends SftpNotificationCreator
-{
+public class EmisSftpNotificationCreator extends SftpNotificationCreator {
+
     @Override
     public String createNotificationMessage(DbConfiguration dbConfiguration, BatchSplit batchSplit) {
 

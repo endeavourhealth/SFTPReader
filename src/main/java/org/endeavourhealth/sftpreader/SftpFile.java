@@ -8,8 +8,8 @@ import org.endeavourhealth.sftpreader.utilities.sftp.SftpRemoteFile;
 
 import java.time.LocalDateTime;
 
-public class SftpFile
-{
+public class SftpFile {
+
     private SftpRemoteFile sftpRemoteFile;
     private SftpFilenameParser sftpFilenameParser;
     private String localRootPath;
@@ -18,8 +18,7 @@ public class SftpFile
     private Long decryptedFileSizeBytes = null;
     private Integer batchFileId = null;
 
-    protected SftpFile(SftpRemoteFile sftpRemoteFile, SftpFilenameParser sftpFilenameParser, String localRootPath)
-    {
+    protected SftpFile(SftpRemoteFile sftpRemoteFile, SftpFilenameParser sftpFilenameParser, String localRootPath) {
         Validate.notNull(sftpRemoteFile, "sftpRemoteFile");
         Validate.notNull(sftpFilenameParser, "sftpFilenameParser");
         Validate.notNull(localRootPath, "localRootPath");
@@ -30,110 +29,91 @@ public class SftpFile
         this.pgpFileExtensionFilter = sftpFilenameParser.getFileExtension();
     }
 
-    public boolean isFilenameValid()
-    {
+    public boolean isFilenameValid() {
         return this.sftpFilenameParser.isFilenameValid();
     }
 
-    public String getBatchIdentifier()
-    {
+    public String getBatchIdentifier() {
         return this.sftpFilenameParser.getBatchIdentifier();
     }
 
-    public String getFileTypeIdentifier()
-    {
+    public String getFileTypeIdentifier() {
         return this.sftpFilenameParser.getFileTypeIdentifier();
     }
 
-    public String getRemoteFilePath()
-    {
+    public String getRemoteFilePath() {
         return this.sftpRemoteFile.getFullPath();
     }
 
-    public String getFilename()
-    {
+    public String getFilename() {
         return this.sftpRemoteFile.getFilename();
     }
 
-    public String getLocalPath()
-    {
+    public String getLocalPath() {
         return FilenameUtils.concat(this.localRootPath, this.getBatchIdentifier());
     }
 
-    public String getLocalRelativePath()
-    {
+    public String getLocalRelativePath() {
         return this.getBatchIdentifier();
     }
 
-    public String getLocalFilePath()
-    {
+    public String getLocalFilePath() {
         return FilenameUtils.concat(getLocalPath(), getFilename());
     }
 
-    public boolean doesFileNeedDecrypting()
-    {
+    public boolean doesFileNeedDecrypting() {
         if (StringUtils.isEmpty(pgpFileExtensionFilter))
             return false;
 
         return (getFilename().endsWith(pgpFileExtensionFilter));
     }
 
-    public String getDecryptedLocalFilePath()
-    {
+    public String getDecryptedLocalFilePath() {
         return FilenameUtils.concat(getLocalPath(), getDecryptedFilename());
     }
 
-    public String getDecryptedFilename()
-    {
+    public String getDecryptedFilename() {
         return StringUtils.removeEnd(getFilename(), this.pgpFileExtensionFilter);
     }
 
-    public long getRemoteFileSizeInBytes()
-    {
+    public long getRemoteFileSizeInBytes() {
         return sftpRemoteFile.getFileSizeBytes();
     }
 
-    public LocalDateTime getRemoteLastModifiedDate()
-    {
+    public LocalDateTime getRemoteLastModifiedDate() {
         return sftpRemoteFile.getLastModified();
     }
 
-    public long getLocalFileSizeBytes()
-    {
+    public long getLocalFileSizeBytes() {
         if (localFileSizeBytes == null)
             throw new NullPointerException("localFileSizeBytes is null");
 
         return this.localFileSizeBytes;
     }
 
-    public void setLocalFileSizeBytes(long localFileSizeBytes)
-    {
+    public void setLocalFileSizeBytes(long localFileSizeBytes) {
         this.localFileSizeBytes = localFileSizeBytes;
     }
 
-    public long getDecryptedFileSizeBytes()
-    {
+    public long getDecryptedFileSizeBytes() {
         if (decryptedFileSizeBytes == null)
             throw new NullPointerException("decryptedFileSizeBytes is null");
 
         return this.decryptedFileSizeBytes;
     }
 
-    public void setDecryptedFileSizeBytes(long localFileSizeBytes)
-    {
+    public void setDecryptedFileSizeBytes(long localFileSizeBytes) {
         this.decryptedFileSizeBytes = localFileSizeBytes;
     }
 
-    public int getBatchFileId()
-    {
+    public int getBatchFileId() {
         if (batchFileId == null)
             throw new NullPointerException("batchFileId is null");
 
         return this.batchFileId;
     }
 
-    public void setBatchFileId(int batchFileId)
-    {
+    public void setBatchFileId(int batchFileId) {
         this.batchFileId = batchFileId;
     }
 }

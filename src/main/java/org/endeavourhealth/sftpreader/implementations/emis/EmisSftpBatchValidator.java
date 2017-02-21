@@ -12,11 +12,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class EmisSftpBatchValidator extends SftpBatchValidator
-{
+public class EmisSftpBatchValidator extends SftpBatchValidator {
+
     @Override
-    public void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException
-    {
+    public void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException {
         Validate.notNull(incompleteBatches, "incompleteBatches is null");
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
         Validate.notNull(dbConfiguration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
@@ -24,8 +23,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator
 
         checkExtractDateTimesIncrementBetweenBatches(incompleteBatches, lastCompleteBatch);
 
-        for (Batch incompleteBatch : incompleteBatches)
-        {
+        for (Batch incompleteBatch : incompleteBatches) {
             checkFilenamesAreConsistentAcrossBatch(incompleteBatch, dbConfiguration);
             checkAllFilesArePresentInBatch(incompleteBatch, dbConfiguration);
 
@@ -59,8 +57,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator
         }
     }
 
-    private void checkFilenamesAreConsistentAcrossBatch(Batch incompleteBatches, DbConfiguration dbConfiguration) throws SftpValidationException
-    {
+    private void checkFilenamesAreConsistentAcrossBatch(Batch incompleteBatches, DbConfiguration dbConfiguration) throws SftpValidationException {
         Validate.notNull(incompleteBatches, "incompleteBatches is null");
         Validate.notNull(incompleteBatches.getBatchFiles(), "incompleteBatches.batchFiles is null");
 
@@ -73,20 +70,16 @@ public class EmisSftpBatchValidator extends SftpBatchValidator
 
         boolean first = true;
 
-        for (BatchFile incompleteBatchFile : incompleteBatches.getBatchFiles())
-        {
+        for (BatchFile incompleteBatchFile : incompleteBatches.getBatchFiles()) {
             EmisSftpFilenameParser emisSftpFilenameParser = new EmisSftpFilenameParser(incompleteBatchFile.getFilename(), dbConfiguration);
 
-            if (first)
-            {
+            if (first) {
                 processingIdStart = emisSftpFilenameParser.getProcessingIds().getProcessingIdStart();
                 processingIdEnd = emisSftpFilenameParser.getProcessingIds().getProcessingIdEnd();
                 extractDateTime = emisSftpFilenameParser.getExtractDateTime();
 
                 first = false;
-            }
-            else
-            {
+            } else {
                 if (emisSftpFilenameParser.getProcessingIds().getProcessingIdStart() != processingIdStart)
                     throw new SftpValidationException("Emis start processing id does not match the rest in the batch.  Filename = " + incompleteBatchFile.getFilename());
 
@@ -99,10 +92,8 @@ public class EmisSftpBatchValidator extends SftpBatchValidator
         }
     }
 
-    private void checkAllFilesArePresentInBatch(Batch incompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException
-    {
-        for (String fileType : dbConfiguration.getInterfaceFileTypes())
-        {
+    private void checkAllFilesArePresentInBatch(Batch incompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException {
+        for (String fileType : dbConfiguration.getInterfaceFileTypes()) {
             boolean found = false;
 
             for (BatchFile incompleteBatchFile : incompleteBatch.getBatchFiles())

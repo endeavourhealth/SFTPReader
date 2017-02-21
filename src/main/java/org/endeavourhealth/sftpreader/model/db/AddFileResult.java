@@ -1,7 +1,6 @@
 package org.endeavourhealth.sftpreader.model.db;
 
-public class AddFileResult
-{
+public class AddFileResult {
     private boolean fileAlreadyProcessed;
     private int batchFileId;
 
@@ -10,19 +9,16 @@ public class AddFileResult
         return fileAlreadyProcessed;
     }
 
-    public AddFileResult setFileAlreadyProcessed(boolean fileAlreadyProcessed)
-    {
+    public AddFileResult setFileAlreadyProcessed(boolean fileAlreadyProcessed) {
         this.fileAlreadyProcessed = fileAlreadyProcessed;
         return this;
     }
 
-    public int getBatchFileId()
-    {
+    public int getBatchFileId() {
         return batchFileId;
     }
 
-    public AddFileResult setBatchFileId(int batchFileId)
-    {
+    public AddFileResult setBatchFileId(int batchFileId) {
         this.batchFileId = batchFileId;
         return this;
     }

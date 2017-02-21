@@ -135,8 +135,6 @@ public class PgpUtil {
         fileOut.close();
     }
 
-
-
     private static PGPOnePassSignature streamOutAndCalculateSignature(PGPOnePassSignatureList onePassSignatureList, InputStream publicKeyStream,
                                                                       KeyFingerPrintCalculator fingerCalc, InputStream fileInput,
                                                                       OutputStream fileOutput) throws PGPException, IOException, SignatureException {
