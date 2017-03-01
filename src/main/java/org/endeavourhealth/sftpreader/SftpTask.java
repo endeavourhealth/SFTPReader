@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.endeavourhealth.common.eds.EdsSender;
-import org.endeavourhealth.common.eds.EdsSenderException;
+import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
@@ -464,8 +464,8 @@ public class SftpTask extends TimerTask {
         } catch (Exception e) {
             String inboundMessage = null;
 
-            if (e.getClass().equals(EdsSenderException.class)) {
-                EdsSenderResponse edsSenderResponse = ((EdsSenderException)e).getEdsSenderResponse();
+            if (e instanceof EdsSenderHttpErrorResponseException) {
+                EdsSenderResponse edsSenderResponse = ((EdsSenderHttpErrorResponseException)e).getEdsSenderResponse();
                 inboundMessage = edsSenderResponse.getStatusLine() + "\r\n" + edsSenderResponse.getResponseBody();
             }
 
@@ -476,10 +476,19 @@ public class SftpTask extends TimerTask {
                     outboundMessage,
                     inboundMessage,
                     false,
-                    e.getClass().getName() + " | " + e.getMessage());
+                    getExceptionNameAndMessage(e));
 
             throw new SftpReaderException("Error notifying EDS for batch split " + unnotifiedBatchSplit.getBatchSplitId(), e);
         }
+    }
+
+    private static String getExceptionNameAndMessage(Throwable e) {
+        String result = "[" + e.getClass().getName() + "] " + e.getMessage();
+
+        if (e.getCause() != null)
+            result += " | " + getExceptionNameAndMessage(e.getCause());
+
+        return result;
     }
 
     private LocalDateTime calculateNextRunTime(LocalDateTime thisRunStartTime) {
