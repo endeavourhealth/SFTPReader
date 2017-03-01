@@ -48,7 +48,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
                 .sorted(Comparator.comparing(t -> EmisSftpFilenameParser.parseBatchIdentifier(t.getBatchIdentifier())))
                 .collect(StreamExtension.firstOrNullCollector());
 
-        if (firstIncompleteBatch != null) {
+        if ((firstIncompleteBatch != null) && (lastCompleteBatch != null)) {
             LocalDateTime lastCompleteBatchDateTime = EmisSftpFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
             LocalDateTime firstIncompleteBatchDatetime = EmisSftpFilenameParser.parseBatchIdentifier(firstIncompleteBatch.getBatchIdentifier());
 
