@@ -13,3 +13,8 @@ grant all on schema log TO postgres;
 grant all privileges on all tables in schema log to postgres;
 grant all privileges on all sequences in schema log to postgres;
 grant all privileges on all functions in schema log to postgres;
+
+grant all on schema helper TO postgres;
+grant all privileges on all tables in schema helper to postgres;
+grant all privileges on all sequences in schema helper to postgres;
+grant all privileges on all functions in schema helper to postgres;

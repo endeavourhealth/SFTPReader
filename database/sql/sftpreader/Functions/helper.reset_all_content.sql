@@ -1,5 +1,5 @@
 
-create or replace function log.reset_all_content
+create or replace function helper.reset_all_content
 ()
 returns void
 as $$

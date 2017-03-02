@@ -1,5 +1,5 @@
 
-create or replace function log.reset_notified_batches
+create or replace function helper.reset_notified_batches
 ()
 returns void
 as $$

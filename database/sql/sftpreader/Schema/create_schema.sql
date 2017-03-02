@@ -4,6 +4,7 @@
 
 create schema configuration;
 create schema log;
+create schema helper;
 
 create table configuration.instance
 (
