@@ -5,4 +5,4 @@ export CONFIG_JDBC_USERNAME=postgres
 export CONFIG_JDBC_PASSWORD=
 export CONFIG_JDBC_URL=jdbc:postgresql://127.0.0.1/config
 
-java -jar -DINSTANCE_NAME=TEST001  /opt/sftpreader/eds-sftpreader-1.0-SNAPSHOT.jar -Xmx4g
+java -jar -DINSTANCE_NAME=TEST001  /opt/sftpreader/sftpreader-1.0-SNAPSHOT.jar -Xmx4g
