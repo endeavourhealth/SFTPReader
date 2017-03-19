@@ -25,4 +25,6 @@ public class ImplementationActivator {
     public static SftpBatchSplitter createSftpBatchSplitter() {
         return new EmisSftpBatchSplitter();
     }
+
+    public static SftpSlackNotifier createSftpSlackNotifier() { return new EmisSftpSlackNotifier(); }
 }

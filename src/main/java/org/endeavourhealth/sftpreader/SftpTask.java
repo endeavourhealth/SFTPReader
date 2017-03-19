@@ -2,6 +2,8 @@ package org.endeavourhealth.sftpreader;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+import net.gpedro.integrations.slack.SlackApi;
+import net.gpedro.integrations.slack.SlackMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
@@ -329,9 +331,30 @@ public class SftpTask extends TimerTask {
         for (Batch batch : sortedBatchSequence.keySet()) {
             LOG.debug("  Batch " + batch.getBatchIdentifier() + " sequenced as " + sortedBatchSequence.get(batch).toString());
             db.setBatchAsComplete(batch, sortedBatchSequence.get(batch));
+
+            postMessageToSlack(batch);
         }
 
         LOG.trace(" Completed batch sequencing");
+    }
+
+    private void postMessageToSlack(Batch batch) {
+        try {
+            DbConfigurationSlack configurationSlack = configuration.getDbConfiguration().getDbConfigurationSlack();
+
+            if (!configurationSlack.isEnabled())
+                return;
+
+            SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier();
+
+            String slackMessage = slackNotifier.getSlackMessage(configurationSlack.getMessageTemplate(), batch);
+
+            SlackApi slackApi = new SlackApi(configurationSlack.getSlackUrl());
+            slackApi.call(new SlackMessage(slackMessage));
+
+        } catch (Exception e) {
+            LOG.error("Error posting message to slack", e);
+        }
     }
 
     private void splitBatches(List<Batch> batches) throws Exception {

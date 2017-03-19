@@ -59,7 +59,12 @@ public class DataLayer implements IDBDigestLogger {
                             .setKeycloakRealm(resultSet.getString("keycloak_realm"))
                             .setKeycloakUsername(resultSet.getString("keycloak_username"))
                             .setKeycloakPassword(resultSet.getString("keycloak_password"))
-                            .setKeycloakClientId(resultSet.getString("keycloak_clientid"))));
+                            .setKeycloakClientId(resultSet.getString("keycloak_clientid")))
+
+                        .setDbConfigurationSlack(new DbConfigurationSlack()
+                            .setEnabled(resultSet.getBoolean("slack_enabled"))
+                            .setSlackUrl(resultSet.getString("slack_url"))
+                            .setMessageTemplate(resultSet.getString("slack_message_template"))));
 
         if (dbConfiguration != null) {
             dbConfiguration.setDbConfigurationKvp(getConfigurationKvp(instanceId));

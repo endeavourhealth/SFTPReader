@@ -32,7 +32,10 @@ returns table
 	keycloak_realm varchar,
 	keycloak_username varchar,
 	keycloak_password varchar,
-	keycloak_clientid varchar
+	keycloak_clientid varchar,
+	slack_enabled boolean,
+	slack_url varchar,
+	slack_message_template varchar
 )
 as $$
 
@@ -64,13 +67,17 @@ as $$
 		ce.keycloak_realm,
 		ce.keycloak_username,
 		ce.keycloak_password,
-		ce.keycloak_clientid
+		ce.keycloak_clientid,
+		coalesce(cl.enabled, false) as slack_enabled,
+		cl.slack_url,
+		cl.message_template as slack_message_template
 	from configuration.instance i
 	inner join configuration.configuration c on i.instance_id = c.instance_id
 	inner join configuration.interface_type it on c.interface_type_id = it.interface_type_id
 	inner join configuration.configuration_sftp cs on c.instance_id = cs.instance_id
 	inner join configuration.configuration_eds ce on c.instance_id = ce.instance_id
 	left outer join configuration.configuration_pgp cp on c.instance_id = cp.instance_id
+	left outer join configuration.configuration_slack cl on c.instance_id = cl.instance_id
 	where i.instance_id = _instance_id;
 
 $$ language sql;

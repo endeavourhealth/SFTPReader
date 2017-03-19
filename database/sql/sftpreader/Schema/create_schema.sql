@@ -170,6 +170,18 @@ create table configuration.configuration_kvp
 	constraint configuration_configuration_key_ck check (char_length(trim(key)) > 0)
 );
 
+create table configuration.configuration_slack
+(
+	instance_id varchar(100) not null,
+	enabled boolean not null,
+	slack_url varchar(1000) not null,
+	message_template varchar(1000) not null,
+	
+	constraint configuration_configurationslack_instanceid_pk primary key (instance_id),
+	constraint configuration_configurationslack_instanceid_fk foreign key (instance_id) references configuration.configuration (instance_id),
+	constraint configuration_configurationslack_enabled_slackurl_ck check ((enabled and char_length(trim(slack_url)) > 0) or not enabled)
+);
+
 create table configuration.emis_organisation_map
 (
 	guid varchar not null,

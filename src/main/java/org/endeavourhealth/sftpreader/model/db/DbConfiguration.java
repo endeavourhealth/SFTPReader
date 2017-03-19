@@ -11,6 +11,7 @@ public class DbConfiguration {
     private DbConfigurationSftp dbConfigurationSftp;
     private DbConfigurationPgp dbConfigurationPgp;
     private DbConfigurationEds dbConfigurationEds;
+    private DbConfigurationSlack dbConfigurationSlack;
     private List<DbConfigurationKvp> dbConfigurationKvp;
     private List<String> interfaceFileTypes;
 
@@ -108,6 +109,15 @@ public class DbConfiguration {
 
     public DbConfiguration setDbConfigurationKvp(List<DbConfigurationKvp> dbConfigurationKvp) {
         this.dbConfigurationKvp = dbConfigurationKvp;
+        return this;
+    }
+
+    public DbConfigurationSlack getDbConfigurationSlack() {
+        return dbConfigurationSlack;
+    }
+
+    public DbConfiguration setDbConfigurationSlack(DbConfigurationSlack dbConfigurationSlack) {
+        this.dbConfigurationSlack = dbConfigurationSlack;
         return this;
     }
 }
