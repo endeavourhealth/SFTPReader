@@ -257,7 +257,8 @@ public class SftpTask extends TimerTask {
 
                 validateBatches(incompleteBatches, lastCompleteBatch);
                 splitBatches(incompleteBatches);
-                sequenceBatches(incompleteBatches, lastCompleteBatch);
+                List<Batch> sequencedBatches = sequenceBatches(incompleteBatches, lastCompleteBatch);
+                postMessageToSlack(sequencedBatches);
             }
 
             return true;
@@ -296,7 +297,7 @@ public class SftpTask extends TimerTask {
         LOG.trace(" Completed batch validation");
     }
 
-    private void sequenceBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch) throws SftpValidationException, SftpFilenameParseException, PgStoredProcException {
+    private List<Batch> sequenceBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch) throws SftpValidationException, SftpFilenameParseException, PgStoredProcException {
         LOG.trace(" Sequencing batches");
 
         int nextSequenceNumber = getNextSequenceNumber(lastCompleteBatch);
@@ -316,14 +317,14 @@ public class SftpTask extends TimerTask {
         for (Batch batch : sortedBatchSequence.keySet()) {
             LOG.debug("  Batch " + batch.getBatchIdentifier() + " sequenced as " + sortedBatchSequence.get(batch).toString());
             db.setBatchAsComplete(batch, sortedBatchSequence.get(batch));
-
-            postMessageToSlack(batch);
         }
 
         LOG.trace(" Completed batch sequencing");
+
+        return new ArrayList<>(sortedBatchSequence.keySet());
     }
 
-    private void postMessageToSlack(Batch batch) {
+    private void postMessageToSlack(List<Batch> batches) {
         try {
             DbConfigurationSlack configurationSlack = configuration.getDbConfiguration().getDbConfigurationSlack();
 
@@ -332,10 +333,12 @@ public class SftpTask extends TimerTask {
 
             SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier();
 
-            String slackMessage = slackNotifier.getSlackMessage(configurationSlack.getMessageTemplate(), batch);
+            for (Batch batch : batches) {
+                String slackMessage = slackNotifier.getSlackMessage(configurationSlack.getMessageTemplate(), batch);
 
-            SlackApi slackApi = new SlackApi(configurationSlack.getSlackUrl());
-            slackApi.call(new SlackMessage(slackMessage));
+                SlackApi slackApi = new SlackApi(configurationSlack.getSlackUrl());
+                slackApi.call(new SlackMessage(slackMessage));
+            }
 
         } catch (Exception e) {
             LOG.error("Error posting message to slack", e);
