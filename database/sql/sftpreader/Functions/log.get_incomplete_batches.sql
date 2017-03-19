@@ -13,8 +13,7 @@ begin
 		array_agg(b.batch_id) into _batch_ids
 	from log.batch b
 	where b.instance_id = _instance_id
-	and b.is_complete = false
-	and b.ignore = false;
+	and b.is_complete = false;
 
 	return query
 	select

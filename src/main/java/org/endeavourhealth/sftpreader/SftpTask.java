@@ -250,8 +250,6 @@ public class SftpTask extends TimerTask {
             if (unknownFiles.size() > 0)
                 throw new SftpValidationException("There are " + Integer.toString(unknownFiles.size()) + " unknown files present.");
 
-            checkForIgnoredBatches();
-
             List<Batch> incompleteBatches = getIncompleteBatches();
 
             if (incompleteBatches.size() > 0) {
@@ -272,19 +270,6 @@ public class SftpTask extends TimerTask {
 
     private List<UnknownFile> getUnknownFiles() throws PgStoredProcException {
         return db.getUnknownFiles(dbConfiguration.getInstanceId());
-    }
-
-    private void checkForIgnoredBatches() throws PgStoredProcException {
-        List<Batch> ignoredBatches = db.getIgnoredBatches(dbConfiguration.getInstanceId());
-
-        if (ignoredBatches.size() > 0) {
-            String ignoredBatchIdentifiers = String.join(", ", ignoredBatches
-                    .stream()
-                    .map(t -> t.getBatchIdentifier())
-                    .collect(Collectors.toList())) + ".";
-
-            LOG.warn(" Skipping {} batches marked as ignore: {}", ignoredBatches.size(), ignoredBatchIdentifiers);
-        }
     }
 
     private List<Batch> getIncompleteBatches() throws PgStoredProcException {

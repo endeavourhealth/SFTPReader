@@ -208,9 +208,7 @@ create table log.batch
 	insert_date timestamp not null default (date_trunc('second', now()::timestamp)),
 	sequence_number integer null,
 	is_complete boolean not null default false,
-	complete_date timestamp null,
-	ignore boolean not null default false,
-	ignore_date timestamp null,
+	complete_date timestamp null
 
 	constraint log_batch_filesetid_pk primary key (batch_id),
 	constraint log_batch_instanceid_interfacetypeid_fk foreign key (instance_id, interface_type_id) references configuration.configuration (instance_id, interface_type_id),
@@ -220,9 +218,7 @@ create table log.batch
 	constraint log_batch_insertdate_completedate_ck check ((complete_date is null) or (insert_date <= complete_date)),
 	constraint log_batch_sequencenumber_ck check (sequence_number is null or (sequence_number > 0)),
 	constraint log_batch_instanceid_sequencenumber_uq unique (instance_id, sequence_number),
-	constraint log_batch_iscomplete_completedate_sequencenumber_ck check ((is_complete and complete_date is not null and sequence_number is not null) or ((not is_complete) and complete_date is null and sequence_number is null)),
-	constraint log_batch_iscomplete_ignore_ck check ((ignore and (not is_complete)) or (not ignore)),
-	constraint log_batch_ignore_ignoredate_ck check ((ignore and (ignore_date is not null)) or ((not ignore) and (ignore_date is null)))
+	constraint log_batch_iscomplete_completedate_sequencenumber_ck check ((is_complete and complete_date is not null and sequence_number is not null) or ((not is_complete) and complete_date is null and sequence_number is null))
 );
 
 create table log.batch_file
