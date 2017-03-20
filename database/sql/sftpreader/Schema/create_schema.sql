@@ -208,7 +208,7 @@ create table log.batch
 	insert_date timestamp not null default (date_trunc('second', now()::timestamp)),
 	sequence_number integer null,
 	is_complete boolean not null default false,
-	complete_date timestamp null
+	complete_date timestamp null,
 
 	constraint log_batch_filesetid_pk primary key (batch_id),
 	constraint log_batch_instanceid_interfacetypeid_fk foreign key (instance_id, interface_type_id) references configuration.configuration (instance_id, interface_type_id),
