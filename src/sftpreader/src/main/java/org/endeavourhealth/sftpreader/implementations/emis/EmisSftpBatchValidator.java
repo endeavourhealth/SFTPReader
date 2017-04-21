@@ -10,7 +10,6 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class EmisSftpBatchValidator extends SftpBatchValidator {
 
