@@ -9,7 +9,7 @@ import java.util.Timer;
 public class Main {
 
 	private static final String PROGRAM_DISPLAY_NAME = "SFTP Reader";
-    private static final String TIMER_THREAD_NAME = "SftpTaskThread";
+    private static final String TIMER_THREAD_NAME = "SftpTask";
 	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static Configuration configuration;
 
