@@ -4,6 +4,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.*;
@@ -312,12 +313,14 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                 String orgName = csvRecord.get("OrganisationName");
                 String orgOds = csvRecord.get("ODSCode");
 
-                EmisOrganisationMap mapping = new EmisOrganisationMap();
-                mapping.setGuid(orgGuid);
-                mapping.setName(orgName);
-                mapping.setOdsCode(orgOds);
+                if (StringUtils.isNotEmpty(orgOds)) {
+                    EmisOrganisationMap mapping = new EmisOrganisationMap()
+                            .setGuid(orgGuid)
+                            .setName(orgName)
+                            .setOdsCode(orgOds);
 
-                db.addEmisOrganisationMap(mapping);
+                    db.addEmisOrganisationMap(mapping);
+                }
             }
         } finally {
             csvParser.close();
