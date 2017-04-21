@@ -31,8 +31,8 @@
     </repositories>
 
     <modules>
-        <module>database</module>
         <module>src/sftpreader</module>
+        <module>src/sftpreader-database</module>
     </modules>
 
     <build>
