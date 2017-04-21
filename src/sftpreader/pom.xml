@@ -226,7 +226,7 @@
                     </execution>
 
                     <!-- dependency analysis -->
-                    <execution>
+                    <!--<execution>
                         <id>analyze</id>
                         <goals>
                             <goal>analyze-only</goal>
@@ -235,7 +235,7 @@
                             <failOnWarning>true</failOnWarning>
                             <outputXML>true</outputXML>
                         </configuration>
-                    </execution>
+                    </execution>-->
 
                 </executions>
             </plugin>
