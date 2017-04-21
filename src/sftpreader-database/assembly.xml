@@ -8,7 +8,7 @@
     <includeBaseDirectory>false</includeBaseDirectory>
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}/src/live</directory>
+            <directory>${project.basedir}/src/main</directory>
             <outputDirectory></outputDirectory>
         </fileSet>
     </fileSets>
