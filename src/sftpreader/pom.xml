@@ -166,36 +166,16 @@
                 </executions>
             </plugin>
 
-            <!-- remove original-sftpreader-1.0-SNAPSHOT.jar as this is the thin JAR and of no use -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <tasks>
-                                <delete file="${project.build.directory}/original-${project.artifactId}-${project.version}.jar" />
-                            </tasks>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- copy bouncycastle dependencies and depedency analysis-->
+            <!-- copy bouncycastle dependencies and dependency analysis-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>3.0.0</version>
                 <executions>
 
-                    <!-- copy bouncycastle dependencies -->
+                    <!-- copy bouncycastle dependencies to module target folder -->
                     <execution>
-                        <id>copy-dependencies</id>
+                        <id>copy-bouncycastle-dependencies</id>
                         <phase>package</phase>
                         <goals>
                             <goal>copy-dependencies</goal>
@@ -203,6 +183,42 @@
                         <configuration>
                             <includeArtifactIds>bcprov-jdk15on,bcpg-jdk15on,bcpkix-jdk15on</includeArtifactIds>
                             <outputDirectory>${project.build.directory}</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                        </configuration>
+                    </execution>
+
+                    <!-- copy shaded JAR to parent module target folder -->
+                    <execution>
+                        <id>copy-jar-to-parent</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.parent.basedir}/target</outputDirectory>
+                        </configuration>
+                    </execution>
+
+                    <!-- copy bouncycastle dependencies to parent module target folder -->
+                    <execution>
+                        <id>copy-bouncycastle-dependencies-to-parent</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeArtifactIds>bcprov-jdk15on,bcpg-jdk15on,bcpkix-jdk15on</includeArtifactIds>
+                            <outputDirectory>${project.parent.basedir}/target</outputDirectory>
                             <overWriteReleases>false</overWriteReleases>
                             <overWriteSnapshots>false</overWriteSnapshots>
                             <overWriteIfNewer>true</overWriteIfNewer>
