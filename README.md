@@ -2,4 +2,4 @@
 
 ## SFTP Reader
 
-A component service of the Endeavour Data Service.
+A component of the Endeavour Data Service.
