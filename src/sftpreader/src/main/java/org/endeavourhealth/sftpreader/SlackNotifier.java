@@ -44,7 +44,7 @@ public class SlackNotifier {
         String instanceName = configuration.getInstanceName();
         String friendlyName = configuration.getDbConfiguration().getInstanceFriendlyName();
 
-        String message = instanceName + " extract (" + friendlyName + ") received";
+        String message = friendlyName + " extract (" + instanceName + ") received";
 
         SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier();
         message += slackNotifier.getCompleteBatchMessageSuffix(batch);
