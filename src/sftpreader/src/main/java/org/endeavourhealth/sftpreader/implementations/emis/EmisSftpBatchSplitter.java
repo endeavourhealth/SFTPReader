@@ -39,7 +39,9 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     @Override
     public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbConfiguration dbConfiguration) throws Exception {
 
-        String path = FilenameUtils.concat(dbConfiguration.getLocalInstancePath(), batch.getLocalRelativePath());
+        String fullLocalInstancePath = dbConfiguration.getFullLocalInstancePath();
+
+        String path = FilenameUtils.concat(fullLocalInstancePath, batch.getLocalRelativePath());
         File srcDir = new File(path);
 
         LOG.trace("Splitting CSV files in {}", srcDir);
@@ -78,7 +80,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         //splitting the sharing agreements file will have created a folder for every org listed,
         //including the non-active ones in there. So delete any folder for orgs that aren't active in the
         //sharing agreement
-        Set<File> expectedOrgFolders = findExpectedOrgFolders(dstDir, dbConfiguration, batch);
+        Set<File> expectedOrgFolders = findExpectedOrgFolders(dstDir, fullLocalInstancePath, batch);
         for (File orgDir: dstDir.listFiles()) {
             if (!expectedOrgFolders.contains(orgDir)) {
                 deleteRecursive(orgDir);
@@ -156,7 +158,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         LOG.trace("Completed CSV file splitting from {} to {}", srcDir, dstDir);
 
         //we need to parse the organisation file, to store the mappings for later
-        saveAllOdsCodes(db, dbConfiguration, batch);
+        saveAllOdsCodes(db, fullLocalInstancePath, batch);
 
         //build a list of the folders containing file sets, to return
         List<BatchSplit> ret = new ArrayList<>();
@@ -240,12 +242,12 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     /**
      * goes through the sharing agreements file to find the org GUIDs of those orgs activated in the sharing agreement
      */
-    private Set<File> findExpectedOrgFolders(File dstDir, DbConfiguration dbConfiguration, Batch batch) throws Exception {
+    private Set<File> findExpectedOrgFolders(File dstDir, String fullLocalInstancePath, Batch batch) throws Exception {
 
         File sharingAgreementFile = null;
         for (BatchFile batchFile: batch.getBatchFiles()) {
             if (batchFile.getFileTypeIdentifier().equalsIgnoreCase("Agreements_SharingOrganisation")) {
-                String path = FilenameUtils.concat(dbConfiguration.getLocalInstancePath(), batch.getLocalRelativePath());
+                String path = FilenameUtils.concat(fullLocalInstancePath, batch.getLocalRelativePath());
                 path = FilenameUtils.concat(path, batchFile.getDecryptedFilename());
                 sharingAgreementFile = new File(path);
                 break;
@@ -290,13 +292,13 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    private static void saveAllOdsCodes(DataLayer db, DbConfiguration dbConfiguration, Batch batch) throws Exception {
+    private static void saveAllOdsCodes(DataLayer db, String fullLocalInstancePath, Batch batch) throws Exception {
 
         //go through our Admin_Organisation file, saving all new org details to our PostgreSQL DB
         File adminCsvFile = null;
         for (BatchFile batchFile: batch.getBatchFiles()) {
             if (batchFile.getFileTypeIdentifier().equalsIgnoreCase("Admin_Organisation")) {
-                String path = FilenameUtils.concat(dbConfiguration.getLocalInstancePath(), batch.getLocalRelativePath());
+                String path = FilenameUtils.concat(fullLocalInstancePath, batch.getLocalRelativePath());
                 path = FilenameUtils.concat(path, batchFile.getDecryptedFilename());
                 adminCsvFile = new File(path);
             }

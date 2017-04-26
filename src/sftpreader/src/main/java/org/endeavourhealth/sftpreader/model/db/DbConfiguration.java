@@ -9,8 +9,8 @@ public class DbConfiguration {
     private String instanceDescription;
     private String interfaceTypeName;
     private int pollFrequencySeconds;
-    private String localRootPath;
-    private String localInstancePathComponent;
+    private String localInstancePathPrefix;
+    private String localInstancePath;
 
     private DbConfigurationSftp dbConfigurationSftp;
     private DbConfigurationPgp dbConfigurationPgp;
@@ -55,25 +55,25 @@ public class DbConfiguration {
         return this;
     }
 
-    public String getLocalRootPath() {
-        return localRootPath;
+    public String getLocalInstancePathPrefix() {
+        return localInstancePathPrefix;
     }
 
-    public DbConfiguration setLocalRootPath(String localRootPath) {
-        this.localRootPath = localRootPath;
+    public DbConfiguration setLocalInstancePathPrefix(String localInstancePathPrefix) {
+        this.localInstancePathPrefix = localInstancePathPrefix;
         return this;
     }
 
+    public String getFullLocalInstancePath() {
+        return FilenameUtils.concat(getLocalInstancePathPrefix(), getLocalInstancePath());
+    }
+
     public String getLocalInstancePath() {
-        return FilenameUtils.concat(getLocalRootPath(), getLocalInstancePathComponent());
+        return localInstancePath;
     }
 
-    public String getLocalInstancePathComponent() {
-        return localInstancePathComponent;
-    }
-
-    public DbConfiguration setLocalInstancePathComponent(String localInstancePathComponent) {
-        this.localInstancePathComponent = localInstancePathComponent;
+    public DbConfiguration setLocalInstancePath(String localInstancePath) {
+        this.localInstancePath = localInstancePath;
         return this;
     }
 

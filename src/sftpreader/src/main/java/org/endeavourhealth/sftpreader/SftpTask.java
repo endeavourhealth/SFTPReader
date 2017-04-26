@@ -78,16 +78,16 @@ public class SftpTask extends TimerTask {
     private void initialise() throws Exception {
         this.dbConfiguration = configuration.getDbConfiguration();
         this.db = new DataLayer(configuration.getDatabaseConnection());
-        checkRootPathExists();
+        checkLocalInstancePathPrefixExists();
     }
 
-    private void checkRootPathExists() throws Exception {
-        if (StringUtils.isNotEmpty(this.dbConfiguration.getLocalRootPath())) {
+    private void checkLocalInstancePathPrefixExists() throws Exception {
+        if (StringUtils.isNotEmpty(this.dbConfiguration.getLocalInstancePathPrefix())) {
 
-            File rootPath = new File(this.dbConfiguration.getLocalRootPath());
+            File rootPath = new File(this.dbConfiguration.getLocalInstancePathPrefix());
 
             if ((!rootPath.exists()) || (!rootPath.isDirectory()))
-                throw new SftpReaderException("Root path '" + rootPath + "' does not exist");
+                throw new SftpReaderException("Local instance path prefix '" + rootPath + "' does not exist");
         }
     }
 
@@ -216,7 +216,7 @@ public class SftpTask extends TimerTask {
 
         return new SftpFile(sftpRemoteFile,
                 emisSftpFilenameParser,
-                dbConfiguration.getLocalInstancePath());
+                dbConfiguration.getFullLocalInstancePath());
     }
 
     private void createBatchDirectory(SftpFile batchFile) throws IOException {

@@ -30,8 +30,8 @@ public class DataLayer implements IDBDigestLogger {
                         .setInstanceDescription(resultSet.getString("instance_description"))
                         .setInterfaceTypeName(resultSet.getString("interface_type_name"))
                         .setPollFrequencySeconds(resultSet.getInt("poll_frequency_seconds"))
-                        .setLocalRootPath(resultSet.getString("local_root_path"))
-                        .setLocalInstancePathComponent(resultSet.getString("local_instance_path_component"))
+                        .setLocalInstancePathPrefix(resultSet.getString("local_instance_path_prefix"))
+                        .setLocalInstancePath(resultSet.getString("local_instance_path"))
 
                         .setDbConfigurationSftp(new DbConfigurationSftp()
                             .setHostname(resultSet.getString("hostname"))
