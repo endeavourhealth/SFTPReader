@@ -8,6 +8,8 @@ public class DbConfiguration {
     private String interfaceTypeName;
     private int pollFrequencySeconds;
     private String localRootPath;
+    private String localInstancePath;
+
     private DbConfigurationSftp dbConfigurationSftp;
     private DbConfigurationPgp dbConfigurationPgp;
     private DbConfigurationEds dbConfigurationEds;
@@ -57,6 +59,15 @@ public class DbConfiguration {
 
     public DbConfiguration setLocalRootPath(String localRootPath) {
         this.localRootPath = localRootPath;
+        return this;
+    }
+
+    public String getLocalInstancePath() {
+        return localInstancePath;
+    }
+
+    public DbConfiguration setLocalInstancePath(String localInstancePath) {
+        this.localInstancePath = localInstancePath;
         return this;
     }
 
