@@ -43,7 +43,7 @@ create table configuration.interface_file_type
 	interface_type_id integer not null,
 	file_type_identifier varchar(1000) not null,
 
-	constraint configuration_interfacefiletype_interfacetypeid_filetypeidentifier_pk primary key (interface_type_id, file_type_identifier),
+	constraint configuration_interfacefiletype_ifacetypeid_ftypeidentifier_pk primary key (interface_type_id, file_type_identifier),
 	constraint configuration_interfacefiletype_interfacetypeid_fk foreign key (interface_type_id) references configuration.interface_type (interface_type_id),
 	constraint configuration_interfacefiletype_filetypeidentifier_ck check (char_length(trim(file_type_identifier)) > 0)
 );
@@ -151,7 +151,7 @@ create table configuration.configuration_eds
 	constraint configuration_configurationeds_softwarename_ck check (char_length(trim(software_name)) > 0),
 	constraint configuration_configurationeds_softwareversion_ck check (char_length(trim(software_version)) > 0),
 	constraint configuration_configurationeds_envelopecontenttype_ck check (char_length(trim(envelope_content_type)) > 0),
-	constraint configuration_configurationeds_usekeycloak_keycloaktokenuri_keycloakrealm_keycloakusername_keycloakpassword_keycloakclientid_ck check ((not use_keycloak) or (keycloak_token_uri is not null and keycloak_realm is not null and keycloak_username is not null and keycloak_password is not null and keycloak_clientid is not null)),
+	constraint configuration_configurationeds_keycloackcolumns_ck check ((not use_keycloak) or (keycloak_token_uri is not null and keycloak_realm is not null and keycloak_username is not null and keycloak_password is not null and keycloak_clientid is not null)),
 	constraint configuration_configurationeds_keycloaktokenuri_ck check (keycloak_token_uri is null or (char_length(trim(keycloak_token_uri)) > 0)),
 	constraint configuration_configurationeds_keycloakrealm_ck check (keycloak_realm is null or (char_length(trim(keycloak_realm)) > 0)),
 	constraint configuration_configurationeds_keycloakusername_ck check (keycloak_username is null or (char_length(trim(keycloak_username)) > 0)),
@@ -249,7 +249,7 @@ create table log.batch_file
 	constraint log_batchfile_remotesizebytes_ck check (remote_size_bytes >= 0),
 	constraint log_batchfile_isdownloaded_downloaddate_localfilesizebytes_ck check ((is_downloaded and download_date is not null and local_size_bytes is not null) or ((not is_downloaded) and download_date is null and local_size_bytes is null)),
 	constraint log_batchfile_requiresdecryption_isdecrypted_ck check (((not requires_decryption) and is_decrypted is null) or (requires_decryption and is_decrypted is not null)),
-	constraint log_batchfile_isdecrypted_decryptdate_decryptedfilename_decryptedsizebytes_ck check ((is_decrypted is not null and is_decrypted and decrypt_date is not null and decrypted_filename is not null and decrypted_size_bytes is not null) or (((is_decrypted is null) or (not is_decrypted)) and decrypt_date is null and decrypted_filename is null and decrypted_size_bytes is null)),
+	constraint log_batchfile_decryptedcolumns_ck check ((is_decrypted is not null and is_decrypted and decrypt_date is not null and decrypted_filename is not null and decrypted_size_bytes is not null) or (((is_decrypted is null) or (not is_decrypted)) and decrypt_date is null and decrypted_filename is null and decrypted_size_bytes is null)),
 	constraint log_batchfile_localsizebytes_ck check (local_size_bytes >= 0),
 	constraint log_batchfile_isdownloaded_isdecrypted_ck check ((not is_decrypted) or is_downloaded),
 	constraint log_batchfile_batchid_decryptedfilename_uq unique (batch_id, decrypted_filename),
