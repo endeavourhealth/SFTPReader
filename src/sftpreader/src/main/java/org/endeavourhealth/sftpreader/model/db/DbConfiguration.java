@@ -1,5 +1,7 @@
 package org.endeavourhealth.sftpreader.model.db;
 
+import org.apache.commons.io.FilenameUtils;
+
 import java.util.List;
 
 public class DbConfiguration {
@@ -60,6 +62,10 @@ public class DbConfiguration {
     public DbConfiguration setLocalRootPath(String localRootPath) {
         this.localRootPath = localRootPath;
         return this;
+    }
+
+    public String getLocalInstancePath() {
+        return FilenameUtils.concat(getLocalRootPath(), getLocalInstancePathComponent());
     }
 
     public String getLocalInstancePathComponent() {

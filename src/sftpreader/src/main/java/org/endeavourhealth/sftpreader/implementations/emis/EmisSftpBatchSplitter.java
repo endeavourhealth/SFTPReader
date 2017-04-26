@@ -39,7 +39,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     @Override
     public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbConfiguration dbConfiguration) throws Exception {
 
-        String path = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batch.getLocalRelativePath());
+        String path = FilenameUtils.concat(dbConfiguration.getLocalInstancePath(), batch.getLocalRelativePath());
         File srcDir = new File(path);
 
         LOG.trace("Splitting CSV files in {}", srcDir);
@@ -245,7 +245,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         File sharingAgreementFile = null;
         for (BatchFile batchFile: batch.getBatchFiles()) {
             if (batchFile.getFileTypeIdentifier().equalsIgnoreCase("Agreements_SharingOrganisation")) {
-                String path = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batch.getLocalRelativePath());
+                String path = FilenameUtils.concat(dbConfiguration.getLocalInstancePath(), batch.getLocalRelativePath());
                 path = FilenameUtils.concat(path, batchFile.getDecryptedFilename());
                 sharingAgreementFile = new File(path);
                 break;
@@ -296,7 +296,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         File adminCsvFile = null;
         for (BatchFile batchFile: batch.getBatchFiles()) {
             if (batchFile.getFileTypeIdentifier().equalsIgnoreCase("Admin_Organisation")) {
-                String path = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batch.getLocalRelativePath());
+                String path = FilenameUtils.concat(dbConfiguration.getLocalInstancePath(), batch.getLocalRelativePath());
                 path = FilenameUtils.concat(path, batchFile.getDecryptedFilename());
                 adminCsvFile = new File(path);
             }

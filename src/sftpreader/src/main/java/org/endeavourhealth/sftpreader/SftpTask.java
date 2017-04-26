@@ -4,6 +4,7 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import net.gpedro.integrations.slack.SlackApi;
 import net.gpedro.integrations.slack.SlackMessage;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
@@ -77,6 +78,17 @@ public class SftpTask extends TimerTask {
     private void initialise() throws Exception {
         this.dbConfiguration = configuration.getDbConfiguration();
         this.db = new DataLayer(configuration.getDatabaseConnection());
+        checkRootPathExists();
+    }
+
+    private void checkRootPathExists() throws Exception {
+        if (StringUtils.isNotEmpty(this.dbConfiguration.getLocalRootPath())) {
+
+            File rootPath = new File(this.dbConfiguration.getLocalRootPath());
+
+            if ((!rootPath.exists()) || (!rootPath.isDirectory()))
+                throw new SftpReaderException("Root path '" + rootPath + "' does not exist");
+        }
     }
 
     private boolean downloadAndProcessFiles() {
@@ -204,7 +216,7 @@ public class SftpTask extends TimerTask {
 
         return new SftpFile(sftpRemoteFile,
                 emisSftpFilenameParser,
-                dbConfiguration.getLocalRootPath());
+                dbConfiguration.getLocalInstancePath());
     }
 
     private void createBatchDirectory(SftpFile batchFile) throws IOException {
