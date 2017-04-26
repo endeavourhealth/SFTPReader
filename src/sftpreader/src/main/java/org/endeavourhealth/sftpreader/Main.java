@@ -21,6 +21,8 @@ public class Main {
             LOG.info(PROGRAM_DISPLAY_NAME);
             LOG.info("--------------------------------------------------");
 
+            new SlackNotifier(configuration).notifyStartup();
+
             SftpTask sftpTask = new SftpTask(configuration);
 
             Timer timer = new Timer(TIMER_THREAD_NAME);
@@ -42,6 +44,8 @@ public class Main {
     private static void shutdown() {
         try {
             LOG.info("Shutting down...");
+
+            new SlackNotifier(configuration).notifyShutdown();
 
         } catch (Exception e) {
             printToErrorConsole("Exception occurred during shutdown", e);

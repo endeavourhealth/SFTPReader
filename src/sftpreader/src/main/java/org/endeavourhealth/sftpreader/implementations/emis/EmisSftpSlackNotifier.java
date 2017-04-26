@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class EmisSftpSlackNotifier extends SftpSlackNotifier {
-    public String getSlackMessage(String messageTemplate, Batch completeBatch) {
+    public String getCompleteBatchMessageSuffix(Batch completeBatch) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm");
         LocalDateTime extractDate = EmisSftpFilenameParser.parseBatchIdentifier(completeBatch.getBatchIdentifier());
@@ -22,6 +22,6 @@ public class EmisSftpSlackNotifier extends SftpSlackNotifier {
 
         String totalSizeReadable = FileUtils.byteCountToDisplaySize(totalSizeInBytes);
 
-        return MessageFormat.format(messageTemplate, extractDate.format(formatter), totalSizeReadable);
+        return MessageFormat.format(" with extract date of {0}, total file size {1}", extractDate.format(formatter), totalSizeReadable);
     }
 }

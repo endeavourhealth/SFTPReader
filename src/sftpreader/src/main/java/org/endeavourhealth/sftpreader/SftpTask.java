@@ -270,7 +270,9 @@ public class SftpTask extends TimerTask {
                 validateBatches(incompleteBatches, lastCompleteBatch);
                 splitBatches(incompleteBatches);
                 List<Batch> sequencedBatches = sequenceBatches(incompleteBatches, lastCompleteBatch);
-                postMessageToSlack(sequencedBatches);
+
+                SlackNotifier slackNotifier = new SlackNotifier(configuration);
+                slackNotifier.notifyCompleteBatches(sequencedBatches);
             }
 
             return true;
@@ -334,27 +336,6 @@ public class SftpTask extends TimerTask {
         LOG.trace(" Completed batch sequencing");
 
         return new ArrayList<>(sortedBatchSequence.keySet());
-    }
-
-    private void postMessageToSlack(List<Batch> batches) {
-        try {
-            DbConfigurationSlack configurationSlack = configuration.getDbConfiguration().getDbConfigurationSlack();
-
-            if (!configurationSlack.isEnabled())
-                return;
-
-            SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier();
-
-            for (Batch batch : batches) {
-                String slackMessage = slackNotifier.getSlackMessage(configurationSlack.getMessageTemplate(), batch);
-
-                SlackApi slackApi = new SlackApi(configurationSlack.getSlackUrl());
-                slackApi.call(new SlackMessage(slackMessage));
-            }
-
-        } catch (Exception e) {
-            LOG.error("Error posting message to slack", e);
-        }
     }
 
     private void splitBatches(List<Batch> batches) throws Exception {

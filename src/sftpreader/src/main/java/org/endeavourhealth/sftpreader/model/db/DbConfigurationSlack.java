@@ -3,7 +3,6 @@ package org.endeavourhealth.sftpreader.model.db;
 public class DbConfigurationSlack {
     private boolean enabled;
     private String slackUrl;
-    private String messageTemplate;
 
     public boolean isEnabled() {
         return enabled;
@@ -20,15 +19,6 @@ public class DbConfigurationSlack {
 
     public DbConfigurationSlack setSlackUrl(String slackUrl) {
         this.slackUrl = slackUrl;
-        return this;
-    }
-
-    public String getMessageTemplate() {
-        return messageTemplate;
-    }
-
-    public DbConfigurationSlack setMessageTemplate(String messageTemplate) {
-        this.messageTemplate = messageTemplate;
         return this;
     }
 }

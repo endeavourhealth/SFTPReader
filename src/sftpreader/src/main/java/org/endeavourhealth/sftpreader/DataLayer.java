@@ -27,7 +27,7 @@ public class DataLayer implements IDBDigestLogger {
                 new DbConfiguration()
 
                         .setInstanceId(resultSet.getString("instance_id"))
-                        .setInstanceDescription(resultSet.getString("instance_description"))
+                        .setInstanceFriendlyName(resultSet.getString("instance_friendly_name"))
                         .setInterfaceTypeName(resultSet.getString("interface_type_name"))
                         .setPollFrequencySeconds(resultSet.getInt("poll_frequency_seconds"))
                         .setLocalInstancePathPrefix(resultSet.getString("local_instance_path_prefix"))
@@ -64,8 +64,7 @@ public class DataLayer implements IDBDigestLogger {
 
                         .setDbConfigurationSlack(new DbConfigurationSlack()
                             .setEnabled(resultSet.getBoolean("slack_enabled"))
-                            .setSlackUrl(resultSet.getString("slack_url"))
-                            .setMessageTemplate(resultSet.getString("slack_message_template"))));
+                            .setSlackUrl(resultSet.getString("slack_url"))));
 
         if (dbConfiguration != null) {
             dbConfiguration.setDbConfigurationKvp(getConfigurationKvp(instanceId));

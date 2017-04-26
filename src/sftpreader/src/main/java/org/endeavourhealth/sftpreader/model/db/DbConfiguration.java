@@ -6,7 +6,7 @@ import java.util.List;
 
 public class DbConfiguration {
     private String instanceId;
-    private String instanceDescription;
+    private String instanceFriendlyName;
     private String interfaceTypeName;
     private int pollFrequencySeconds;
     private String localInstancePathPrefix;
@@ -28,12 +28,12 @@ public class DbConfiguration {
         return this;
     }
 
-    public String getInstanceDescription() {
-        return instanceDescription;
+    public String getInstanceFriendlyName() {
+        return instanceFriendlyName;
     }
 
-    public DbConfiguration setInstanceDescription(String instanceDescription) {
-        this.instanceDescription = instanceDescription;
+    public DbConfiguration setInstanceFriendlyName(String instanceFriendlyName) {
+        this.instanceFriendlyName = instanceFriendlyName;
         return this;
     }
 
