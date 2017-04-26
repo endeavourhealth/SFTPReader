@@ -66,7 +66,7 @@ public class DbConfiguration {
         return localInstancePathComponent;
     }
 
-    public DbConfiguration setLocalInstancePath(String localInstancePathComponent) {
+    public DbConfiguration setLocalInstancePathComponent(String localInstancePathComponent) {
         this.localInstancePathComponent = localInstancePathComponent;
         return this;
     }
