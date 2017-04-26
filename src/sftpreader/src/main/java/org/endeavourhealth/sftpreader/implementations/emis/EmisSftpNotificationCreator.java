@@ -20,7 +20,7 @@ public class EmisSftpNotificationCreator extends SftpNotificationCreator {
 
         List<String> files = findFiles(new File(fullPath), relativePath);
 
-        return StringUtils.join(files, "\r\n");
+        return StringUtils.join(files, System.lineSeparator());
     }
 
     private static List<String> findFiles(File dir, String relativePath) {
