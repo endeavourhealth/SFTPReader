@@ -8,7 +8,7 @@ public class DbConfiguration {
     private String interfaceTypeName;
     private int pollFrequencySeconds;
     private String localRootPath;
-    private String localInstancePath;
+    private String localInstancePathComponent;
 
     private DbConfigurationSftp dbConfigurationSftp;
     private DbConfigurationPgp dbConfigurationPgp;
@@ -62,12 +62,12 @@ public class DbConfiguration {
         return this;
     }
 
-    public String getLocalInstancePath() {
-        return localInstancePath;
+    public String getLocalInstancePathComponent() {
+        return localInstancePathComponent;
     }
 
-    public DbConfiguration setLocalInstancePath(String localInstancePath) {
-        this.localInstancePath = localInstancePath;
+    public DbConfiguration setLocalInstancePath(String localInstancePathComponent) {
+        this.localInstancePathComponent = localInstancePathComponent;
         return this;
     }
 
