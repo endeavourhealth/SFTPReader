@@ -2,7 +2,6 @@ package org.endeavourhealth.sftpreader.model.db;
 
 public class DbConfigurationEds {
     private String edsUrl;
-    private String softwareName;
     private String softwareVersion;
     private String envelopeContentType;
     private boolean useKeycloak;
@@ -18,15 +17,6 @@ public class DbConfigurationEds {
 
     public DbConfigurationEds setEdsUrl(String edsUrl) {
         this.edsUrl = edsUrl;
-        return this;
-    }
-
-    public String getSoftwareName() {
-        return softwareName;
-    }
-
-    public DbConfigurationEds setSoftwareName(String softwareName) {
-        this.softwareName = softwareName;
         return this;
     }
 
