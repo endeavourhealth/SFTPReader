@@ -447,9 +447,9 @@ public class SftpTask extends TimerTask {
 
         UUID messageId = UUID.randomUUID();
         String organisationId = unnotifiedBatchSplit.getOrganisationId();
-        String envelopeContentType = dbConfiguration.getDbConfigurationEds().getEnvelopeContentType();
+        String softwareContentType = dbConfiguration.getDbConfigurationEds().getSoftwareContentType();
         String softwareVersion = dbConfiguration.getDbConfigurationEds().getSoftwareVersion();
-        String outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, envelopeContentType, softwareVersion, messagePayload);
+        String outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload);
 
         try {
             String edsUrl = dbConfiguration.getDbConfigurationEds().getEdsUrl();

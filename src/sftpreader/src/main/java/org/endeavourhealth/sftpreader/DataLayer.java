@@ -51,8 +51,8 @@ public class DataLayer implements IDBDigestLogger {
 
                         .setDbConfigurationEds(new DbConfigurationEds()
                             .setEdsUrl(resultSet.getString("eds_url"))
+                            .setSoftwareContentType(resultSet.getString("software_content_type"))
                             .setSoftwareVersion(resultSet.getString("software_version"))
-                            .setEnvelopeContentType(resultSet.getString("envelope_content_type"))
                             .setUseKeycloak(resultSet.getBoolean("use_keycloak"))
                             .setKeycloakTokenUri(resultSet.getString("keycloak_token_uri"))
                             .setKeycloakRealm(resultSet.getString("keycloak_realm"))

@@ -24,8 +24,8 @@ returns table
 	pgp_recipient_private_key varchar,
 	pgp_recipient_private_key_password varchar,
 	eds_url varchar,
+	software_content_type varchar,
 	software_version varchar,
-	envelope_content_type varchar,
 	use_keycloak boolean,
 	keycloak_token_uri varchar,
 	keycloak_realm varchar,
@@ -56,23 +56,23 @@ as $$
 		cp.recipient_public_key as pgp_recipient_public_key,
 		cp.recipient_private_key as pgp_recipient_private_key,
 		cp.recipient_private_key_password as pgp_private_key_password,
-		ce.eds_url,
-		ce.software_version,
-		ce.envelope_content_type,
-		ce.use_keycloak,
-		ce.keycloak_token_uri,
-		ce.keycloak_realm,
-		ce.keycloak_username,
-		ce.keycloak_password,
-		ce.keycloak_clientid,
+		e.eds_url,
+		e.software_content_type,
+		e.software_version,
+		e.use_keycloak,
+		e.keycloak_token_uri,
+		e.keycloak_realm,
+		e.keycloak_username,
+		e.keycloak_password,
+		e.keycloak_clientid,
 		coalesce(s.enabled, false) as slack_enabled,
 		s.slack_url
 	from configuration.instance i
 	inner join configuration.configuration c on i.instance_id = c.instance_id
 	inner join configuration.interface_type it on c.interface_type_id = it.interface_type_id
 	inner join configuration.configuration_sftp cs on c.instance_id = cs.instance_id
-	inner join configuration.configuration_eds ce on c.instance_id = ce.instance_id
 	left outer join configuration.configuration_pgp cp on c.instance_id = cp.instance_id
+	left outer join configuration.eds e on e.single_row_lock = True
 	left outer join configuration.slack s on s.single_row_lock = True
 	where i.instance_id = _instance_id;
 

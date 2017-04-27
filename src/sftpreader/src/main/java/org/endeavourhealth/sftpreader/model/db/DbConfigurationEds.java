@@ -2,8 +2,8 @@ package org.endeavourhealth.sftpreader.model.db;
 
 public class DbConfigurationEds {
     private String edsUrl;
+    private String softwareContentType;
     private String softwareVersion;
-    private String envelopeContentType;
     private boolean useKeycloak;
     private String keycloakTokenUri;
     private String keycloakRealm;
@@ -29,12 +29,12 @@ public class DbConfigurationEds {
         return this;
     }
 
-    public String getEnvelopeContentType() {
-        return envelopeContentType;
+    public String getSoftwareContentType() {
+        return softwareContentType;
     }
 
-    public DbConfigurationEds setEnvelopeContentType(String envelopeContentType) {
-        this.envelopeContentType = envelopeContentType;
+    public DbConfigurationEds setSoftwareContentType(String softwareContentType) {
+        this.softwareContentType = softwareContentType;
         return this;
     }
 
