@@ -51,7 +51,6 @@ public class DataLayer implements IDBDigestLogger {
 
                         .setDbConfigurationEds(new DbConfigurationEds()
                             .setEdsUrl(resultSet.getString("eds_url"))
-                            .setEdsServiceIdentifier(resultSet.getString("eds_service_identifier"))
                             .setSoftwareName(resultSet.getString("software_name"))
                             .setSoftwareVersion(resultSet.getString("software_version"))
                             .setEnvelopeContentType(resultSet.getString("envelope_content_type"))

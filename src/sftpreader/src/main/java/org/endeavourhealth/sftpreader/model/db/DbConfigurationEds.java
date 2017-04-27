@@ -2,7 +2,6 @@ package org.endeavourhealth.sftpreader.model.db;
 
 public class DbConfigurationEds {
     private String edsUrl;
-    private String edsServiceIdentifier;
     private String softwareName;
     private String softwareVersion;
     private String envelopeContentType;
@@ -19,15 +18,6 @@ public class DbConfigurationEds {
 
     public DbConfigurationEds setEdsUrl(String edsUrl) {
         this.edsUrl = edsUrl;
-        return this;
-    }
-
-    public String getEdsServiceIdentifier() {
-        return edsServiceIdentifier;
-    }
-
-    public DbConfigurationEds setEdsServiceIdentifier(String edsServiceIdentifier) {
-        this.edsServiceIdentifier = edsServiceIdentifier;
         return this;
     }
 
