@@ -38,8 +38,8 @@ returns table
 as $$
 
 	select
-		i.instance_id,
-		i.instance_friendly_name,
+		c.instance_id,
+		c.instance_friendly_name,
 		it.interface_type_name,
 		c.poll_frequency_seconds,	
 		c.local_instance_path_prefix,
@@ -67,13 +67,12 @@ as $$
 		e.keycloak_clientid,
 		coalesce(s.enabled, false) as slack_enabled,
 		s.slack_url
-	from configuration.instance i
-	inner join configuration.configuration c on i.instance_id = c.instance_id
+	from configuration.configuration c 
 	inner join configuration.interface_type it on c.interface_type_id = it.interface_type_id
 	inner join configuration.configuration_sftp cs on c.instance_id = cs.instance_id
 	left outer join configuration.configuration_pgp cp on c.instance_id = cp.instance_id
 	left outer join configuration.eds e on e.single_row_lock = True
 	left outer join configuration.slack s on s.single_row_lock = True
-	where i.instance_id = _instance_id;
+	where c.instance_id = _instance_id;
 
 $$ language sql;
