@@ -26,7 +26,7 @@ public final class Configuration {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
     private static final String PROGRAM_CONFIG_MANAGER_NAME = "sftpreader";
     private static final String INSTANCE_NAMES_JAVA_PROPERTY = "INSTANCE_NAMES";
-    private static final String INSTANCE_NAMES_SEPERATOR = ";";
+    private static final String INSTANCE_NAMES_SEPERATOR = "~";
 
     private static Configuration instance = null;
 
