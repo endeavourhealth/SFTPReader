@@ -33,7 +33,7 @@ public class SftpReaderTaskInfo {
     }
 
     public void incrementScheduledDate() {
-        this.nextScheduledDate = this.nextScheduledDate.plusSeconds(dbConfiguration.getPollFrequencySeconds());
+        this.nextScheduledDate = LocalDateTime.now().plusSeconds(dbConfiguration.getPollFrequencySeconds());
     }
 
     public String getTaskName() {
