@@ -2,9 +2,6 @@ package org.endeavourhealth.sftpreader;
 
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-import net.gpedro.integrations.slack.SlackApi;
-import net.gpedro.integrations.slack.SlackMessage;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
@@ -33,26 +30,25 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class SftpTask extends TimerTask {
+public class SftpReaderTask implements Runnable {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpTask.class);
-    private static final DateTimeFormatter DATE_DISPLAY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MMM-dd HH:mm");
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpReaderTask.class);
 
     private Configuration configuration = null;
+    private String instanceName = null;
     private DbGlobalConfiguration dbGlobalConfiguration = null;
     private DbConfiguration dbConfiguration = null;
     private DataLayer db = null;
 
-    public SftpTask(Configuration configuration) {
+    public SftpReaderTask(Configuration configuration, String instanceName) {
         this.configuration = configuration;
+        this.instanceName = instanceName;
     }
 
     @Override
     public void run() {
-        LocalDateTime startTime = LocalDateTime.now();
-
         try {
-            LOG.trace(">>>Starting scheduled SftpTask run, initialising");
+            LOG.trace(">>>Starting scheduled SftpReader run, initialising");
             initialise();
 
             LOG.trace(">>>Downloading and decrypting files");
@@ -66,19 +62,16 @@ public class SftpTask extends TimerTask {
             LOG.trace(">>>Notifying EDS");
             notifyEds();
 
-            LOG.trace(">>>Completed SftpTask run");
+            LOG.trace(">>>Completed SftpReader run");
 
         } catch (Exception e) {
             LOG.error(">>>Fatal exception in SftpTask run, terminating this run", e);
         }
-
-        LOG.trace(">>>Next run scheduled for " + calculateNextRunTime(startTime).format(DATE_DISPLAY_FORMAT));
-        LOG.trace("--------------------------------------------------");
     }
 
     private void initialise() throws Exception {
-        this.dbGlobalConfiguration = configuration.getDbGlobalConfiguration();
-        this.dbConfiguration = configuration.getDbConfiguration();
+        this.dbGlobalConfiguration = configuration.getGlobalConfiguration();
+        this.dbConfiguration = configuration.getConfiguration(instanceName);
         this.db = new DataLayer(configuration.getDatabaseConnection());
         checkLocalInstancePathPrefixExists();
     }
@@ -117,7 +110,7 @@ public class SftpTask extends TimerTask {
                     continue;
                 }
 
-                AddFileResult addFileResult = db.addFile(configuration.getInstanceName(), batchFile);
+                AddFileResult addFileResult = db.addFile(instanceName, batchFile);
 
                 if (addFileResult.isFileAlreadyProcessed()) {
                     countAlreadyProcessed ++;
@@ -274,7 +267,7 @@ public class SftpTask extends TimerTask {
                 List<Batch> sequencedBatches = sequenceBatches(incompleteBatches, lastCompleteBatch);
 
                 SlackNotifier slackNotifier = new SlackNotifier(configuration);
-                slackNotifier.notifyCompleteBatches(sequencedBatches);
+                slackNotifier.notifyCompleteBatches(dbConfiguration, sequencedBatches);
             }
 
             return true;
@@ -505,6 +498,6 @@ public class SftpTask extends TimerTask {
     private LocalDateTime calculateNextRunTime(LocalDateTime thisRunStartTime) {
         Validate.notNull(thisRunStartTime);
 
-        return thisRunStartTime.plusSeconds(configuration.getDbConfiguration().getPollFrequencySeconds());
+        return thisRunStartTime.plusSeconds(dbConfiguration.getPollFrequencySeconds());
     }
 }

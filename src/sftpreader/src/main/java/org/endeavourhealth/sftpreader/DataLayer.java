@@ -6,6 +6,7 @@ import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.IDBDigestLogger;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.model.db.*;
+import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 
 import javax.sql.DataSource;
 import java.util.List;
@@ -61,6 +62,9 @@ public class DataLayer implements IDBDigestLogger {
                         .setLocalInstancePathPrefix(resultSet.getString("local_instance_path_prefix"))
                         .setLocalInstancePath(resultSet.getString("local_instance_path")));
 
+        if (dbConfiguration == null)
+            throw new PgStoredProcException("No configuration found with instance name " + instanceId);
+
         DbConfigurationSftp dbConfigurationSftp = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbConfigurationSftp()
                         .setHostname(resultSet.getString("hostname"))
@@ -71,6 +75,9 @@ public class DataLayer implements IDBDigestLogger {
                         .setClientPrivateKeyPassword(resultSet.getString("client_private_key_password"))
                         .setHostPublicKey(resultSet.getString("host_public_key")));
 
+        if (dbConfigurationSftp == null)
+            throw new PgStoredProcException("No SFTP configuration details found for instance name " + instanceId);
+
         DbConfigurationPgp dbConfigurationPgp = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbConfigurationPgp()
                         .setPgpFileExtensionFilter(resultSet.getString("pgp_file_extension_filter"))
@@ -78,6 +85,9 @@ public class DataLayer implements IDBDigestLogger {
                         .setPgpRecipientPublicKey(resultSet.getString("pgp_recipient_public_key"))
                         .setPgpRecipientPrivateKey(resultSet.getString("pgp_recipient_private_key"))
                         .setPgpRecipientPrivateKeyPassword(resultSet.getString("pgp_recipient_private_key_password")));
+
+        if (dbConfigurationPgp == null)
+            throw new PgStoredProcException("No PGP configuration details found for instance name " + instanceId);
 
         List<DbConfigurationKvp> dbConfigurationKvp = pgStoredProc.executeMultiQuery((resultSet) ->
                 new DbConfigurationKvp()

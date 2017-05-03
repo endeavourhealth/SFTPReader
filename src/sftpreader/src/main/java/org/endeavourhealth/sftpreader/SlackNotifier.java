@@ -2,10 +2,12 @@ package org.endeavourhealth.sftpreader;
 
 import net.gpedro.integrations.slack.SlackApi;
 import net.gpedro.integrations.slack.SlackMessage;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpSlackNotifier;
 import org.endeavourhealth.sftpreader.model.db.Batch;
+import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbGlobalConfigurationSlack;
 import org.slf4j.LoggerFactory;
 
@@ -20,29 +22,33 @@ public class SlackNotifier {
 
     public SlackNotifier(Configuration configuration) {
         Validate.notNull(configuration, "configuration");
-        Validate.notNull(configuration.getDbGlobalConfiguration().getSlackConfiguration(), "configuration.getDbGlobalConfiguration().getSlackConfiguration()");
+        Validate.notNull(configuration.getGlobalConfiguration().getSlackConfiguration(), "configuration.getDbGlobalConfiguration().getSlackConfiguration()");
 
         this.configuration = configuration;
-        this.slackConfiguration = configuration.getDbGlobalConfiguration().getSlackConfiguration();
+        this.slackConfiguration = configuration.getGlobalConfiguration().getSlackConfiguration();
     }
 
     public void notifyStartup() {
-        postMessage("Service started (" + configuration.getInstanceName() + ")");
+        postMessage("Service started (" + getInstanceNames() + ")");
     }
 
     public void notifyShutdown() {
-        postMessage("Service stopped (" + configuration.getInstanceName() + ")");
+        postMessage("Service stopped (" + getInstanceNames() + ")");
     }
 
-    public void notifyCompleteBatches(List<Batch> batches) {
+    private String getInstanceNames() {
+        return StringUtils.join(configuration.getInstanceNames(), ",");
+    }
+
+    public void notifyCompleteBatches(DbConfiguration dbConfiguration, List<Batch> batches) {
         for (Batch batch : batches)
-            notifyCompleteBatch(batch);
+            notifyCompleteBatch(dbConfiguration, batch);
     }
 
-    public void notifyCompleteBatch(Batch batch) {
+    public void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) {
 
-        String instanceName = configuration.getInstanceName();
-        String friendlyName = configuration.getDbConfiguration().getInstanceFriendlyName();
+        String instanceName = dbConfiguration.getInstanceId();
+        String friendlyName = dbConfiguration.getInstanceFriendlyName();
 
         String message = friendlyName + " extract (" + instanceName + ") received";
 
