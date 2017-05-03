@@ -37,7 +37,7 @@ public class SlackNotifier {
     }
 
     private String getInstanceNames() {
-        return StringUtils.join(configuration.getInstanceNames(), ",");
+        return StringUtils.join(configuration.getInstanceNames(), ", ");
     }
 
     public void notifyCompleteBatches(DbConfiguration dbConfiguration, List<Batch> batches) {
