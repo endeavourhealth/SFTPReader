@@ -26,6 +26,7 @@ public final class Configuration {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
     private static final String PROGRAM_CONFIG_MANAGER_NAME = "sftpreader";
     private static final String INSTANCE_NAMES_JAVA_PROPERTY = "INSTANCE_NAMES";
+    private static final String INSTANCE_NAMES_SEPERATOR = ";";
 
     private static Configuration instance = null;
 
@@ -68,7 +69,7 @@ public final class Configuration {
             if (StringUtils.isEmpty(instanceNames))
                 throw new SftpReaderException("Could not find " + INSTANCE_NAMES_JAVA_PROPERTY + " Java -D property");
 
-            this.instanceNames = Arrays.stream(StringUtils.split(instanceNames, "|"))
+            this.instanceNames = Arrays.stream(StringUtils.split(instanceNames, INSTANCE_NAMES_SEPERATOR))
                     .map(t -> t.trim())
                     .collect(Collectors.toList());
 
