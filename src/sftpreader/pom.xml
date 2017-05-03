@@ -92,6 +92,11 @@
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.kstruct</groupId>
+            <artifactId>gethostname4j</artifactId>
+            <version>0.0.2</version>
+        </dependency>
+        <dependency>
             <groupId>net.gpedro.integrations.slack</groupId>
             <artifactId>slack-webhook</artifactId>
             <version>${slack-integration.version}</version>

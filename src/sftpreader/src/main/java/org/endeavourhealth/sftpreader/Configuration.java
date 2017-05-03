@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader;
 
+import com.kstruct.gethostname4j.Hostname;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
@@ -7,6 +8,7 @@ import org.endeavourhealth.common.postgres.PgDataSource;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.LogDigestAppender;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.endeavourhealth.sftpreader.model.db.DbGlobalConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,17 +33,28 @@ public final class Configuration {
     }
 
     // instance members //
-    private DbConfiguration dbConfiguration;
+    private String machineName;
     private String instanceName;
     private String postgresUrl;
     private String postgresUsername;
     private String postgresPassword;
+    private DbGlobalConfiguration dbGlobalConfiguration;
+    private DbConfiguration dbConfiguration;
 
     private Configuration() throws Exception {
+        initialiseMachineName();
         retrieveInstanceName();
         initialiseConfigManager();
         addHL7LogAppender();
         loadDbConfiguration();
+    }
+
+    private void initialiseMachineName() throws SftpReaderException {
+        try {
+            machineName = Hostname.getHostname();
+        } catch (Exception e) {
+            throw new SftpReaderException("Error getting machine name");
+        }
     }
 
     private void retrieveInstanceName() throws SftpReaderException {
@@ -74,18 +87,33 @@ public final class Configuration {
 
     private void loadDbConfiguration() throws PgStoredProcException, SQLException, SftpReaderException {
         DataLayer dataLayer = new DataLayer(getDatabaseConnection());
+
+        this.dbGlobalConfiguration = dataLayer.getGlobalConfiguration(getMachineName());
+
         this.dbConfiguration = dataLayer.getConfiguration(getInstanceName());
 
         if (this.dbConfiguration == null)
             throw new SftpReaderException("No configuration found with instance name " + getInstanceName());
+
+        if (this.dbConfiguration.getSftpConfiguration() == null)
+            throw new SftpReaderException("No SFTP configuration details found for instance name " + getInstanceName());
+
+        if (this.dbConfiguration.getPgpConfiguration() == null)
+            throw new SftpReaderException("No PGP configuration details found for instance name " + getInstanceName());
     }
 
     public DataSource getDatabaseConnection() throws SQLException {
         return PgDataSource.get(postgresUrl, postgresUsername, postgresPassword);
     }
 
+    public String getMachineName() { return machineName; }
+
     public String getInstanceName() {
         return instanceName;
+    }
+
+    public DbGlobalConfiguration getDbGlobalConfiguration() {
+        return this.dbGlobalConfiguration;
     }
 
     public DbConfiguration getDbConfiguration() {

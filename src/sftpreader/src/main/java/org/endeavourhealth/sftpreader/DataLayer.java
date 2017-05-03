@@ -18,76 +18,85 @@ public class DataLayer implements IDBDigestLogger {
         this.dataSource = dataSource;
     }
 
+    public DbGlobalConfiguration getGlobalConfiguration(String hostname) throws PgStoredProcException {
+
+        PgStoredProc pgStoredProc2 = new PgStoredProc(dataSource)
+                .setName("configuration.get_global_configuration")
+                .addParameter("_hostname", hostname);
+
+        DbGlobalConfigurationEds dbGlobalConfigurationEds = pgStoredProc2.executeMultiQuerySingleOrEmptyRow((resultSet) ->
+                new DbGlobalConfigurationEds()
+                        .setEdsUrl(resultSet.getString("eds_url"))
+                        .setSoftwareContentType(resultSet.getString("software_content_type"))
+                        .setSoftwareVersion(resultSet.getString("software_version"))
+                        .setUseKeycloak(resultSet.getBoolean("use_keycloak"))
+                        .setKeycloakTokenUri(resultSet.getString("keycloak_token_uri"))
+                        .setKeycloakRealm(resultSet.getString("keycloak_realm"))
+                        .setKeycloakUsername(resultSet.getString("keycloak_username"))
+                        .setKeycloakPassword(resultSet.getString("keycloak_password"))
+                        .setKeycloakClientId(resultSet.getString("keycloak_clientid")));
+
+        DbGlobalConfigurationSlack dbGlobalConfigurationSlack = pgStoredProc2.executeMultiQuerySingleRow((resultSet) ->
+                new DbGlobalConfigurationSlack()
+                        .setEnabled(resultSet.getBoolean("slack_enabled"))
+                        .setSlackUrl(resultSet.getString("slack_url")));
+
+        return new DbGlobalConfiguration()
+                .setEdsConfiguration(dbGlobalConfigurationEds)
+                .setSlackConfiguration(dbGlobalConfigurationSlack);
+    }
+
     public DbConfiguration getConfiguration(String instanceId) throws PgStoredProcException {
+
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("configuration.get_configuration")
                 .addParameter("_instance_id", instanceId);
 
-        DbConfiguration dbConfiguration = pgStoredProc.executeSingleOrEmptyRow((resultSet) ->
+        DbConfiguration dbConfiguration = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbConfiguration()
-
                         .setInstanceId(resultSet.getString("instance_id"))
                         .setInstanceFriendlyName(resultSet.getString("instance_friendly_name"))
                         .setInterfaceTypeName(resultSet.getString("interface_type_name"))
                         .setPollFrequencySeconds(resultSet.getInt("poll_frequency_seconds"))
                         .setLocalInstancePathPrefix(resultSet.getString("local_instance_path_prefix"))
-                        .setLocalInstancePath(resultSet.getString("local_instance_path"))
+                        .setLocalInstancePath(resultSet.getString("local_instance_path")));
 
-                        .setDbConfigurationSftp(new DbConfigurationSftp()
-                            .setHostname(resultSet.getString("hostname"))
-                            .setPort(resultSet.getInt("port"))
-                            .setRemotePath(resultSet.getString("remote_path"))
-                            .setUsername(resultSet.getString("username"))
-                            .setClientPrivateKey(resultSet.getString("client_private_key"))
-                            .setClientPrivateKeyPassword(resultSet.getString("client_private_key_password"))
-                            .setHostPublicKey(resultSet.getString("host_public_key")))
+        DbConfigurationSftp dbConfigurationSftp = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
+                new DbConfigurationSftp()
+                        .setHostname(resultSet.getString("hostname"))
+                        .setPort(resultSet.getInt("port"))
+                        .setRemotePath(resultSet.getString("remote_path"))
+                        .setUsername(resultSet.getString("username"))
+                        .setClientPrivateKey(resultSet.getString("client_private_key"))
+                        .setClientPrivateKeyPassword(resultSet.getString("client_private_key_password"))
+                        .setHostPublicKey(resultSet.getString("host_public_key")));
 
-                        .setDbConfigurationPgp(new DbConfigurationPgp()
-                            .setPgpFileExtensionFilter(resultSet.getString("pgp_file_extension_filter"))
-                            .setPgpSenderPublicKey(resultSet.getString("pgp_sender_public_key"))
-                            .setPgpRecipientPublicKey(resultSet.getString("pgp_recipient_public_key"))
-                            .setPgpRecipientPrivateKey(resultSet.getString("pgp_recipient_private_key"))
-                            .setPgpRecipientPrivateKeyPassword(resultSet.getString("pgp_recipient_private_key_password")))
+        DbConfigurationPgp dbConfigurationPgp = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
+                new DbConfigurationPgp()
+                        .setPgpFileExtensionFilter(resultSet.getString("pgp_file_extension_filter"))
+                        .setPgpSenderPublicKey(resultSet.getString("pgp_sender_public_key"))
+                        .setPgpRecipientPublicKey(resultSet.getString("pgp_recipient_public_key"))
+                        .setPgpRecipientPrivateKey(resultSet.getString("pgp_recipient_private_key"))
+                        .setPgpRecipientPrivateKeyPassword(resultSet.getString("pgp_recipient_private_key_password")));
 
-                        .setDbConfigurationEds(new DbConfigurationEds()
-                            .setEdsUrl(resultSet.getString("eds_url"))
-                            .setSoftwareContentType(resultSet.getString("software_content_type"))
-                            .setSoftwareVersion(resultSet.getString("software_version"))
-                            .setUseKeycloak(resultSet.getBoolean("use_keycloak"))
-                            .setKeycloakTokenUri(resultSet.getString("keycloak_token_uri"))
-                            .setKeycloakRealm(resultSet.getString("keycloak_realm"))
-                            .setKeycloakUsername(resultSet.getString("keycloak_username"))
-                            .setKeycloakPassword(resultSet.getString("keycloak_password"))
-                            .setKeycloakClientId(resultSet.getString("keycloak_clientid")))
-
-                        .setDbConfigurationSlack(new DbConfigurationSlack()
-                            .setEnabled(resultSet.getBoolean("slack_enabled"))
-                            .setSlackUrl(resultSet.getString("slack_url"))));
-
-        if (dbConfiguration != null) {
-            dbConfiguration.setDbConfigurationKvp(getConfigurationKvp(instanceId));
-            dbConfiguration.setInterfaceFileTypes(getInterfaceFileTypes(instanceId));
-        }
-
-        return dbConfiguration;
-    }
-
-    private List<DbConfigurationKvp> getConfigurationKvp(String instanceId) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
-                .setName("configuration.get_configuration_kvp")
-                .addParameter("_instance_id", instanceId);
-
-        return pgStoredProc.executeQuery((resultSet) -> new DbConfigurationKvp()
+        List<DbConfigurationKvp> dbConfigurationKvp = pgStoredProc.executeMultiQuery((resultSet) ->
+                new DbConfigurationKvp()
                         .setKey(resultSet.getString("key"))
                         .setValue(resultSet.getString("value")));
-    }
 
-    public List<String> getInterfaceFileTypes(String instanceId) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
-                .setName("configuration.get_interface_file_types")
-                .addParameter("_instance_id", instanceId);
+        List<String> interfaceFileTypes = pgStoredProc.executeMultiQuery((resultSet) ->
+            resultSet.getString("file_type_identifier"));
 
-        return pgStoredProc.executeQuery(resultSet -> resultSet.getString("file_type_identifier"));
+        // assemble data
+
+        if (dbConfiguration == null)
+            return null;
+
+        return dbConfiguration
+                .setSftpConfiguration(dbConfigurationSftp)
+                .setPgpConfiguration(dbConfigurationPgp)
+                .setDbConfigurationKvp(dbConfigurationKvp)
+                .setInterfaceFileTypes(interfaceFileTypes);
     }
 
     public void addEmisOrganisationMap(EmisOrganisationMap mapping) throws PgStoredProcException {

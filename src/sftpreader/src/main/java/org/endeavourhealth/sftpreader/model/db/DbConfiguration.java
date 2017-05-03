@@ -12,11 +12,9 @@ public class DbConfiguration {
     private String localInstancePathPrefix;
     private String localInstancePath;
 
-    private DbConfigurationSftp dbConfigurationSftp;
-    private DbConfigurationPgp dbConfigurationPgp;
-    private DbConfigurationEds dbConfigurationEds;
-    private DbConfigurationSlack dbConfigurationSlack;
-    private List<DbConfigurationKvp> dbConfigurationKvp;
+    private DbConfigurationSftp sftpConfiguration;
+    private DbConfigurationPgp pgpConfiguration;
+    private List<DbConfigurationKvp> kvpConfiguration;
     private List<String> interfaceFileTypes;
 
     public String getInstanceId() {
@@ -77,29 +75,29 @@ public class DbConfiguration {
         return this;
     }
 
-    public DbConfigurationPgp getDbConfigurationPgp() {
-        return this.dbConfigurationPgp;
+    public DbConfigurationPgp getPgpConfiguration() {
+        return this.pgpConfiguration;
     }
 
-    public DbConfiguration setDbConfigurationPgp(DbConfigurationPgp dbConfigurationPgp) {
-        this.dbConfigurationPgp = dbConfigurationPgp;
+    public DbConfiguration setPgpConfiguration(DbConfigurationPgp pgpConfiguration) {
+        this.pgpConfiguration = pgpConfiguration;
         return this;
     }
 
-    public DbConfigurationSftp getDbConfigurationSftp() {
-        return this.dbConfigurationSftp;
+    public DbConfigurationSftp getSftpConfiguration() {
+        return this.sftpConfiguration;
     }
 
-    public DbConfiguration setDbConfigurationSftp(DbConfigurationSftp dbConfigurationSftp) {
-        this.dbConfigurationSftp = dbConfigurationSftp;
+    public DbConfiguration setSftpConfiguration(DbConfigurationSftp sftpConfiguration) {
+        this.sftpConfiguration = sftpConfiguration;
         return this;
     }
 
     public String getPgpFileExtensionFilter() {
-        if (this.getDbConfigurationPgp() == null)
+        if (this.getPgpConfiguration() == null)
             return null;
 
-        return this.getDbConfigurationPgp().getPgpFileExtensionFilter();
+        return this.getPgpConfiguration().getPgpFileExtensionFilter();
     }
 
     public List<String> getInterfaceFileTypes() {
@@ -111,30 +109,12 @@ public class DbConfiguration {
         return this;
     }
 
-    public DbConfigurationEds getDbConfigurationEds() {
-        return this.dbConfigurationEds;
-    }
-
-    public DbConfiguration setDbConfigurationEds(DbConfigurationEds dbConfigurationEds) {
-        this.dbConfigurationEds = dbConfigurationEds;
-        return this;
-    }
-
     public List<DbConfigurationKvp> getDbConfigurationKvp() {
-        return this.dbConfigurationKvp;
+        return this.kvpConfiguration;
     }
 
-    public DbConfiguration setDbConfigurationKvp(List<DbConfigurationKvp> dbConfigurationKvp) {
-        this.dbConfigurationKvp = dbConfigurationKvp;
-        return this;
-    }
-
-    public DbConfigurationSlack getDbConfigurationSlack() {
-        return dbConfigurationSlack;
-    }
-
-    public DbConfiguration setDbConfigurationSlack(DbConfigurationSlack dbConfigurationSlack) {
-        this.dbConfigurationSlack = dbConfigurationSlack;
+    public DbConfiguration setDbConfigurationKvp(List<DbConfigurationKvp> kvpConfiguration) {
+        this.kvpConfiguration = kvpConfiguration;
         return this;
     }
 }

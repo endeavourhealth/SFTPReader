@@ -1,6 +1,6 @@
 package org.endeavourhealth.sftpreader.model.db;
 
-public class DbConfigurationSlack {
+public class DbGlobalConfigurationSlack {
     private boolean enabled;
     private String slackUrl;
 
@@ -8,7 +8,7 @@ public class DbConfigurationSlack {
         return enabled;
     }
 
-    public DbConfigurationSlack setEnabled(boolean enabled) {
+    public DbGlobalConfigurationSlack setEnabled(boolean enabled) {
         this.enabled = enabled;
         return this;
     }
@@ -17,7 +17,7 @@ public class DbConfigurationSlack {
         return slackUrl;
     }
 
-    public DbConfigurationSlack setSlackUrl(String slackUrl) {
+    public DbGlobalConfigurationSlack setSlackUrl(String slackUrl) {
         this.slackUrl = slackUrl;
         return this;
     }

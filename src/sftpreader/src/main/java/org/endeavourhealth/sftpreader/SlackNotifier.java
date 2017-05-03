@@ -6,7 +6,7 @@ import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpSlackNotifier;
 import org.endeavourhealth.sftpreader.model.db.Batch;
-import org.endeavourhealth.sftpreader.model.db.DbConfigurationSlack;
+import org.endeavourhealth.sftpreader.model.db.DbGlobalConfigurationSlack;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
@@ -16,14 +16,14 @@ public class SlackNotifier {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SlackNotifier.class);
 
     private Configuration configuration;
-    private DbConfigurationSlack dbConfigurationSlack;
+    private DbGlobalConfigurationSlack slackConfiguration;
 
     public SlackNotifier(Configuration configuration) {
         Validate.notNull(configuration, "configuration");
-        Validate.notNull(configuration.getDbConfiguration().getDbConfigurationSlack(), "configuration.getDbConfiguration().getDbConfigurationSlack()");
+        Validate.notNull(configuration.getDbGlobalConfiguration().getSlackConfiguration(), "configuration.getDbGlobalConfiguration().getSlackConfiguration()");
 
         this.configuration = configuration;
-        this.dbConfigurationSlack = configuration.getDbConfiguration().getDbConfigurationSlack();
+        this.slackConfiguration = configuration.getDbGlobalConfiguration().getSlackConfiguration();
     }
 
     public void notifyStartup() {
@@ -54,10 +54,10 @@ public class SlackNotifier {
 
     private void postMessage(String slackMessage) {
         try {
-            if (!dbConfigurationSlack.isEnabled())
+            if (!slackConfiguration.isEnabled())
                 return;
 
-            SlackApi slackApi = new SlackApi(dbConfigurationSlack.getSlackUrl());
+            SlackApi slackApi = new SlackApi(slackConfiguration.getSlackUrl());
             slackApi.call(new SlackMessage(slackMessage));
 
         } catch (Exception e) {

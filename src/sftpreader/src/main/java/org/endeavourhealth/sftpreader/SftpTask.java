@@ -39,6 +39,7 @@ public class SftpTask extends TimerTask {
     private static final DateTimeFormatter DATE_DISPLAY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MMM-dd HH:mm");
 
     private Configuration configuration = null;
+    private DbGlobalConfiguration dbGlobalConfiguration = null;
     private DbConfiguration dbConfiguration = null;
     private DataLayer db = null;
 
@@ -76,6 +77,7 @@ public class SftpTask extends TimerTask {
     }
 
     private void initialise() throws Exception {
+        this.dbGlobalConfiguration = configuration.getDbGlobalConfiguration();
         this.dbConfiguration = configuration.getDbConfiguration();
         this.db = new DataLayer(configuration.getDatabaseConnection());
         checkLocalInstancePathPrefixExists();
@@ -95,9 +97,9 @@ public class SftpTask extends TimerTask {
         SftpConnection sftpConnection = null;
 
         try {
-            sftpConnection = openSftpConnection(dbConfiguration.getDbConfigurationSftp());
+            sftpConnection = openSftpConnection(dbConfiguration.getSftpConfiguration());
 
-            String remotePath = dbConfiguration.getDbConfigurationSftp().getRemotePath();
+            String remotePath = dbConfiguration.getSftpConfiguration().getRemotePath();
 
             sftpConnection.cd(remotePath);
             List<SftpRemoteFile> sftpRemoteFiles = getFileList(sftpConnection, "\\");
@@ -236,10 +238,10 @@ public class SftpTask extends TimerTask {
     private void decryptFile(SftpFile batchFile) throws Exception {
         String localFilePath = batchFile.getLocalFilePath();
         String decryptedLocalFilePath = batchFile.getDecryptedLocalFilePath();
-        String privateKey = dbConfiguration.getDbConfigurationPgp().getPgpRecipientPrivateKey();
-        String privateKeyPassword = dbConfiguration.getDbConfigurationPgp().getPgpRecipientPrivateKeyPassword();
-        //String publicKey = dbConfiguration.getDbConfigurationPgp().getPgpRecipientPublicKey();
-        String publicKey = dbConfiguration.getDbConfigurationPgp().getPgpSenderPublicKey();
+        String privateKey = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKey();
+        String privateKeyPassword = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKeyPassword();
+        //String publicKey = dbConfiguration.getPgpConfiguration().getPgpRecipientPublicKey();
+        String publicKey = dbConfiguration.getPgpConfiguration().getPgpSenderPublicKey();
 
         LOG.info("   Decrypting file to: " + decryptedLocalFilePath);
 
@@ -372,14 +374,19 @@ public class SftpTask extends TimerTask {
             return;
         }
 
-        if (dbConfiguration.getDbConfigurationEds().isUseKeycloak()) {
-            LOG.trace("Initialising keycloak at: {}", dbConfiguration.getDbConfigurationEds().getKeycloakTokenUri());
+        DbGlobalConfigurationEds edsConfiguration = dbGlobalConfiguration.getEdsConfiguration();
 
-            KeycloakClient.init(dbConfiguration.getDbConfigurationEds().getKeycloakTokenUri(),
-                    dbConfiguration.getDbConfigurationEds().getKeycloakRealm(),
-                    dbConfiguration.getDbConfigurationEds().getKeycloakUsername(),
-                    dbConfiguration.getDbConfigurationEds().getKeycloakPassword(),
-                    dbConfiguration.getDbConfigurationEds().getKeycloakClientId());
+        if (edsConfiguration == null)
+            throw new SftpReaderException("Cannot notify EDS - EDS configuration is not set");
+
+        if (edsConfiguration.isUseKeycloak()) {
+            LOG.trace("Initialising keycloak at: {}", edsConfiguration.getKeycloakTokenUri());
+
+            KeycloakClient.init(edsConfiguration.getKeycloakTokenUri(),
+                    edsConfiguration.getKeycloakRealm(),
+                    edsConfiguration.getKeycloakUsername(),
+                    edsConfiguration.getKeycloakPassword(),
+                    edsConfiguration.getKeycloakClientId());
 
             try {
                 Header response = KeycloakClient.instance().getAuthorizationHeader();
@@ -447,13 +454,13 @@ public class SftpTask extends TimerTask {
 
         UUID messageId = UUID.randomUUID();
         String organisationId = unnotifiedBatchSplit.getOrganisationId();
-        String softwareContentType = dbConfiguration.getDbConfigurationEds().getSoftwareContentType();
-        String softwareVersion = dbConfiguration.getDbConfigurationEds().getSoftwareVersion();
+        String softwareContentType = dbGlobalConfiguration.getEdsConfiguration().getSoftwareContentType();
+        String softwareVersion = dbGlobalConfiguration.getEdsConfiguration().getSoftwareVersion();
         String outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload);
 
         try {
-            String edsUrl = dbConfiguration.getDbConfigurationEds().getEdsUrl();
-            boolean useKeycloak = dbConfiguration.getDbConfigurationEds().isUseKeycloak();
+            String edsUrl = dbGlobalConfiguration.getEdsConfiguration().getEdsUrl();
+            boolean useKeycloak = dbGlobalConfiguration.getEdsConfiguration().isUseKeycloak();
 
             EdsSenderResponse edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage);
 
