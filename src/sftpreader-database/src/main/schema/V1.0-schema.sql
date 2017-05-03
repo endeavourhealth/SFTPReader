@@ -1,5 +1,5 @@
 /* 
-	create schema
+	Schema V1.0: initial schema
 */
 
 create schema configuration;

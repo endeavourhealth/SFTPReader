@@ -3,7 +3,7 @@ create or replace function log.add_batch_notification
 (
 	_batch_id integer,
 	_batch_split_id integer,
-	_instance_id varchar,
+	_configuration_id varchar,
 	_message_uuid uuid,
 	_outbound_message varchar,
 	_inbound_message varchar,
@@ -22,7 +22,7 @@ begin
 	(
 		batch_id,
 		batch_split_id,
-		instance_id,
+		configuration_id,
 		message_uuid,
 		timestamp,
 		outbound,
@@ -34,7 +34,7 @@ begin
 	(
 		_batch_id,
 		_batch_split_id,
-		_instance_id,
+		_configuration_id,
 		_message_uuid,
 		_timestamp,
 		_outbound_message,

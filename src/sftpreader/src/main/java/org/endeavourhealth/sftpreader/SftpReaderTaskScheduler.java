@@ -34,7 +34,6 @@ public class SftpReaderTaskScheduler {
 
                 if (task.getNextScheduledDate().isBefore(LocalDateTime.now())) {
 
-
                     LOG.info("Starting SftpReaderTask " + task.getTaskName());
 
                     LOG.trace("--------------------------------------------------");
@@ -57,9 +56,9 @@ public class SftpReaderTaskScheduler {
 
         for (DbConfiguration dbConfiguration : configuration.getConfigurations()) {
 
-            LOG.info("Creating SftpReaderTask for instance " + dbConfiguration.getInstanceId());
+            LOG.info("Creating SftpReaderTask for configuration " + dbConfiguration.getConfigurationId());
 
-            SftpReaderTask sftpReaderTask = new SftpReaderTask(configuration, dbConfiguration.getInstanceId());
+            SftpReaderTask sftpReaderTask = new SftpReaderTask(configuration, dbConfiguration.getConfigurationId());
 
             tasks.add(new SftpReaderTaskInfo(sftpReaderTask, dbConfiguration));
         }

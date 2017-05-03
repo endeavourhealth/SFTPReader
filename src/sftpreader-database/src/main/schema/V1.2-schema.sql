@@ -1,3 +1,7 @@
+/* 
+	Schema V1.2: Have only one slack configuration rather than one per configuration, rename description column to instance_friendly_name
+*/
+
 create table configuration.slack
 (
 	single_row_lock boolean not null,

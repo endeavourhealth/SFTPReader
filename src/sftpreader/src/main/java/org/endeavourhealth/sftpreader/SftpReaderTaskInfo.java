@@ -15,7 +15,7 @@ public class SftpReaderTaskInfo {
         this.sftpReaderTask = sftpReaderTask;
         this.dbConfiguration = dbConfiguration;
         this.nextScheduledDate = LocalDateTime.now();
-        this.taskName = dbConfiguration.getInstanceId();
+        this.taskName = dbConfiguration.getConfigurationId();
     }
 
     public void runTask() throws InterruptedException {

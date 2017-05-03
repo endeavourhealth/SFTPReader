@@ -1,3 +1,7 @@
+/* 
+	Schema V1.1: split configuration paths into two to allow sending of partial (relative) path to onward destination
+*/
+
 alter table configuration.configuration add local_instance_path varchar(1000) null;
 
 update configuration.configuration set local_instance_path = '';

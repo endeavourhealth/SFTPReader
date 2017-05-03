@@ -1,3 +1,6 @@
+/* 
+	Schema V1.4: drop configuration.instance table
+*/
 
 alter table configuration.configuration add column instance_friendly_name varchar(100) null;
 

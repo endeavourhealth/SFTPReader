@@ -1,3 +1,6 @@
+/*
+	Schema V1.3: Have only one eds configuration, rather than one per configuration
+*/
 
 create table configuration.eds
 (

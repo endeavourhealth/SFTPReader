@@ -1,7 +1,7 @@
 
 create or replace function log.add_file
 (
-	_instance_id varchar,
+	_configuration_id varchar,
 	_batch_identifier varchar,
 	_file_type_identifier varchar,
 	_filename varchar,
@@ -27,7 +27,7 @@ begin
 	into
 		_batch_id
 	from log.batch
-	where instance_id = _instance_id
+	where configuration_id = _configuration_id
 	and batch_identifier = _batch_identifier;
 
 	select
@@ -35,21 +35,21 @@ begin
 	into
 		_interface_type_id
 	from configuration.configuration
-	where instance_id = _instance_id;
+	where configuration_id = _configuration_id;
 
 	if (_batch_id is null)
 	then
 
 		insert into log.batch
 		(
-			instance_id,
+			configuration_id,
 			batch_identifier,
 			interface_type_id,
 			local_relative_path
 		)
 		values
 		(
-			_instance_id,
+			_configuration_id,
 			_batch_identifier,
 			_interface_type_id,
 			_local_relative_path

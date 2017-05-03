@@ -39,7 +39,7 @@ public final class Configuration {
 
     // instance members //
     private String machineName;
-    private List<String> instanceNames;
+    private List<String> configurationIds;
     private String postgresUrl;
     private String postgresUsername;
     private String postgresPassword;
@@ -69,7 +69,7 @@ public final class Configuration {
             if (StringUtils.isEmpty(instanceNames))
                 throw new SftpReaderException("Could not find " + INSTANCE_NAMES_JAVA_PROPERTY + " Java -D property");
 
-            this.instanceNames = Arrays.stream(StringUtils.split(instanceNames, INSTANCE_NAMES_SEPERATOR))
+            this.configurationIds = Arrays.stream(StringUtils.split(instanceNames, INSTANCE_NAMES_SEPERATOR))
                     .map(t -> t.trim())
                     .collect(Collectors.toList());
 
@@ -101,8 +101,8 @@ public final class Configuration {
 
         this.dbConfiguration = new ArrayList<>();
 
-        for (String instanceName : instanceNames)
-            this.dbConfiguration.add(dataLayer.getConfiguration(instanceName));
+        for (String configurationId : configurationIds)
+            this.dbConfiguration.add(dataLayer.getConfiguration(configurationId));
     }
 
     public DataSource getDatabaseConnection() throws SQLException {
@@ -115,17 +115,17 @@ public final class Configuration {
         return this.dbGlobalConfiguration;
     }
 
-    public DbConfiguration getConfiguration(String instanceName) throws SftpReaderException {
+    public DbConfiguration getConfiguration(String configurationId) throws SftpReaderException {
         List<DbConfiguration> dbConfigurations = this.dbConfiguration
                 .stream()
-                .filter(t -> t.getInstanceId().equals(instanceName))
+                .filter(t -> t.getConfigurationId().equals(configurationId))
                 .collect(Collectors.toList());
 
         if (dbConfigurations.size() == 0)
-            throw new SftpReaderException("Could not find configuration with instance name " + instanceName);
+            throw new SftpReaderException("Could not find configuration with id " + configurationId);
 
         if (dbConfigurations.size() > 1)
-            throw new SftpReaderException("Multiple configurations found with instance name " + instanceName);
+            throw new SftpReaderException("Multiple configurations found with id " + configurationId);
 
         return dbConfigurations.get(0);
     }
@@ -134,7 +134,7 @@ public final class Configuration {
         return this.dbConfiguration;
     }
 
-    public String[] getInstanceNames() {
-        return this.instanceNames.toArray(new String[this.instanceNames.size()]);
+    public String[] getConfigurationIds() {
+        return this.configurationIds.toArray(new String[this.configurationIds.size()]);
     }
 }

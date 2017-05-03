@@ -1,7 +1,7 @@
 
 create or replace function log.get_unknown_files
 (
-	_instance_id varchar
+	_configuration_id varchar
 )
 returns table
 (
@@ -20,7 +20,7 @@ as $$
 		remote_created_date,
 		remote_size_bytes
 	from log.unknown_file
-	where instance_id = _instance_id;
+	where configuration_id = _configuration_id;
 
 $$ language sql;
 

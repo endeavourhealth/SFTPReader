@@ -8,7 +8,8 @@ create or replace function configuration.add_emis_organisation_map
 returns void as
 $$
 
-	delete from configuration.emis_organisation_map
+	delete 
+	from configuration.emis_organisation_map
 	where guid = _guid;
 
 	insert into configuration.emis_organisation_map

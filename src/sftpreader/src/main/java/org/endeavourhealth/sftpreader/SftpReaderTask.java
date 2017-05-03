@@ -35,14 +35,14 @@ public class SftpReaderTask implements Runnable {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpReaderTask.class);
 
     private Configuration configuration = null;
-    private String instanceName = null;
+    private String configurationId = null;
     private DbGlobalConfiguration dbGlobalConfiguration = null;
     private DbConfiguration dbConfiguration = null;
     private DataLayer db = null;
 
-    public SftpReaderTask(Configuration configuration, String instanceName) {
+    public SftpReaderTask(Configuration configuration, String configurationId) {
         this.configuration = configuration;
-        this.instanceName = instanceName;
+        this.configurationId = configurationId;
     }
 
     @Override
@@ -71,18 +71,18 @@ public class SftpReaderTask implements Runnable {
 
     private void initialise() throws Exception {
         this.dbGlobalConfiguration = configuration.getGlobalConfiguration();
-        this.dbConfiguration = configuration.getConfiguration(instanceName);
+        this.dbConfiguration = configuration.getConfiguration(configurationId);
         this.db = new DataLayer(configuration.getDatabaseConnection());
-        checkLocalInstancePathPrefixExists();
+        checkLocalRootPathPrefixExists();
     }
 
-    private void checkLocalInstancePathPrefixExists() throws Exception {
-        if (StringUtils.isNotEmpty(this.dbConfiguration.getLocalInstancePathPrefix())) {
+    private void checkLocalRootPathPrefixExists() throws Exception {
+        if (StringUtils.isNotEmpty(this.dbConfiguration.getLocalRootPathPrefix())) {
 
-            File rootPath = new File(this.dbConfiguration.getLocalInstancePathPrefix());
+            File rootPath = new File(this.dbConfiguration.getLocalRootPathPrefix());
 
             if ((!rootPath.exists()) || (!rootPath.isDirectory()))
-                throw new SftpReaderException("Local instance path prefix '" + rootPath + "' does not exist");
+                throw new SftpReaderException("Local root path prefix '" + rootPath + "' does not exist");
         }
     }
 
@@ -106,11 +106,11 @@ public class SftpReaderTask implements Runnable {
 
                 if (!batchFile.isFilenameValid()) {
                     LOG.error("   Invalid filename, skipping: " + batchFile.getFilename());
-                    db.addUnknownFile(dbConfiguration.getInstanceId(), batchFile);
+                    db.addUnknownFile(dbConfiguration.getConfigurationId(), batchFile);
                     continue;
                 }
 
-                AddFileResult addFileResult = db.addFile(instanceName, batchFile);
+                AddFileResult addFileResult = db.addFile(configurationId, batchFile);
 
                 if (addFileResult.isFileAlreadyProcessed()) {
                     countAlreadyProcessed ++;
@@ -211,7 +211,7 @@ public class SftpReaderTask implements Runnable {
 
         return new SftpFile(sftpRemoteFile,
                 emisSftpFilenameParser,
-                dbConfiguration.getFullLocalInstancePath());
+                dbConfiguration.getFullLocalRootPath());
     }
 
     private void createBatchDirectory(SftpFile batchFile) throws IOException {
@@ -260,7 +260,7 @@ public class SftpReaderTask implements Runnable {
             List<Batch> incompleteBatches = getIncompleteBatches();
 
             if (incompleteBatches.size() > 0) {
-                Batch lastCompleteBatch = db.getLastCompleteBatch(dbConfiguration.getInstanceId());
+                Batch lastCompleteBatch = db.getLastCompleteBatch(dbConfiguration.getConfigurationId());
 
                 validateBatches(incompleteBatches, lastCompleteBatch);
                 splitBatches(incompleteBatches);
@@ -279,13 +279,13 @@ public class SftpReaderTask implements Runnable {
     }
 
     private List<UnknownFile> getUnknownFiles() throws PgStoredProcException {
-        return db.getUnknownFiles(dbConfiguration.getInstanceId());
+        return db.getUnknownFiles(dbConfiguration.getConfigurationId());
     }
 
     private List<Batch> getIncompleteBatches() throws PgStoredProcException {
         LOG.trace(" Getting batches ready for validation and sequencing");
 
-        List<Batch> incompleteBatches = db.getIncompleteBatches(dbConfiguration.getInstanceId());
+        List<Batch> incompleteBatches = db.getIncompleteBatches(dbConfiguration.getConfigurationId());
 
         LOG.trace(" There are {} batches ready for validation and sequencing", Integer.toString(incompleteBatches.size()));
 
@@ -345,7 +345,7 @@ public class SftpReaderTask implements Runnable {
             List<BatchSplit> splitBatches = sftpBatchSplitter.splitBatch(batch, db, dbConfiguration);
 
             for (BatchSplit splitBatch: splitBatches)
-                db.addBatchSplit(splitBatch, dbConfiguration.getInstanceId());
+                db.addBatchSplit(splitBatch, dbConfiguration.getConfigurationId());
         }
 
         LOG.trace("Completed splitting");
@@ -360,7 +360,7 @@ public class SftpReaderTask implements Runnable {
 
     private void notifyEds() throws PgStoredProcException, SftpReaderException {
 
-        List<BatchSplit> unnotifiedBatchSplits = db.getUnnotifiedBatchSplits(dbConfiguration.getInstanceId());
+        List<BatchSplit> unnotifiedBatchSplits = db.getUnnotifiedBatchSplits(dbConfiguration.getConfigurationId());
         LOG.debug("There are {} complete split batches for notification", unnotifiedBatchSplits.size());
 
         if (unnotifiedBatchSplits.isEmpty()) {
@@ -459,7 +459,7 @@ public class SftpReaderTask implements Runnable {
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),
                     unnotifiedBatchSplit.getBatchSplitId(),
-                    dbConfiguration.getInstanceId(),
+                    dbConfiguration.getConfigurationId(),
                     messageId,
                     outboundMessage,
                     edsSenderResponse.getStatusLine() + "\r\n" + edsSenderResponse.getResponseBody(),
@@ -475,7 +475,7 @@ public class SftpReaderTask implements Runnable {
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),
                     unnotifiedBatchSplit.getBatchSplitId(),
-                    dbConfiguration.getInstanceId(),
+                    dbConfiguration.getConfigurationId(),
                     messageId,
                     outboundMessage,
                     inboundMessage,

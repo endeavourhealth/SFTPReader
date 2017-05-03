@@ -1,7 +1,7 @@
 
 create or replace function log.get_unnotified_batch_splits
 (
-	_instance_id varchar
+	_configuration_id varchar
 )
 returns setof refcursor
 as $$
@@ -13,7 +13,7 @@ begin
 		array_agg(bs.batch_split_id) into _batch_split_ids
 	from log.batch b
 	inner join log.batch_split bs on b.batch_id = bs.batch_id
-	where b.instance_id = _instance_id
+	where b.configuration_id = _configuration_id
 	and b.is_complete = true
 	and bs.have_notified = false;
 
@@ -21,7 +21,7 @@ begin
 		array_agg(b.batch_id) into _batch_ids
 	from log.batch b
 	inner join log.batch_split bs on b.batch_id = bs.batch_id
-	where b.instance_id = _instance_id
+	where b.configuration_id = _configuration_id
 	and b.is_complete = true
 	and bs.have_notified = false;
 

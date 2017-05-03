@@ -1,7 +1,7 @@
 
 create or replace function configuration.get_configuration
 (
-	_instance_id varchar(100)
+	_configuration_id varchar(100)
 )
 returns setof refcursor
 as $$
@@ -18,15 +18,15 @@ begin
 	
 	open configuration for
 	select
-		c.instance_id,
-		c.instance_friendly_name,
+		c.configuration_id,
+		c.configuration_friendly_name,
 		it.interface_type_name,
 		c.poll_frequency_seconds,	
-		c.local_instance_path_prefix,
-		c.local_instance_path
+		c.local_root_path_prefix,
+		c.local_root_path
 	from configuration.configuration c 
 	inner join configuration.interface_type it on c.interface_type_id = it.interface_type_id
-	where c.instance_id = _instance_id;
+	where c.configuration_id = _configuration_id;
 
 	return next configuration;
 	
@@ -43,7 +43,7 @@ begin
 		cs.client_private_key_password,
 		cs.host_public_key
 	from configuration.configuration_sftp cs
-	where cs.instance_id = _instance_id;
+	where cs.configuration_id = _configuration_id;
 	
 	return next configuration_sftp;
 	
@@ -58,7 +58,7 @@ begin
 		cp.recipient_private_key as pgp_recipient_private_key,
 		cp.recipient_private_key_password as pgp_recipient_private_key_password
 	from configuration.configuration_pgp cp
-	where cp.instance_id = _instance_id;
+	where cp.configuration_id = _configuration_id;
 	
 	return next configuration_pgp;
 	
@@ -70,7 +70,7 @@ begin
 		kvp.key,
 		kvp.value
 	from configuration.configuration_kvp kvp
-	where kvp.instance_id = _instance_id;
+	where kvp.configuration_id = _configuration_id;
 	
 	return next configuration_kvp;
 	
@@ -83,7 +83,7 @@ begin
 	from configuration.configuration c
 	inner join configuration.interface_type it on c.interface_type_id = it.interface_type_id
 	inner join configuration.interface_file_type ift on ift.interface_type_id = it.interface_type_id
-	where c.instance_id = _instance_id;
+	where c.configuration_id = _configuration_id;
 	
 	return next configuration_filetypeidentifier;
 	

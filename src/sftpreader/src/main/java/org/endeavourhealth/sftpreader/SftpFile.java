@@ -12,20 +12,20 @@ public class SftpFile {
 
     private SftpRemoteFile sftpRemoteFile;
     private SftpFilenameParser sftpFilenameParser;
-    private String localInstancePath;
+    private String fullLocalRootPath;
     protected String pgpFileExtensionFilter;
     private Long localFileSizeBytes = null;
     private Long decryptedFileSizeBytes = null;
     private Integer batchFileId = null;
 
-    protected SftpFile(SftpRemoteFile sftpRemoteFile, SftpFilenameParser sftpFilenameParser, String localInstancePath) {
+    protected SftpFile(SftpRemoteFile sftpRemoteFile, SftpFilenameParser sftpFilenameParser, String fullLocalRootPath) {
         Validate.notNull(sftpRemoteFile, "sftpRemoteFile");
         Validate.notNull(sftpFilenameParser, "sftpFilenameParser");
-        Validate.notNull(localInstancePath, "localInstancePath");
+        Validate.notNull(fullLocalRootPath, "fullLocalRootPath");
 
         this.sftpRemoteFile = sftpRemoteFile;
         this.sftpFilenameParser = sftpFilenameParser;
-        this.localInstancePath = localInstancePath;
+        this.fullLocalRootPath = fullLocalRootPath;
         this.pgpFileExtensionFilter = sftpFilenameParser.getFileExtension();
     }
 
@@ -50,7 +50,7 @@ public class SftpFile {
     }
 
     public String getLocalPath() {
-        return FilenameUtils.concat(this.localInstancePath, this.getBatchIdentifier());
+        return FilenameUtils.concat(this.fullLocalRootPath, this.getBatchIdentifier());
     }
 
     public String getLocalRelativePath() {

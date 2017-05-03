@@ -15,8 +15,8 @@ public class EmisSftpNotificationCreator extends SftpNotificationCreator {
     @Override
     public String createNotificationMessage(DbConfiguration dbConfiguration, BatchSplit batchSplit) {
 
-        String relativePath = FilenameUtils.concat(dbConfiguration.getLocalInstancePath(), batchSplit.getLocalRelativePath());
-        String fullPath = FilenameUtils.concat(dbConfiguration.getLocalInstancePathPrefix(), relativePath);
+        String relativePath = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batchSplit.getLocalRelativePath());
+        String fullPath = FilenameUtils.concat(dbConfiguration.getLocalRootPathPrefix(), relativePath);
 
         List<String> files = findFiles(new File(fullPath), relativePath);
 

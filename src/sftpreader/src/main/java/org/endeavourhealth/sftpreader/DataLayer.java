@@ -47,23 +47,23 @@ public class DataLayer implements IDBDigestLogger {
                 .setSlackConfiguration(dbGlobalConfigurationSlack);
     }
 
-    public DbConfiguration getConfiguration(String instanceId) throws PgStoredProcException {
+    public DbConfiguration getConfiguration(String configurationId) throws PgStoredProcException {
 
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("configuration.get_configuration")
-                .addParameter("_instance_id", instanceId);
+                .addParameter("_configuration_id", configurationId);
 
         DbConfiguration dbConfiguration = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbConfiguration()
-                        .setInstanceId(resultSet.getString("instance_id"))
-                        .setInstanceFriendlyName(resultSet.getString("instance_friendly_name"))
+                        .setConfigurationId(resultSet.getString("configuration_id"))
+                        .setConfigurationFriendlyName(resultSet.getString("configuration_friendly_name"))
                         .setInterfaceTypeName(resultSet.getString("interface_type_name"))
                         .setPollFrequencySeconds(resultSet.getInt("poll_frequency_seconds"))
-                        .setLocalInstancePathPrefix(resultSet.getString("local_instance_path_prefix"))
-                        .setLocalInstancePath(resultSet.getString("local_instance_path")));
+                        .setLocalRootPathPrefix(resultSet.getString("local_root_path_prefix"))
+                        .setLocalRootPath(resultSet.getString("local_root_path")));
 
         if (dbConfiguration == null)
-            throw new PgStoredProcException("No configuration found with instance name " + instanceId);
+            throw new PgStoredProcException("No configuration found with configuration id " + configurationId);
 
         DbConfigurationSftp dbConfigurationSftp = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbConfigurationSftp()
@@ -76,7 +76,7 @@ public class DataLayer implements IDBDigestLogger {
                         .setHostPublicKey(resultSet.getString("host_public_key")));
 
         if (dbConfigurationSftp == null)
-            throw new PgStoredProcException("No SFTP configuration details found for instance name " + instanceId);
+            throw new PgStoredProcException("No SFTP configuration details found for configuration id " + configurationId);
 
         DbConfigurationPgp dbConfigurationPgp = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbConfigurationPgp()
@@ -87,7 +87,7 @@ public class DataLayer implements IDBDigestLogger {
                         .setPgpRecipientPrivateKeyPassword(resultSet.getString("pgp_recipient_private_key_password")));
 
         if (dbConfigurationPgp == null)
-            throw new PgStoredProcException("No PGP configuration details found for instance name " + instanceId);
+            throw new PgStoredProcException("No PGP configuration details found for configuration id " + configurationId);
 
         List<DbConfigurationKvp> dbConfigurationKvp = pgStoredProc.executeMultiQuery((resultSet) ->
                 new DbConfigurationKvp()
@@ -135,10 +135,10 @@ public class DataLayer implements IDBDigestLogger {
         return mappings.get(0);
     }
 
-    public AddFileResult addFile(String instanceId, SftpFile batchFile) throws PgStoredProcException {
+    public AddFileResult addFile(String configurationId, SftpFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.add_file")
-                .addParameter("_instance_id", instanceId)
+                .addParameter("_configuration_id", configurationId)
                 .addParameter("_batch_identifier", batchFile.getBatchIdentifier())
                 .addParameter("_file_type_identifier", batchFile.getFileTypeIdentifier())
                 .addParameter("_filename", batchFile.getFilename())
@@ -172,10 +172,10 @@ public class DataLayer implements IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void addUnknownFile(String instanceId, SftpFile batchFile) throws PgStoredProcException {
+    public void addUnknownFile(String configurationId, SftpFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.add_unknown_file")
-                .addParameter("_instance_id", instanceId)
+                .addParameter("_configuration_id", configurationId)
                 .addParameter("_filename", batchFile.getFilename())
                 .addParameter("_remote_size_bytes", batchFile.getRemoteFileSizeInBytes())
                 .addParameter("_remote_created_date", batchFile.getRemoteLastModifiedDate());
@@ -183,18 +183,18 @@ public class DataLayer implements IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public List<Batch> getIncompleteBatches(String instanceId) throws PgStoredProcException {
+    public List<Batch> getIncompleteBatches(String configurationId) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.get_incomplete_batches")
-                .addParameter("_instance_id", instanceId);
+                .addParameter("_configuration_id", configurationId);
 
         return populateBatches(pgStoredProc);
     }
 
-    public Batch getLastCompleteBatch(String instanceId) throws PgStoredProcException {
+    public Batch getLastCompleteBatch(String configurationId) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.get_last_complete_batch")
-                .addParameter("_instance_id", instanceId);
+                .addParameter("_configuration_id", configurationId);
 
         List<Batch> batches = populateBatches(pgStoredProc);
 
@@ -207,10 +207,10 @@ public class DataLayer implements IDBDigestLogger {
         return batches.get(0);
     }
 
-    public List<BatchSplit> getUnnotifiedBatchSplits(String instanceId) throws PgStoredProcException {
+    public List<BatchSplit> getUnnotifiedBatchSplits(String configurationId) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.get_unnotified_batch_splits")
-                .addParameter("_instance_id", instanceId);
+                .addParameter("_configuration_id", configurationId);
 
         return populateBatchSplits(pgStoredProc);
     }
@@ -233,10 +233,10 @@ public class DataLayer implements IDBDigestLogger {
         return batchSplits;
     }
 
-    public List<UnknownFile> getUnknownFiles(String instanceId) throws PgStoredProcException {
+    public List<UnknownFile> getUnknownFiles(String configurationId) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.get_unknown_files")
-                .addParameter("_instance_id", instanceId);
+                .addParameter("_configuration_id", configurationId);
 
         return pgStoredProc.executeQuery(resultSet -> new UnknownFile()
                 .setUnknownFileId(resultSet.getInt("unknown_file_id"))
@@ -287,12 +287,12 @@ public class DataLayer implements IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void addBatchNotification(int batchId, int batchSplitId, String instanceId, UUID messageId, String outboundMessage, String inboundMessage, boolean wasSuccess, String errorText) throws PgStoredProcException {
+    public void addBatchNotification(int batchId, int batchSplitId, String configurationId, UUID messageId, String outboundMessage, String inboundMessage, boolean wasSuccess, String errorText) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.add_batch_notification")
                 .addParameter("_batch_id", batchId)
                 .addParameter("_batch_split_id", batchSplitId)
-                .addParameter("_instance_id", instanceId)
+                .addParameter("_configuration_id", configurationId)
                 .addParameter("_message_uuid", messageId)
                 .addParameter("_outbound_message", outboundMessage)
                 .addParameter("_inbound_message", inboundMessage)
@@ -302,11 +302,11 @@ public class DataLayer implements IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void addBatchSplit(BatchSplit batchSplit, String instanceId) throws PgStoredProcException {
+    public void addBatchSplit(BatchSplit batchSplit, String configurationId) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.add_batch_split")
                 .addParameter("_batch_id", batchSplit.getBatchId())
-                .addParameter("_instance_id", instanceId)
+                .addParameter("_configuration_id", configurationId)
                 .addParameter("_local_relative_path", batchSplit.getLocalRelativePath())
                 .addParameter("_organisation_id", batchSplit.getOrganisationId());
 

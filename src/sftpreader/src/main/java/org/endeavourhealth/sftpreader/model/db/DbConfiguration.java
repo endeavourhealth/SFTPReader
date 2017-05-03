@@ -5,33 +5,33 @@ import org.apache.commons.io.FilenameUtils;
 import java.util.List;
 
 public class DbConfiguration {
-    private String instanceId;
-    private String instanceFriendlyName;
+    private String configurationId;
+    private String configurationFriendlyName;
     private String interfaceTypeName;
     private int pollFrequencySeconds;
-    private String localInstancePathPrefix;
-    private String localInstancePath;
+    private String localRootPathPrefix;
+    private String localRootPath;
 
     private DbConfigurationSftp sftpConfiguration;
     private DbConfigurationPgp pgpConfiguration;
     private List<DbConfigurationKvp> kvpConfiguration;
     private List<String> interfaceFileTypes;
 
-    public String getInstanceId() {
-        return instanceId;
+    public String getConfigurationId() {
+        return configurationId;
     }
 
-    public DbConfiguration setInstanceId(String instanceId) {
-        this.instanceId = instanceId;
+    public DbConfiguration setConfigurationId(String configurationId) {
+        this.configurationId = configurationId;
         return this;
     }
 
-    public String getInstanceFriendlyName() {
-        return instanceFriendlyName;
+    public String getConfigurationFriendlyName() {
+        return configurationFriendlyName;
     }
 
-    public DbConfiguration setInstanceFriendlyName(String instanceFriendlyName) {
-        this.instanceFriendlyName = instanceFriendlyName;
+    public DbConfiguration setConfigurationFriendlyName(String configurationFriendlyName) {
+        this.configurationFriendlyName = configurationFriendlyName;
         return this;
     }
 
@@ -53,25 +53,25 @@ public class DbConfiguration {
         return this;
     }
 
-    public String getLocalInstancePathPrefix() {
-        return localInstancePathPrefix;
+    public String getLocalRootPathPrefix() {
+        return localRootPathPrefix;
     }
 
-    public DbConfiguration setLocalInstancePathPrefix(String localInstancePathPrefix) {
-        this.localInstancePathPrefix = localInstancePathPrefix;
+    public DbConfiguration setLocalRootPathPrefix(String localRootPathPrefix) {
+        this.localRootPathPrefix = localRootPathPrefix;
         return this;
     }
 
-    public String getFullLocalInstancePath() {
-        return FilenameUtils.concat(getLocalInstancePathPrefix(), getLocalInstancePath());
+    public String getFullLocalRootPath() {
+        return FilenameUtils.concat(getLocalRootPathPrefix(), getLocalRootPath());
     }
 
-    public String getLocalInstancePath() {
-        return localInstancePath;
+    public String getLocalRootPath() {
+        return localRootPath;
     }
 
-    public DbConfiguration setLocalInstancePath(String localInstancePath) {
-        this.localInstancePath = localInstancePath;
+    public DbConfiguration setLocalRootPath(String localRootPath) {
+        this.localRootPath = localRootPath;
         return this;
     }
 

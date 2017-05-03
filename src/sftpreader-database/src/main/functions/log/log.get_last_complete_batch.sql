@@ -1,7 +1,7 @@
 
 create or replace function log.get_last_complete_batch
 (
-	_instance_id varchar
+	_configuration_id varchar
 )
 returns setof refcursor
 as $$
@@ -12,12 +12,12 @@ begin
 	select
 		array_agg(b.batch_id) into _batch_ids
 	from log.batch b
-	where b.instance_id = _instance_id
+	where b.configuration_id = _configuration_id
 	and sequence_number =
 	(
 		select max(sequence_number)
 		from log.batch
-		where instance_id = _instance_id
+		where configuration_id = _configuration_id
 		and is_complete = true
 	);
 

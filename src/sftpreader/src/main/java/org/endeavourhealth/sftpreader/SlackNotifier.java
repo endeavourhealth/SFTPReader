@@ -29,15 +29,15 @@ public class SlackNotifier {
     }
 
     public void notifyStartup() {
-        postMessage("Service started (" + getInstanceNames() + ")");
+        postMessage("Service started (" + getConfigurationIds() + ")");
     }
 
     public void notifyShutdown() {
-        postMessage("Service stopped (" + getInstanceNames() + ")");
+        postMessage("Service stopped (" + getConfigurationIds() + ")");
     }
 
-    private String getInstanceNames() {
-        return StringUtils.join(configuration.getInstanceNames(), ", ");
+    private String getConfigurationIds() {
+        return StringUtils.join(configuration.getConfigurationIds(), ", ");
     }
 
     public void notifyCompleteBatches(DbConfiguration dbConfiguration, List<Batch> batches) {
@@ -47,10 +47,10 @@ public class SlackNotifier {
 
     public void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) {
 
-        String instanceName = dbConfiguration.getInstanceId();
-        String friendlyName = dbConfiguration.getInstanceFriendlyName();
+        String configurationId = dbConfiguration.getConfigurationId();
+        String friendlyName = dbConfiguration.getConfigurationFriendlyName();
 
-        String message = friendlyName + " extract (" + instanceName + ") received";
+        String message = friendlyName + " extract (" + configurationId + ") received";
 
         SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier();
         message += slackNotifier.getCompleteBatchMessageSuffix(batch);
