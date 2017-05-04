@@ -54,9 +54,10 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         path = FilenameUtils.concat(path, SPLIT_FOLDER);
         File dstDir = new File(path);
 
-        if (dstDir.exists()) {
-            //if the folder does exist, delete all content within it, since if we're re-splitting a file
-            //we want to make sure that all previous content is deleted
+        //if the folder does exist, delete all content within it, since if we're re-splitting a file
+        //we want to make sure that all previous content is deleted
+        if (dstDir.exists()
+            || dstDir.listFiles() != null) { //listing the files is a workaround for the NFS inaccurately reporting if something exists
             deleteRecursive(dstDir);
         }
 
@@ -91,12 +92,12 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         for (String fileName: orgAndProcessingIdFiles) {
             File f = new File(srcDir, fileName);
             LOG.trace("Splitting {} into {}", f, dstDir);
-            splitFile(f, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
+            Set<File> splitFiles = splitFile(f, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
 
             //having split the file, we then want to join the files back together so we have one per
             //organisation but ordered by processing ID
             for (File orgDir: dstDir.listFiles()) {
-                joinFiles(fileName, orgDir);
+                joinFiles(fileName, orgDir, splitFiles);
             }
         }
 
@@ -111,10 +112,10 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                 //if we've not split and re-ordered the file, do it now into this org dir
                 if (reorderedFile == null) {
                     LOG.trace("Splitting {} into {}", f, orgDir);
-                    splitFile(f, orgDir, CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
+                    Set<File> splitFiles = splitFile(f, orgDir, CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
 
                     //join them back together
-                    reorderedFile = joinFiles(fileName, orgDir);
+                    reorderedFile = joinFiles(fileName, orgDir, splitFiles);
 
                     //if the file was empty, there won't be a reordered file, so just drop out, and let the
                     //thing that creates empty files pick this up
@@ -155,6 +156,10 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
             createMissingFiles(f, dstDir);
         }
 
+        //if any of our ORG folders contains child folders, then something has gone wrong with the splitting and joining,
+        //so check for this and throw an exception if this is the case
+        validateSplitFolders(srcDir, dstDir);
+
         LOG.trace("Completed CSV file splitting from {} to {}", srcDir, dstDir);
 
         //we need to parse the organisation file, to store the mappings for later
@@ -184,36 +189,86 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
-    private static File joinFiles(String fileName, File directory) throws Exception {
+    /**
+     * validates that each org dir contains no sub-directories, that every folder contains the same number of files
+     * and that the total size of the split files is larger than the original (it'll be larger due to duplication
+     * of CSV header lines and that some files aren't split by org)
+     */
+    private void validateSplitFolders(File srcDir, File dstDir) throws Exception {
+
+        Map<String, Long> fileNamesAndSizes = new HashMap<>();
+
+        for (File orgDir : dstDir.listFiles()) {
+
+            File[] orgDirContents = orgDir.listFiles();
+            if (!fileNamesAndSizes.isEmpty()
+                && fileNamesAndSizes.size() != orgDirContents.length) {
+                throw new Exception("Organisation dir " + orgDir + " contains " + orgDirContents.length + " but others contain " + fileNamesAndSizes.size());
+            }
+
+            for (File orgDirChild: orgDirContents) {
+
+                if (orgDirChild.isDirectory()) {
+                    throw new Exception("Organisation dir " + orgDir + " should not contain subdirectories (" + orgDirChild.getName() + ")");
+                }
+
+                String name = orgDirChild.getName();
+                long size = orgDirChild.length();
+
+                Long totalSize = fileNamesAndSizes.get(name);
+                if (totalSize == null) {
+                    fileNamesAndSizes.put(name, new Long(size));
+
+                } else {
+                    fileNamesAndSizes.put(name, new Long(size + totalSize.longValue()));
+                }
+            }
+        }
+
+        //backed out this check, since in some cases the split files do end up smaller than the original one,
+        //because emis send duplicate rows (at least in the sessionUser file) which the splitter ignores
+        /*for (String fileName: fileNamesAndSizes.keySet()) {
+            Long totalSize = fileNamesAndSizes.get(fileName);
+
+            File srcFile = new File(srcDir, fileName);
+            long srcSize = srcFile.length();
+
+            if (totalSize.longValue() < srcSize) {
+                throw new Exception("Split " + fileName + " files add up to less than the original size");
+            }
+        }*/
+    }
+
+    private static File joinFiles(String fileName, File directory, Set<File> splitFiles) throws Exception {
         File joinedFile = new File(directory, fileName);
 
         List<File> separateFiles = new ArrayList<>();
 
-        for (File orgProcessingIdDir: orderFilesByNumber(directory)) {
+        for (File orgProcessingIdDir: findDirectoriesAndOrderByNumber(directory)) {
+            //there may not be a split file with our name in each of the folders,
+            //so check the split files set, to see if there was one created during the split
             File orgProcessingIdFile = new File(orgProcessingIdDir, fileName);
-            if (orgProcessingIdFile.exists()
-                    && orgProcessingIdFile.isFile()) {
+            if (splitFiles.contains(orgProcessingIdFile)) {
                 separateFiles.add(orgProcessingIdFile);
             }
         }
 
         CsvJoiner joiner = new CsvJoiner(separateFiles, joinedFile, CSV_FORMAT);
-        joiner.go();
+        boolean joined = joiner.go();
 
         //delete all the separate files
         for (File orgProcessingIdFile: separateFiles) {
             deleteRecursive(orgProcessingIdFile);
         }
 
-        //if there was nothing to join, this file won't exist
-        if (joinedFile.exists()) {
+        if (joined) {
             return joinedFile;
         } else {
             return null;
         }
     }
 
-    private static List<File> orderFilesByNumber(File rootDir) {
+    private static List<File> findDirectoriesAndOrderByNumber(File rootDir) {
 
         //the org directory contains a sub-directory for each processing ID, which must be processed in order
         List<Integer> processingIds = new ArrayList<>();
@@ -397,6 +452,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     private static void createMissingFile(String fileName, String headers, File dstDir) throws Exception {
 
         File dstFile = new File(dstDir, fileName);
+        //TODO - fix this
         if (dstFile.exists()) {
             return;
         }
@@ -437,8 +493,8 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return headers;
     }
 
-    private static void splitFile(File srcFile, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
+    private static Set<File> splitFile(File srcFile, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
         CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, csvFormat, splitColmumns);
-        csvSplitter.go();
+        return csvSplitter.go();
     }
 }

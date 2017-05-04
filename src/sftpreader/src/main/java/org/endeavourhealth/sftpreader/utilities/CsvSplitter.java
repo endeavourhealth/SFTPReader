@@ -12,9 +12,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 public class CsvSplitter {
 
@@ -26,6 +24,7 @@ public class CsvSplitter {
     private String[] splitColumns = null;
     private String[] columnHeaders = null;
     private Map<String, CSVPrinter> csvPrinterMap = new HashMap<>();
+    private Set<File> filesCreated = null;
 
     /*public static void main(String[] args) {
 
@@ -61,11 +60,12 @@ public class CsvSplitter {
         this.splitColumns = splitColumns;
     }
 
-    public void go() throws Exception {
+    public Set<File> go() throws Exception {
 
         //adding .withHeader() to the csvFormat forces it to treat the first row as the column headers,
         //and read them in, instead of ignoring them
         CSVParser csvParser = CSVParser.parse(srcFile, Charset.defaultCharset(), csvFormat.withHeader());
+        filesCreated = new HashSet<>();
 
         try
         {
@@ -123,6 +123,7 @@ public class CsvSplitter {
             }
         }
 
+        return filesCreated;
     }
 
     private static boolean isSame(CSVRecord one, CSVRecord two) {
@@ -174,9 +175,8 @@ public class CsvSplitter {
 
             String fileName = srcFile.getName();
             File f = new File(folder, fileName);
-            /*if (f.exists()) {
-                throw new FileAlreadyExistsException(f.getAbsolutePath());
-            }*/
+            filesCreated.add(f);
+
             //LOG.debug("Creating " + f);
             FileWriter fileWriter = new FileWriter(f);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);

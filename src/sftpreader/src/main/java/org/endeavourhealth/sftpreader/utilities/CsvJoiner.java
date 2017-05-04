@@ -19,6 +19,7 @@ public class CsvJoiner {
     private List<File> srcFiles = null;
     private File dstFile = null;
     private CSVFormat csvFormat = null;
+    private boolean writtenContent;
 
     public CsvJoiner(List<File> srcFiles, File dstFile, CSVFormat csvFormat) {
         this.srcFiles = srcFiles;
@@ -26,11 +27,12 @@ public class CsvJoiner {
         this.csvFormat = csvFormat;
     }
 
-    public void go() throws Exception {
+    public boolean go() throws Exception {
 
         CSVPrinter csvPrinter = null;
         CSVParser csvParser = null;
         List<String> firstColumnHeaders = null;
+        writtenContent = false;
 
         try {
 
@@ -70,6 +72,7 @@ public class CsvJoiner {
                 while (csvIterator.hasNext()) {
                     CSVRecord csvRecord = csvIterator.next();
                     csvPrinter.printRecord(csvRecord);
+                    writtenContent = true;
                 }
 
                 csvParser.close();
@@ -85,5 +88,7 @@ public class CsvJoiner {
                 csvPrinter.close();
             }
         }
+
+        return writtenContent;
     }
 }
