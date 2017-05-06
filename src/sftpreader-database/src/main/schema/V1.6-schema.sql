@@ -18,7 +18,7 @@ create table configuration.instance_configuration
 	instance_name varchar(100) not null,
 	configuration_id varchar(100) not null,
 	
-	constraint configuration_instanceconfiguration_instancename_configurationid_pk primary key (instance_name, configuration_id),
+	constraint configuration_instanceconfiguration_instancename_configid_pk primary key (instance_name, configuration_id),
 	constraint configuration_instanceconfiguration_instancename_fk foreign key (instance_name) references configuration.instance (instance_name),
 	constraint configuration_instanceconfiguration_configurationid_fk foreign key (configuration_id) references configuration.configuration (configuration_id),
 	constraint configuration_instanceconfiguration_configurationid_uq unique (configuration_id)
