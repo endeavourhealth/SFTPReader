@@ -6,7 +6,6 @@ import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.IDBDigestLogger;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.model.db.*;
-import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 
 import javax.sql.DataSource;
 import java.util.List;
@@ -19,14 +18,17 @@ public class DataLayer implements IDBDigestLogger {
         this.dataSource = dataSource;
     }
 
-    public DbGlobalConfiguration getGlobalConfiguration(String hostname) throws PgStoredProcException {
+    public DbInstanceConfiguration getInstanceConfiguration(String instanceName, String hostname) throws PgStoredProcException {
 
         PgStoredProc pgStoredProc2 = new PgStoredProc(dataSource)
-                .setName("configuration.get_global_configuration")
+                .setName("configuration.get_instance_configuration")
+                .addParameter("_instance_name", instanceName)
                 .addParameter("_hostname", hostname);
 
-        DbGlobalConfigurationEds dbGlobalConfigurationEds = pgStoredProc2.executeMultiQuerySingleOrEmptyRow((resultSet) ->
-                new DbGlobalConfigurationEds()
+        List<String> configurationIds = pgStoredProc2.executeMultiQuery((resultSet) -> resultSet.getString("configuration_id"));
+
+        DbInstanceConfigurationEds dbInstanceConfigurationEds = pgStoredProc2.executeMultiQuerySingleOrEmptyRow((resultSet) ->
+                new DbInstanceConfigurationEds()
                         .setEdsUrl(resultSet.getString("eds_url"))
                         .setSoftwareContentType(resultSet.getString("software_content_type"))
                         .setSoftwareVersion(resultSet.getString("software_version"))
@@ -37,14 +39,15 @@ public class DataLayer implements IDBDigestLogger {
                         .setKeycloakPassword(resultSet.getString("keycloak_password"))
                         .setKeycloakClientId(resultSet.getString("keycloak_clientid")));
 
-        DbGlobalConfigurationSlack dbGlobalConfigurationSlack = pgStoredProc2.executeMultiQuerySingleRow((resultSet) ->
-                new DbGlobalConfigurationSlack()
+        DbInstanceConfigurationSlack dbInstanceConfigurationSlack = pgStoredProc2.executeMultiQuerySingleRow((resultSet) ->
+                new DbInstanceConfigurationSlack()
                         .setEnabled(resultSet.getBoolean("slack_enabled"))
                         .setSlackUrl(resultSet.getString("slack_url")));
 
-        return new DbGlobalConfiguration()
-                .setEdsConfiguration(dbGlobalConfigurationEds)
-                .setSlackConfiguration(dbGlobalConfigurationSlack);
+        return new DbInstanceConfiguration()
+                .setConfigurationIds(configurationIds)
+                .setEdsConfiguration(dbInstanceConfigurationEds)
+                .setSlackConfiguration(dbInstanceConfigurationSlack);
     }
 
     public DbConfiguration getConfiguration(String configurationId) throws PgStoredProcException {

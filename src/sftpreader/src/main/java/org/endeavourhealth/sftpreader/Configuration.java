@@ -1,6 +1,7 @@
 package org.endeavourhealth.sftpreader;
 
 import com.kstruct.gethostname4j.Hostname;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
@@ -8,15 +9,15 @@ import org.endeavourhealth.common.postgres.PgDataSource;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.LogDigestAppender;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbGlobalConfiguration;
+import org.endeavourhealth.sftpreader.model.db.DbInstanceConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
+import org.endeavourhealth.sftpreader.utilities.StringHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,8 +26,7 @@ public final class Configuration {
     // class members //
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
     private static final String PROGRAM_CONFIG_MANAGER_NAME = "sftpreader";
-    private static final String INSTANCE_NAMES_JAVA_PROPERTY = "INSTANCE_NAMES";
-    private static final String INSTANCE_NAMES_SEPERATOR = "~";
+    private static final String INSTANCE_NAME_JAVA_PROPERTY = "INSTANCE_NAME";
 
     private static Configuration instance = null;
 
@@ -38,21 +38,29 @@ public final class Configuration {
     }
 
     // instance members //
-    private String machineName;
-    private List<String> configurationIds;
     private String postgresUrl;
     private String postgresUsername;
     private String postgresPassword;
-    private DbGlobalConfiguration dbGlobalConfiguration;
+    private DataSource dataSource;
+
+    private String machineName;
+    private String instanceName;
+    private DbInstanceConfiguration dbInstanceConfiguration;
     private List<DbConfiguration> dbConfiguration;
 
     private Configuration() throws Exception {
+        initialiseConfigManager();
+        initialiseDBConnectionPool();
         initialiseMachineName();
         retrieveInstanceName();
-        initialiseConfigManager();
         addHL7LogAppender();
         loadDbConfiguration();
     }
+
+    public String getMachineName() { return machineName; }
+    public String getInstanceName() { return instanceName; }
+    public List<DbConfiguration> getConfigurations() { return this.dbConfiguration; }
+    public DbInstanceConfiguration getInstanceConfiguration() { return this.dbInstanceConfiguration; }
 
     private void initialiseMachineName() throws SftpReaderException {
         try {
@@ -64,17 +72,15 @@ public final class Configuration {
 
     private void retrieveInstanceName() throws SftpReaderException {
         try {
-            String instanceNames = System.getProperty(INSTANCE_NAMES_JAVA_PROPERTY);
+            this.instanceName = System.getProperty(INSTANCE_NAME_JAVA_PROPERTY);
 
-            if (StringUtils.isEmpty(instanceNames))
-                throw new SftpReaderException("Could not find " + INSTANCE_NAMES_JAVA_PROPERTY + " Java -D property");
+            if (StringUtils.isEmpty(this.instanceName))
+                throw new SftpReaderException("Could not find " + INSTANCE_NAME_JAVA_PROPERTY + " Java -D property");
 
-            this.configurationIds = Arrays.stream(StringUtils.split(instanceNames, INSTANCE_NAMES_SEPERATOR))
-                    .map(t -> t.trim())
-                    .collect(Collectors.toList());
-
+        } catch (SftpReaderException e) {
+            throw e;
         } catch (Exception e) {
-            throw new SftpReaderException("Could not read " + INSTANCE_NAMES_JAVA_PROPERTY + " Java -D property");
+            throw new SftpReaderException("Could not read " + INSTANCE_NAME_JAVA_PROPERTY + " Java -D property");
         }
     }
 
@@ -97,22 +103,20 @@ public final class Configuration {
     private void loadDbConfiguration() throws PgStoredProcException, SQLException, SftpReaderException {
         DataLayer dataLayer = new DataLayer(getDatabaseConnection());
 
-        this.dbGlobalConfiguration = dataLayer.getGlobalConfiguration(getMachineName());
+        this.dbInstanceConfiguration = dataLayer.getInstanceConfiguration(this.instanceName, getMachineName());
 
         this.dbConfiguration = new ArrayList<>();
 
-        for (String configurationId : configurationIds)
+        for (String configurationId : this.dbInstanceConfiguration.getConfigurationIds())
             this.dbConfiguration.add(dataLayer.getConfiguration(configurationId));
     }
 
     public DataSource getDatabaseConnection() throws SQLException {
-        return PgDataSource.get(postgresUrl, postgresUsername, postgresPassword);
+        return this.dataSource;
     }
 
-    public String getMachineName() { return machineName; }
-
-    public DbGlobalConfiguration getGlobalConfiguration() {
-        return this.dbGlobalConfiguration;
+    public DataSource getNonPooledDatabaseConnection() throws SQLException {
+        return PgDataSource.get(postgresUrl, postgresUsername, postgresPassword);
     }
 
     public DbConfiguration getConfiguration(String configurationId) throws SftpReaderException {
@@ -130,11 +134,28 @@ public final class Configuration {
         return dbConfigurations.get(0);
     }
 
-    public List<DbConfiguration> getConfigurations() {
-        return this.dbConfiguration;
+    public String getConfigurationIdsForDisplay() {
+        String commaSeperatedString = StringUtils.join(this.getInstanceConfiguration().getConfigurationIds(), ", ");
+        return StringHelper.replaceLast(commaSeperatedString, ",", "and");
     }
 
-    public String[] getConfigurationIds() {
-        return this.configurationIds.toArray(new String[this.configurationIds.size()]);
+    private synchronized void initialiseDBConnectionPool() throws SftpReaderException {
+        try {
+            if (this.dataSource == null) {
+
+                HikariDataSource hikariDataSource = new HikariDataSource();
+                hikariDataSource.setJdbcUrl(postgresUrl);
+                hikariDataSource.setUsername(postgresUsername);
+                hikariDataSource.setPassword(postgresPassword);
+                hikariDataSource.setMaximumPoolSize(2);
+                hikariDataSource.setMinimumIdle(1);
+                hikariDataSource.setIdleTimeout(60000);
+                hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
+
+                this.dataSource = hikariDataSource;
+            }
+        } catch (Exception e) {
+            throw new SftpReaderException("Error creating Hikari connection pool", e);
+        }
     }
 }

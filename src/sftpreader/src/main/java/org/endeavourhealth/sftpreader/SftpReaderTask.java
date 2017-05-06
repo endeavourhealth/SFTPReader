@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -36,7 +35,7 @@ public class SftpReaderTask implements Runnable {
 
     private Configuration configuration = null;
     private String configurationId = null;
-    private DbGlobalConfiguration dbGlobalConfiguration = null;
+    private DbInstanceConfiguration dbInstanceConfiguration = null;
     private DbConfiguration dbConfiguration = null;
     private DataLayer db = null;
 
@@ -70,7 +69,7 @@ public class SftpReaderTask implements Runnable {
     }
 
     private void initialise() throws Exception {
-        this.dbGlobalConfiguration = configuration.getGlobalConfiguration();
+        this.dbInstanceConfiguration = configuration.getInstanceConfiguration();
         this.dbConfiguration = configuration.getConfiguration(configurationId);
         this.db = new DataLayer(configuration.getDatabaseConnection());
         checkLocalRootPathPrefixExists();
@@ -367,7 +366,7 @@ public class SftpReaderTask implements Runnable {
             return;
         }
 
-        DbGlobalConfigurationEds edsConfiguration = dbGlobalConfiguration.getEdsConfiguration();
+        DbInstanceConfigurationEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
 
         if (edsConfiguration == null)
             throw new SftpReaderException("Cannot notify EDS - EDS configuration is not set");
@@ -447,13 +446,13 @@ public class SftpReaderTask implements Runnable {
 
         UUID messageId = UUID.randomUUID();
         String organisationId = unnotifiedBatchSplit.getOrganisationId();
-        String softwareContentType = dbGlobalConfiguration.getEdsConfiguration().getSoftwareContentType();
-        String softwareVersion = dbGlobalConfiguration.getEdsConfiguration().getSoftwareVersion();
+        String softwareContentType = dbInstanceConfiguration.getEdsConfiguration().getSoftwareContentType();
+        String softwareVersion = dbInstanceConfiguration.getEdsConfiguration().getSoftwareVersion();
         String outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload);
 
         try {
-            String edsUrl = dbGlobalConfiguration.getEdsConfiguration().getEdsUrl();
-            boolean useKeycloak = dbGlobalConfiguration.getEdsConfiguration().isUseKeycloak();
+            String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
+            boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
 
             EdsSenderResponse edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage);
 
