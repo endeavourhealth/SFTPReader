@@ -29,15 +29,15 @@ public class SlackNotifier {
     }
 
     public void notifyStartup() {
-        String message = Main.PROGRAM_DISPLAY_NAME + " started (" + this.configuration.getInstanceName() + ")";
-        postMessage(message);
+        String message = Main.PROGRAM_DISPLAY_NAME + " started "
+                + "(" + this.configuration.getInstanceName() + " instance, reading extracts "
+                + this.configuration.getConfigurationIdsForDisplay() + ")";
 
-        message = this.configuration.getInstanceName() + " polls for extracts " + this.configuration.getConfigurationIdsForDisplay();
         postMessage(message);
     }
 
     public void notifyShutdown() {
-        String message = Main.PROGRAM_DISPLAY_NAME + " stopped (" + this.configuration.getInstanceName() + ")";
+        String message = Main.PROGRAM_DISPLAY_NAME + " stopped (" + this.configuration.getInstanceName() + " instance)";
         postMessage(message);
     }
 
