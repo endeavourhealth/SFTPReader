@@ -32,12 +32,12 @@ public class SlackNotifier {
         String message = Main.PROGRAM_DISPLAY_NAME + " started (" + this.configuration.getInstanceName() + ")";
         postMessage(message);
 
-        message = this.configuration.getInstanceName() + " polls for extracts" + this.configuration.getConfigurationIdsForDisplay();
+        message = this.configuration.getInstanceName() + " polls for extracts " + this.configuration.getConfigurationIdsForDisplay();
         postMessage(message);
     }
 
     public void notifyShutdown() {
-        String message = Main.PROGRAM_DISPLAY_NAME + " started (" + this.configuration.getInstanceName() + ")";
+        String message = Main.PROGRAM_DISPLAY_NAME + " stopped (" + this.configuration.getInstanceName() + ")";
         postMessage(message);
     }
 

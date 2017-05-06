@@ -136,7 +136,7 @@ public final class Configuration {
 
     public String getConfigurationIdsForDisplay() {
         String commaSeperatedString = StringUtils.join(this.getInstanceConfiguration().getConfigurationIds(), ", ");
-        return StringHelper.replaceLast(commaSeperatedString, ",", "and");
+        return StringHelper.replaceLast(commaSeperatedString, ",", " and");
     }
 
     private synchronized void initialiseDBConnectionPool() throws SftpReaderException {
