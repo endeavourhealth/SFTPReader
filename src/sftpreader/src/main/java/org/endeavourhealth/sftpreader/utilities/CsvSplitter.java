@@ -32,7 +32,7 @@ public class CsvSplitter {
             javax.swing.JFileChooser f = new javax.swing.JFileChooser();
             f.setFileSelectionMode(javax.swing.JFileChooser.FILES_ONLY);
             f.setMultiSelectionEnabled(false);
-            f.setCurrentDirectory(new File("C:\\Users\\drewl\\Desktop\\EMIS CSV Sample"));
+            f.setCurrentDirectory(new File("C:\\SFTPData"));
 
             int r = f.showOpenDialog(null);
             if (r == javax.swing.JFileChooser.CANCEL_OPTION) {
@@ -40,16 +40,53 @@ public class CsvSplitter {
             }
 
             File file = f.getSelectedFile();
+            File dir = file.getParentFile();
 
-            File dst = new File("C:\\Users\\drewl\\Desktop");
+            File dst = new File(dir, "Split");
 
-
-            CsvSplitter splitter = new CsvSplitter(file, dst, CSVFormat.DEFAULT, "OrganisationGuid", "ProcessingId");
+            CsvSplitter splitter = new CsvSplitter(file, dst, CSVFormat.DEFAULT, "ProcessingId");
             splitter.go();
+
+            List<File> splitFiles = new ArrayList<>();
+            List<File> splitDirs = findDirectoriesAndOrderByNumber(dst);
+            for (File splitDir: splitDirs) {
+                File splitFile = new File(splitDir, file.getName());
+                splitFiles.add(splitFile);
+            }
+
+            File newFile = new File(dst, file.getName());
+            CsvJoiner joiner = new CsvJoiner(splitFiles, newFile, CSVFormat.DEFAULT);
+            joiner.go();
 
         } catch (Exception ex) {
             LOG.error("", ex);
         }
+    }
+
+    private static List<File> findDirectoriesAndOrderByNumber(File rootDir) {
+
+        //the org directory contains a sub-directory for each processing ID, which must be processed in order
+        List<Integer> processingIds = new ArrayList<>();
+        Map<Integer, File> hmFiles = new HashMap<>();
+
+        for (File file: rootDir.listFiles()) {
+            if (file.isDirectory()) {
+                Integer processingId = Integer.valueOf(file.getName());
+                processingIds.add(processingId);
+                hmFiles.put(processingId, file);
+            }
+        }
+
+        Collections.sort(processingIds);
+
+        List<File> ret = new ArrayList<>();
+
+        for (Integer processingId: processingIds) {
+            File f = hmFiles.get(processingId);
+            ret.add(f);
+        }
+
+        return ret;
     }*/
 
     public CsvSplitter(File srcFile, File dstDir, CSVFormat csvFormat, String... splitColumns) {
