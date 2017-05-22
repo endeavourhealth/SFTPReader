@@ -9,7 +9,7 @@ import org.endeavourhealth.common.postgres.PgDataSource;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.LogDigestAppender;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbInstanceConfiguration;
+import org.endeavourhealth.sftpreader.model.db.DbInstance;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.utilities.StringHelper;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public final class Configuration {
 
     private String machineName;
     private String instanceName;
-    private DbInstanceConfiguration dbInstanceConfiguration;
+    private DbInstance dbInstanceConfiguration;
     private List<DbConfiguration> dbConfiguration;
 
     private Configuration() throws Exception {
@@ -60,7 +60,7 @@ public final class Configuration {
     public String getMachineName() { return machineName; }
     public String getInstanceName() { return instanceName; }
     public List<DbConfiguration> getConfigurations() { return this.dbConfiguration; }
-    public DbInstanceConfiguration getInstanceConfiguration() { return this.dbInstanceConfiguration; }
+    public DbInstance getInstanceConfiguration() { return this.dbInstanceConfiguration; }
 
     private void initialiseMachineName() throws SftpReaderException {
         try {

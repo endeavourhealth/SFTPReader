@@ -35,7 +35,7 @@ public class SftpReaderTask implements Runnable {
 
     private Configuration configuration = null;
     private String configurationId = null;
-    private DbInstanceConfiguration dbInstanceConfiguration = null;
+    private DbInstance dbInstanceConfiguration = null;
     private DbConfiguration dbConfiguration = null;
     private DataLayer db = null;
 
@@ -366,7 +366,7 @@ public class SftpReaderTask implements Runnable {
             return;
         }
 
-        DbInstanceConfigurationEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
+        DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
 
         if (edsConfiguration == null)
             throw new SftpReaderException("Cannot notify EDS - EDS configuration is not set");

@@ -1,6 +1,6 @@
 package org.endeavourhealth.sftpreader.model.db;
 
-public class DbInstanceConfigurationEds {
+public class DbInstanceEds {
     private String edsUrl;
     private String softwareContentType;
     private String softwareVersion;
@@ -15,7 +15,7 @@ public class DbInstanceConfigurationEds {
         return edsUrl;
     }
 
-    public DbInstanceConfigurationEds setEdsUrl(String edsUrl) {
+    public DbInstanceEds setEdsUrl(String edsUrl) {
         this.edsUrl = edsUrl;
         return this;
     }
@@ -24,7 +24,7 @@ public class DbInstanceConfigurationEds {
         return softwareVersion;
     }
 
-    public DbInstanceConfigurationEds setSoftwareVersion(String softwareVersion) {
+    public DbInstanceEds setSoftwareVersion(String softwareVersion) {
         this.softwareVersion = softwareVersion;
         return this;
     }
@@ -33,7 +33,7 @@ public class DbInstanceConfigurationEds {
         return softwareContentType;
     }
 
-    public DbInstanceConfigurationEds setSoftwareContentType(String softwareContentType) {
+    public DbInstanceEds setSoftwareContentType(String softwareContentType) {
         this.softwareContentType = softwareContentType;
         return this;
     }
@@ -42,7 +42,7 @@ public class DbInstanceConfigurationEds {
         return useKeycloak;
     }
 
-    public DbInstanceConfigurationEds setUseKeycloak(boolean useKeycloak) {
+    public DbInstanceEds setUseKeycloak(boolean useKeycloak) {
         this.useKeycloak = useKeycloak;
         return this;
     }
@@ -51,7 +51,7 @@ public class DbInstanceConfigurationEds {
         return keycloakTokenUri;
     }
 
-    public DbInstanceConfigurationEds setKeycloakTokenUri(String keycloakTokenUri) {
+    public DbInstanceEds setKeycloakTokenUri(String keycloakTokenUri) {
         this.keycloakTokenUri = keycloakTokenUri;
         return this;
     }
@@ -60,7 +60,7 @@ public class DbInstanceConfigurationEds {
         return keycloakRealm;
     }
 
-    public DbInstanceConfigurationEds setKeycloakRealm(String keycloakRealm) {
+    public DbInstanceEds setKeycloakRealm(String keycloakRealm) {
         this.keycloakRealm = keycloakRealm;
         return this;
     }
@@ -69,7 +69,7 @@ public class DbInstanceConfigurationEds {
         return keycloakUsername;
     }
 
-    public DbInstanceConfigurationEds setKeycloakUsername(String keycloakUsername) {
+    public DbInstanceEds setKeycloakUsername(String keycloakUsername) {
         this.keycloakUsername = keycloakUsername;
         return this;
     }
@@ -78,7 +78,7 @@ public class DbInstanceConfigurationEds {
         return keycloakPassword;
     }
 
-    public DbInstanceConfigurationEds setKeycloakPassword(String keycloakPassword) {
+    public DbInstanceEds setKeycloakPassword(String keycloakPassword) {
         this.keycloakPassword = keycloakPassword;
         return this;
     }
@@ -87,7 +87,7 @@ public class DbInstanceConfigurationEds {
         return keycloakClientId;
     }
 
-    public DbInstanceConfigurationEds setKeycloakClientId(String keycloakClientId) {
+    public DbInstanceEds setKeycloakClientId(String keycloakClientId) {
         this.keycloakClientId = keycloakClientId;
         return this;
     }

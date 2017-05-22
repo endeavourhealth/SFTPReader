@@ -99,12 +99,17 @@
         <dependency>
             <groupId>com.kstruct</groupId>
             <artifactId>gethostname4j</artifactId>
-            <version>0.0.2</version>
+            <version>${gethostname4j.version}</version>
         </dependency>
         <dependency>
             <groupId>net.gpedro.integrations.slack</groupId>
             <artifactId>slack-webhook</artifactId>
             <version>${slack-integration.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${jetty.version}</version>
         </dependency>
 
         <!-- specifically include as excluded from eds-common -->

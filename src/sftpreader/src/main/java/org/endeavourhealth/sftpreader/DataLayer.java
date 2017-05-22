@@ -18,17 +18,22 @@ public class DataLayer implements IDBDigestLogger {
         this.dataSource = dataSource;
     }
 
-    public DbInstanceConfiguration getInstanceConfiguration(String instanceName, String hostname) throws PgStoredProcException {
+    public DbInstance getInstanceConfiguration(String instanceName, String hostname) throws PgStoredProcException {
 
-        PgStoredProc pgStoredProc2 = new PgStoredProc(dataSource)
+        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("configuration.get_instance_configuration")
                 .addParameter("_instance_name", instanceName)
                 .addParameter("_hostname", hostname);
 
-        List<String> configurationIds = pgStoredProc2.executeMultiQuery((resultSet) -> resultSet.getString("configuration_id"));
+        DbInstance dbInstance = pgStoredProc.executeMultiQuerySingleRow((resultSet) ->
+                new DbInstance()
+                    .setInstanceName(resultSet.getString("instance_name"))
+                    .setHttpManagementPort(PgResultSet.getInteger(resultSet, "http_management_port")));
 
-        DbInstanceConfigurationEds dbInstanceConfigurationEds = pgStoredProc2.executeMultiQuerySingleOrEmptyRow((resultSet) ->
-                new DbInstanceConfigurationEds()
+        List<String> configurationIds = pgStoredProc.executeMultiQuery((resultSet) -> resultSet.getString("configuration_id"));
+
+        DbInstanceEds dbInstanceEds = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
+                new DbInstanceEds()
                         .setEdsUrl(resultSet.getString("eds_url"))
                         .setSoftwareContentType(resultSet.getString("software_content_type"))
                         .setSoftwareVersion(resultSet.getString("software_version"))
@@ -39,15 +44,15 @@ public class DataLayer implements IDBDigestLogger {
                         .setKeycloakPassword(resultSet.getString("keycloak_password"))
                         .setKeycloakClientId(resultSet.getString("keycloak_clientid")));
 
-        DbInstanceConfigurationSlack dbInstanceConfigurationSlack = pgStoredProc2.executeMultiQuerySingleRow((resultSet) ->
-                new DbInstanceConfigurationSlack()
+        DbInstanceSlack dbInstanceSlack = pgStoredProc.executeMultiQuerySingleRow((resultSet) ->
+                new DbInstanceSlack()
                         .setEnabled(resultSet.getBoolean("slack_enabled"))
                         .setSlackUrl(resultSet.getString("slack_url")));
 
-        return new DbInstanceConfiguration()
+        return dbInstance
                 .setConfigurationIds(configurationIds)
-                .setEdsConfiguration(dbInstanceConfigurationEds)
-                .setSlackConfiguration(dbInstanceConfigurationSlack);
+                .setEdsConfiguration(dbInstanceEds)
+                .setSlackConfiguration(dbInstanceSlack);
     }
 
     public DbConfiguration getConfiguration(String configurationId) throws PgStoredProcException {

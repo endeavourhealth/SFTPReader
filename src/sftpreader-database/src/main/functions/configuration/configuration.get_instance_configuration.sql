@@ -8,6 +8,7 @@ returns setof refcursor
 as $$
 declare
 	_existing_hostname varchar(500);
+	instance refcursor;
 	configuration_instance refcursor;
 	configuration_eds refcursor;
 	configuration_slack refcursor;
@@ -67,6 +68,18 @@ begin
 
 	------------------------------------------------------
 	-- now get the configuration
+	------------------------------------------------------
+	instance = 'instance';
+	
+	open instance for
+	select
+		instance_name,
+		http_management_port
+	from configuration.instance
+	where instance_name = _instance_name;
+	
+	return next instance;
+	
 	------------------------------------------------------
 	configuration_instance = 'configuration_instance';
 	

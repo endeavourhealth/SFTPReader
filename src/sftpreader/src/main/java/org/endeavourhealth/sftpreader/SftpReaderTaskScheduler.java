@@ -22,7 +22,7 @@ public class SftpReaderTaskScheduler {
         this.configuration = configuration;
     }
 
-    public void run() throws InterruptedException {
+    public void start() throws InterruptedException {
 
         LOG.info("Starting SftpReaderTaskScheduler");
 
@@ -48,6 +48,9 @@ public class SftpReaderTaskScheduler {
 
             Thread.sleep(THREAD_SLEEP_SECONDS);
         }
+    }
+
+    public void stop() {
     }
 
     private static List<SftpReaderTaskInfo> createTasks(Configuration configuration) {

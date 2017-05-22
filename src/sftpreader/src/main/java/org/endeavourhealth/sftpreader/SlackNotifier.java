@@ -2,13 +2,12 @@ package org.endeavourhealth.sftpreader;
 
 import net.gpedro.integrations.slack.SlackApi;
 import net.gpedro.integrations.slack.SlackMessage;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpSlackNotifier;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbInstanceConfigurationSlack;
+import org.endeavourhealth.sftpreader.model.db.DbInstanceSlack;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
@@ -18,7 +17,7 @@ public class SlackNotifier {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SlackNotifier.class);
 
     private Configuration configuration;
-    private DbInstanceConfigurationSlack slackConfiguration;
+    private DbInstanceSlack slackConfiguration;
 
     public SlackNotifier(Configuration configuration) {
         Validate.notNull(configuration, "configuration");
