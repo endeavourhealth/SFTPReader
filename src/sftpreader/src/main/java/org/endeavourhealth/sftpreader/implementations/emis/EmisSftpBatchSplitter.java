@@ -72,26 +72,27 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         List<String> orgIdFiles = new ArrayList<>();
         identifyFiles(batch, srcDir, orgAndProcessingIdFiles, processingIdFiles, orgIdFiles, dbConfiguration);
 
-        Set<File> orgIdsFolders = new HashSet<>();
+        Set<File> orgIdDirs = new HashSet<>();
+        Map<File, Set<File>> processingIdDirsByOrgId = new HashMap<>();
 
-        //split the org ID-only files so we have a directory per organisation ID
+        //split the org ID-only files (i.e. sharing agreements file) so we have a directory per organisation ID
         for (String fileName: orgIdFiles) {
             File f = new File(srcDir, fileName);
             LOG.trace("Splitting {} into {}", f, dstDir);
             Set<File> splitFiles = splitFile(f, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
-            appendOrgIdsToSet(splitFiles, orgIdsFolders);
+            appendOrgIdsToSet(splitFiles, orgIdDirs);
         }
 
         //splitting the sharing agreements file will have created a folder for every org listed,
         //including the non-active ones in there. So delete any folder for orgs that aren't active in the sharing agreement
         Set<File> expectedOrgFolders = findExpectedOrgFolders(dstDir, fullLocalRootPath, batch);
-        for (File orgDir: orgIdsFolders) {
+        for (File orgDir: orgIdDirs) {
             if (!expectedOrgFolders.contains(orgDir)) {
                 deleteRecursive(orgDir);
             }
         }
-        orgIdsFolders = expectedOrgFolders;
-        LOG.trace("Created " + orgIdsFolders + " org ID folders");
+        orgIdDirs = expectedOrgFolders;
+        LOG.trace("Created " + orgIdDirs.size() + " org ID folders");
 
         //split the clinical files by org and processing ID, which creates the org ID -> processing ID folder structure
         for (String fileName: orgAndProcessingIdFiles) {
@@ -101,10 +102,13 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
             //having split the file, we then want to join the files back together so we have one per
             //organisation but ordered by processing ID
-            for (File orgDir: orgIdsFolders) {
+            for (File orgDir: orgIdDirs) {
                 Set<File> splitFilesForOrg = filterOrgAndProcessingFilesByParent(splitFiles, orgDir);
                 joinFiles(fileName, orgDir, splitFilesForOrg);
             }
+
+            //keep track of all the processing ID folders we've created
+            appendProcessingIdDirsToMap(splitFiles, processingIdDirsByOrgId);
         }
 
         //for the files with just a processing ID, each org folder we want a copy of the non-clinical data, but in processing ID order
@@ -113,7 +117,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
             File reorderedFile = null;
 
-            for (File orgDir: orgIdsFolders) {
+            for (File orgDir: orgIdDirs) {
 
                 //if we've not split and re-ordered the file, do it now into this org dir
                 if (reorderedFile == null) {
@@ -127,6 +131,8 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                     if (reorderedFile != null) {
                         LOG.trace("Joined file size " + reorderedFile.length());
                     }
+
+                    appendProcessingIdDirsToMap(splitFiles, processingIdDirsByOrgId);
 
                     //if the file was empty, there won't be a reordered file, so just drop out, and let the
                     //thing that creates empty files pick this up
@@ -144,16 +150,18 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
         //each org dir with have loads of empty folders for the processing IDs, so delete them
         //iterate using a copy of the orgIdsFolders set, because we'll want to remove from the set while iterating
-        for (File orgDir : new HashSet<>(orgIdsFolders)) {
+        for (File orgDir : new HashSet<>(orgIdDirs)) {
             LOG.trace("Deleting processing ID folders from " + orgDir);
 
-            for (File processingIdDir: orgDir.listFiles()) {
+            Set<File> processingIdDirs = processingIdDirsByOrgId.get(orgDir);
+            //for (File processingIdDir: orgDir.listFiles()) {
+            for (File processingIdDir: processingIdDirs) {
                 LOG.trace("Checking " + processingIdDir);
-                if (processingIdDir.isDirectory()
-                        && processingIdDir.listFiles().length == 0) {
-                    LOG.trace("Going to delete " + processingIdDir);
-                    deleteRecursive(processingIdDir);
+                if (processingIdDir.listFiles().length > 0) {
+                    throw new Exception("Processing ID dir " + processingIdDir + " isn't empty");
                 }
+                LOG.trace("Going to delete " + processingIdDir);
+                deleteRecursive(processingIdDir);
             }
 
             //the sharing agreements file always has a row per org in the data sharing agreement, even if there
@@ -162,7 +170,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
             if (orgDir.listFiles().length == 0) {
                 LOG.trace("Org dir is now empty, so will delete it");
                 deleteRecursive(orgDir);
-                orgIdsFolders.remove(orgDir);
+                orgIdDirs.remove(orgDir);
             }
         }
 
@@ -170,12 +178,12 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         //so create any missing files, so there's a full set of files in every folder
         for (BatchFile batchFile: batch.getBatchFiles()) {
             File f = new File(srcDir, batchFile.getDecryptedFilename());
-            createMissingFiles(f, orgIdsFolders);
+            createMissingFiles(f, orgIdDirs);
         }
 
         //if any of our ORG folders contains child folders, then something has gone wrong with the splitting and joining,
         //so check for this and throw an exception if this is the case
-        validateSplitFolders(srcDir, orgIdsFolders);
+        validateSplitFolders(srcDir, orgIdDirs);
 
         LOG.trace("Completed CSV file splitting from {} to {}", srcDir, dstDir);
 
@@ -185,7 +193,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         //build a list of the folders containing file sets, to return
         List<BatchSplit> ret = new ArrayList<>();
 
-        for (File orgDir : orgIdsFolders) {
+        for (File orgDir : orgIdDirs) {
 
             String orgGuid = orgDir.getName();
             String localPath = FilenameUtils.concat(batch.getLocalRelativePath(), SPLIT_FOLDER);
@@ -206,6 +214,21 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
+    private void appendProcessingIdDirsToMap(Set<File> splitFiles, Map<File, Set<File>> processingIdDirsByOrgId) {
+        for (File splitFile: splitFiles) {
+
+            File processingIdDir = splitFile.getParentFile();
+            File orgIdDir = processingIdDir.getParentFile();
+
+            Set<File> processingIdDirs = processingIdDirsByOrgId.get(orgIdDir);
+            if (processingIdDirs == null) {
+                processingIdDirs = new HashSet<>();
+                processingIdDirsByOrgId.put(orgIdDir, processingIdDirs);
+            }
+            processingIdDirs.add(processingIdDir);
+        }
+    }
+
     private Set<File> filterOrgAndProcessingFilesByParent(Set<File> splitFiles, File requiredOrgDir) {
         Set<File> ret = new HashSet<>();
 
@@ -222,6 +245,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
     private static void appendOrgIdsToSet(Set<File> splitFiles, Set<File> orgIdsFolders) {
         for (File splitFile: splitFiles) {
+
             File orgIdFolder = splitFile.getParentFile();
             orgIdsFolders.add(orgIdFolder);
         }
