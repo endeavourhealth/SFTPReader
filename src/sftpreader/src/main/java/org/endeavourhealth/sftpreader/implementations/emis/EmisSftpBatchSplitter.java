@@ -154,14 +154,16 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
             LOG.trace("Deleting processing ID folders from " + orgDir);
 
             Set<File> processingIdDirs = processingIdDirsByOrgId.get(orgDir);
-            //for (File processingIdDir: orgDir.listFiles()) {
-            for (File processingIdDir: processingIdDirs) {
-                LOG.trace("Checking " + processingIdDir);
-                if (processingIdDir.listFiles().length > 0) {
-                    throw new Exception("Processing ID dir " + processingIdDir + " isn't empty");
+            if (processingIdDirs != null) {
+                //for (File processingIdDir: orgDir.listFiles()) {
+                for (File processingIdDir : processingIdDirs) {
+                    LOG.trace("Checking " + processingIdDir);
+                    if (processingIdDir.listFiles().length > 0) {
+                        throw new Exception("Processing ID dir " + processingIdDir + " isn't empty");
+                    }
+                    LOG.trace("Going to delete " + processingIdDir);
+                    deleteRecursive(processingIdDir);
                 }
-                LOG.trace("Going to delete " + processingIdDir);
-                deleteRecursive(processingIdDir);
             }
 
             //the sharing agreements file always has a row per org in the data sharing agreement, even if there
