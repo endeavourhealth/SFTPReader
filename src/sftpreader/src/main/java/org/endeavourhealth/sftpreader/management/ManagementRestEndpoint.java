@@ -1,4 +1,4 @@
-package org.endeavourhealth.sftpreader.management.rest;
+package org.endeavourhealth.sftpreader.management;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

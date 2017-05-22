@@ -1,11 +1,8 @@
 package org.endeavourhealth.sftpreader.management;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.endeavourhealth.sftpreader.Configuration;
-import org.endeavourhealth.sftpreader.management.rest.ManagementRestEndpoint;
 import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
@@ -38,11 +35,8 @@ public class ManagementService {
         this.server = new Server(httpPort.intValue());
 
         WebAppContext webAppContext = createWebAppContext();
-        ServletContextHandler restServletContext = createRestServletContext();
 
         this.server.setHandler(webAppContext);
-
-        //this.server.setHandler(restServletContext);
         this.server.start();
     }
 
@@ -58,20 +52,6 @@ public class ManagementService {
 
         context.setResourceBase(webAppDir.toURI().toString());
         context.setParentLoaderPriority(true);
-
-        return context;
-    }
-
-    private ServletContextHandler createRestServletContext() {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/api");
-
-        ServletHolder jerseyServlet = context.addServlet(org.glassfish.jersey.servlet.ServletContainer.class, "/*");
-        jerseyServlet.setInitOrder(0);
-
-        jerseyServlet.setInitParameter(
-                "jersey.config.server.provider.classnames",
-                ManagementRestEndpoint.class.getCanonicalName());
 
         return context;
     }

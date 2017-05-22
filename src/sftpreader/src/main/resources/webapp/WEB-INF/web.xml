@@ -5,21 +5,11 @@
 			http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" version="2.4">
 
     <servlet>
-        <servlet-name>ManagementServlet</servlet-name>
-        <servlet-class>org.endeavourhealth.sftpreader.management.ManagementServlet</servlet-class>
-    </servlet>
-
-    <servlet-mapping>
-        <servlet-name>ManagementServlet</servlet-name>
-        <url-pattern>/manage</url-pattern>
-    </servlet-mapping>
-
-    <servlet>
         <servlet-name>jersey-servlet</servlet-name>
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
             <param-name>jersey.config.server.provider.packages</param-name>
-            <param-value>org.endeavourhealth.sftpreader.management.rest</param-value>
+            <param-value>org.endeavourhealth.sftpreader.management</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
