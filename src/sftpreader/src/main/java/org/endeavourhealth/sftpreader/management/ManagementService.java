@@ -1,12 +1,16 @@
 package org.endeavourhealth.sftpreader.management;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.endeavourhealth.sftpreader.Configuration;
 import org.slf4j.LoggerFactory;
+
+import java.net.URL;
 
 public class ManagementService {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ManagementService.class);
+    public static final String WEBAPP_RESOURCES_LOCATION = "webapp";
 
     private Configuration configuration;
     private Server server;
@@ -28,7 +32,18 @@ public class ManagementService {
         LOG.info("Starting http management interface on port " + httpPort.toString());
 
         this.server = new Server(httpPort.intValue());
-        this.server.setHandler(new ManagementHandler(configuration));
+        WebAppContext root = new WebAppContext();
+        root.setContextPath("/");
+        root.setDescriptor(WEBAPP_RESOURCES_LOCATION + "/WEB-INF/web.xml");
+
+        URL webAppDir = Thread.currentThread().getContextClassLoader().getResource(WEBAPP_RESOURCES_LOCATION);
+        if (webAppDir == null)
+            throw new RuntimeException(String.format("No %s directory was found into the JAR file", WEBAPP_RESOURCES_LOCATION));
+
+        root.setResourceBase(webAppDir.toURI().toString());
+        root.setParentLoaderPriority(true);
+
+        this.server.setHandler(root);
         this.server.start();
     }
 

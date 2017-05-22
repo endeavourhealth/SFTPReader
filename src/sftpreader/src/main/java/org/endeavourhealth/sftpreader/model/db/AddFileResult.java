@@ -4,8 +4,7 @@ public class AddFileResult {
     private boolean fileAlreadyProcessed;
     private int batchFileId;
 
-    public boolean isFileAlreadyProcessed()
-    {
+    public boolean isFileAlreadyProcessed() {
         return fileAlreadyProcessed;
     }
 
