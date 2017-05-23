@@ -1,5 +1,5 @@
 
-create or replace function helper.get_emis_extract_dates
+create or replace function management.get_emis_extract_dates
 ()
 returns table
 (

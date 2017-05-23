@@ -28,11 +28,15 @@ public final class Configuration {
     private static final String PROGRAM_CONFIG_MANAGER_NAME = "sftpreader";
     private static final String INSTANCE_NAME_JAVA_PROPERTY = "INSTANCE_NAME";
 
-    private static Configuration instance = null;
+    private volatile static Configuration instance = null;
 
     public static Configuration getInstance() throws Exception {
-        if (instance == null)
-            instance = new Configuration();
+        if (instance == null) {
+            synchronized (Configuration.class) {
+                if (instance == null)
+                    instance = new Configuration();
+            }
+        }
 
         return instance;
     }
