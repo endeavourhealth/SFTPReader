@@ -17,6 +17,15 @@
         <module>src/sftpreader-database</module>
     </modules>
 
+    <repositories>
+        <repository>
+            <snapshots />
+            <id>snapshots</id>
+            <name>libs-snapshot</name>
+            <url>http://maven.endeavourhealth.net:8081/artifactory/libs-snapshot</url>
+        </repository>
+    </repositories>
+
     <build>
         <plugins>
 
