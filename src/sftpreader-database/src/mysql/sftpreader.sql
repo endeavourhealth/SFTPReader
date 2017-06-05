@@ -1,6 +1,6 @@
 CREATE TABLE interface_type (
 	interface_type_id integer NOT NULL,
-	interface_type_name character varying(1000) NOT NULL,
+	interface_type_name varchar(1000) NOT NULL,
 
 	CONSTRAINT interfacetype_interfacetypeid_pk PRIMARY KEY (interface_type_id),
 	CONSTRAINT interfacetype_interfacetypename_uq UNIQUE (interface_type_name)
@@ -8,19 +8,19 @@ CREATE TABLE interface_type (
 
 CREATE TABLE interface_file_type (
 	interface_type_id integer NOT NULL,
-	file_type_identifier character varying(1000) NOT NULL,
+	file_type_identifier varchar(1000) NOT NULL,
 
 	CONSTRAINT interfacefiletype_ifacetypeid_ftypeidentifier_pk PRIMARY KEY (interface_type_id, file_type_identifier),
 	CONSTRAINT interfacefiletype_interfacetypeid_fk FOREIGN KEY (interface_type_id) REFERENCES interface_type (interface_type_id)
 );
 
 CREATE TABLE configuration (
-	configuration_id character varying(100) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
 	interface_type_id integer NOT NULL,
 	poll_frequency_seconds integer NOT NULL,
-	local_root_path_prefix character varying(1000) NOT NULL,
-	local_root_path character varying(1000) NOT NULL,
-	configuration_friendly_name character varying(100) NOT NULL,
+	local_root_path_prefix varchar(1000) NOT NULL,
+	local_root_path varchar(1000) NOT NULL,
+	configuration_friendly_name varchar(100) NOT NULL,
 
 	CONSTRAINT configuration_configurationid_pk PRIMARY KEY (configuration_id),
 	CONSTRAINT configuration_interfacetypeid_fk FOREIGN KEY (interface_type_id) REFERENCES interface_type(interface_type_id),
@@ -30,9 +30,9 @@ CREATE TABLE configuration (
 );
 
 CREATE TABLE configuration_kvp (
-	configuration_id character varying(100) NOT NULL,
-	key character varying(100) NOT NULL,
-	value character varying(1000) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
+	key varchar(100) NOT NULL,
+	value varchar(1000) NOT NULL,
 
 	CONSTRAINT configurationkvp_configurationid_key_pk PRIMARY KEY (configuration_id, key),
 	CONSTRAINT configurationkvp_key_ck CHECK ((char_length(btrim((key)::text)) > 0)),
@@ -40,27 +40,27 @@ CREATE TABLE configuration_kvp (
 );
 
 CREATE TABLE configuration_pgp (
-	configuration_id character varying(100) NOT NULL,
-	file_extension_filter character varying(100) NOT NULL,
-	sender_public_key character varying NOT NULL,
-	recipient_public_key character varying NOT NULL,
-	recipient_private_key character varying NOT NULL,
-	recipient_private_key_password character varying(1000) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
+	file_extension_filter varchar(100) NOT NULL,
+	sender_public_key varchar NOT NULL,
+	recipient_public_key varchar NOT NULL,
+	recipient_private_key varchar NOT NULL,
+	recipient_private_key_password varchar(1000) NOT NULL,
 
 	CONSTRAINT configurationpgp_configurationid_pk PRIMARY KEY (configuration_id),
 	CONSTRAINT configurationpgp_configurationid_fk FOREIGN KEY (configuration_id) REFERENCES configuration (configuration_id)
 );
 
 CREATE TABLE configuration_sftp (
-	configuration_id character varying(100) NOT NULL,
-	hostname character varying(100) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
+	hostname varchar(100) NOT NULL,
 	port integer NOT NULL,
-	remote_path character varying(1000) NOT NULL,
-	username character varying(100) NOT NULL,
-	client_public_key character varying NOT NULL,
-	client_private_key character varying NOT NULL,
-	client_private_key_password character varying(1000) NOT NULL,
-	host_public_key character varying NOT NULL,
+	remote_path varchar(1000) NOT NULL,
+	username varchar(100) NOT NULL,
+	client_public_key varchar NOT NULL,
+	client_private_key varchar NOT NULL,
+	client_private_key_password varchar(1000) NOT NULL,
+	host_public_key varchar NOT NULL,
 
 	CONSTRAINT configurationsftp_configurationid_pk PRIMARY KEY (configuration_id),
 	CONSTRAINT configurationsftp_configurationid_fk FOREIGN KEY (configuration_id) REFERENCES configuration (configuration_id)
@@ -68,24 +68,24 @@ CREATE TABLE configuration_sftp (
 
 CREATE TABLE eds_endpoint (
 	single_row_lock boolean NOT NULL,
-	eds_url character varying(1000) NOT NULL,
-	software_content_type character varying(100) NOT NULL,
-	software_version character varying(100) NOT NULL,
+	eds_url varchar(1000) NOT NULL,
+	software_content_type varchar(100) NOT NULL,
+	software_version varchar(100) NOT NULL,
 	use_keycloak boolean NOT NULL,
-	keycloak_token_uri character varying(500),
-	keycloak_realm character varying(100),
-	keycloak_username character varying(100),
-	keycloak_password character varying(100),
-	keycloak_clientid character varying(100),
+	keycloak_token_uri varchar(500),
+	keycloak_realm varchar(100),
+	keycloak_username varchar(100),
+	keycloak_password varchar(100),
+	keycloak_clientid varchar(100),
 
 	CONSTRAINT edsendpoint_singlerowlock_pk PRIMARY KEY (single_row_lock),
 	CONSTRAINT edsendpoint_edsurl_ck CHECK ((char_length(btrim((eds_url)::text)) > 0))
 );
 
 CREATE TABLE emis_organisation_map (
-	guid character varying NOT NULL,
-	name character varying NOT NULL,
-	ods_code character varying NOT NULL,
+	guid varchar NOT NULL,
+	name varchar NOT NULL,
+	ods_code varchar NOT NULL,
 
 	CONSTRAINT emisorganisationmap_guid_pk PRIMARY KEY (guid)
 );
@@ -93,8 +93,8 @@ CREATE TABLE emis_organisation_map (
 CREATE INDEX configuration_emisorganisationmap_guid_ix ON emis_organisation_map USING btree (guid);
 
 CREATE TABLE instance (
-	instance_name character varying(100) NOT NULL,
-	hostname character varying(500),
+	instance_name varchar(100) NOT NULL,
+	hostname varchar(500),
 	http_management_port integer,
 	last_config_get_date timestamp without time zone,
 
@@ -102,8 +102,8 @@ CREATE TABLE instance (
 );
 
 CREATE TABLE instance_configuration (
-	instance_name character varying(100) NOT NULL,
-	configuration_id character varying(100) NOT NULL,
+	instance_name varchar(100) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
 
 	CONSTRAINT instanceconfiguration_instancename_configid_pk PRIMARY KEY (instance_name, configuration_id),
 	CONSTRAINT instanceconfiguration_configurationid_uq UNIQUE (configuration_id),
@@ -114,17 +114,17 @@ CREATE TABLE instance_configuration (
 CREATE TABLE slack_endpoint (
 	single_row_lock boolean NOT NULL,
 	enabled boolean NOT NULL,
-	slack_url character varying(1000) NOT NULL,
+	slack_url varchar(1000) NOT NULL,
 
 	CONSTRAINT slackendpoint_singlerowlock_pk PRIMARY KEY (single_row_lock)
 );
 
 CREATE TABLE batch (
 	batch_id integer NOT NULL,
-	configuration_id character varying(100) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
 	interface_type_id integer NOT NULL,
-	batch_identifier character varying(500) NOT NULL,
-	local_relative_path character varying(1000) NOT NULL,
+	batch_identifier varchar(500) NOT NULL,
+	local_relative_path varchar(1000) NOT NULL,
 	insert_date timestamp without time zone DEFAULT date_trunc('second'::text, (now())::timestamp without time zone) NOT NULL,
 	sequence_number integer,
 	is_complete boolean DEFAULT false NOT NULL,
@@ -141,9 +141,9 @@ CREATE TABLE batch_file (
 	batch_file_id integer NOT NULL,
 	batch_id integer NOT NULL,
 	interface_type_id integer NOT NULL,
-	file_type_identifier character varying(1000) NOT NULL,
+	file_type_identifier varchar(1000) NOT NULL,
 	insert_date timestamp without time zone DEFAULT date_trunc('second'::text, (now())::timestamp without time zone) NOT NULL,
-	filename character varying(1000) NOT NULL,
+	filename varchar(1000) NOT NULL,
 	remote_created_date timestamp without time zone NOT NULL,
 	remote_size_bytes bigint NOT NULL,
 	is_downloaded boolean DEFAULT false NOT NULL,
@@ -152,7 +152,7 @@ CREATE TABLE batch_file (
 	requires_decryption boolean NOT NULL,
 	is_decrypted boolean,
 	decrypt_date timestamp without time zone,
-	decrypted_filename character varying(1000),
+	decrypted_filename varchar(1000),
 	decrypted_size_bytes bigint,
 
 	CONSTRAINT batchfile_batchfileid_pk PRIMARY KEY (batch_file_id),
@@ -166,9 +166,9 @@ CREATE TABLE batch_file (
 CREATE TABLE batch_split (
 	batch_split_id integer NOT NULL,
 	batch_id integer NOT NULL,
-	configuration_id character varying(100) NOT NULL,
-	local_relative_path character varying(1000) NOT NULL,
-	organisation_id character varying(100) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
+	local_relative_path varchar(1000) NOT NULL,
+	organisation_id varchar(100) NOT NULL,
 	have_notified boolean DEFAULT false NOT NULL,
 	notification_date timestamp without time zone,
 
@@ -181,10 +181,10 @@ CREATE TABLE error_digest (
 	error_digest_id integer NOT NULL,
 	error_count integer NOT NULL,
 	last_log_date timestamp without time zone NOT NULL,
-	log_class character varying(1000) NOT NULL,
-	log_method character varying(1000) NOT NULL,
-	log_message character varying(1000) NOT NULL,
-	exception character varying NOT NULL,
+	log_class varchar(1000) NOT NULL,
+	log_method varchar(1000) NOT NULL,
+	log_message varchar(1000) NOT NULL,
+	exception varchar NOT NULL,
 
 	CONSTRAINT errordigest_errordigestid_pk PRIMARY KEY (error_digest_id),
 	CONSTRAINT errordigest_logclass_logmethod_logmessage_exception_uq UNIQUE (log_class, log_method, log_message, exception)
@@ -194,13 +194,13 @@ CREATE TABLE notification_message (
 	notification_message_id integer NOT NULL,
 	batch_id integer NOT NULL,
 	batch_split_id integer NOT NULL,
-	configuration_id character varying(100) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
 	message_uuid uuid NOT NULL,
 	"timestamp" timestamp without time zone NOT NULL,
-	outbound character varying NOT NULL,
-	inbound character varying,
+	outbound varchar NOT NULL,
+	inbound varchar,
 	was_success boolean NOT NULL,
-	error_text character varying,
+	error_text varchar,
 
 	CONSTRAINT notificationmessage_notificationmessageid_pk PRIMARY KEY (notification_message_id),
 	CONSTRAINT notificationmessage_messageuuid_uq UNIQUE (message_uuid),
@@ -209,9 +209,9 @@ CREATE TABLE notification_message (
 
 CREATE TABLE unknown_file (
 	unknown_file_id integer NOT NULL,
-	configuration_id character varying(100) NOT NULL,
+	configuration_id varchar(100) NOT NULL,
 	insert_date timestamp without time zone DEFAULT date_trunc('second'::text, (now())::timestamp without time zone) NOT NULL,
-	filename character varying(1000) NOT NULL,
+	filename varchar(1000) NOT NULL,
 	remote_created_date timestamp without time zone NOT NULL,
 	remote_size_bytes bigint NOT NULL,
 
