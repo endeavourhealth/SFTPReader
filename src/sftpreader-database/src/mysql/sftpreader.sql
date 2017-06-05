@@ -18,8 +18,8 @@ CREATE TABLE configuration (
 	configuration_id varchar(100) NOT NULL,
 	interface_type_id integer NOT NULL,
 	poll_frequency_seconds integer NOT NULL,
-	local_root_path_prefix varchar(1000) NOT NULL,
-	local_root_path varchar(1000) NOT NULL,
+	local_root_path_prefix varchar(500) NOT NULL,
+	local_root_path varchar(500) NOT NULL,
 	configuration_friendly_name varchar(100) NOT NULL,
 
 	CONSTRAINT configuration_configurationid_pk PRIMARY KEY (configuration_id),
@@ -31,20 +31,19 @@ CREATE TABLE configuration (
 
 CREATE TABLE configuration_kvp (
 	configuration_id varchar(100) NOT NULL,
-	key varchar(100) NOT NULL,
-	value varchar(1000) NOT NULL,
+	configuration_key varchar(100) NOT NULL,
+	configuration_value varchar(1000) NOT NULL,
 
-	CONSTRAINT configurationkvp_configurationid_key_pk PRIMARY KEY (configuration_id, key),
-	CONSTRAINT configurationkvp_key_ck CHECK ((char_length(btrim((key)::text)) > 0)),
+	CONSTRAINT configurationkvp_configurationid_configurationkey_pk PRIMARY KEY (configuration_id, configuration_key),
 	CONSTRAINT configurationkvp_configurationid_fk FOREIGN KEY (configuration_id) REFERENCES configuration (configuration_id)
 );
 
 CREATE TABLE configuration_pgp (
 	configuration_id varchar(100) NOT NULL,
 	file_extension_filter varchar(100) NOT NULL,
-	sender_public_key varchar NOT NULL,
-	recipient_public_key varchar NOT NULL,
-	recipient_private_key varchar NOT NULL,
+	sender_public_key text NOT NULL,
+	recipient_public_key text NOT NULL,
+	recipient_private_key text NOT NULL,
 	recipient_private_key_password varchar(1000) NOT NULL,
 
 	CONSTRAINT configurationpgp_configurationid_pk PRIMARY KEY (configuration_id),
@@ -57,10 +56,10 @@ CREATE TABLE configuration_sftp (
 	port integer NOT NULL,
 	remote_path varchar(1000) NOT NULL,
 	username varchar(100) NOT NULL,
-	client_public_key varchar NOT NULL,
-	client_private_key varchar NOT NULL,
+	client_public_key text NOT NULL,
+	client_private_key text NOT NULL,
 	client_private_key_password varchar(1000) NOT NULL,
-	host_public_key varchar NOT NULL,
+	host_public_key text NOT NULL,
 
 	CONSTRAINT configurationsftp_configurationid_pk PRIMARY KEY (configuration_id),
 	CONSTRAINT configurationsftp_configurationid_fk FOREIGN KEY (configuration_id) REFERENCES configuration (configuration_id)
@@ -83,9 +82,9 @@ CREATE TABLE eds_endpoint (
 );
 
 CREATE TABLE emis_organisation_map (
-	guid varchar NOT NULL,
-	name varchar NOT NULL,
-	ods_code varchar NOT NULL,
+	guid varchar(100) NOT NULL,
+	name varchar(1000) NOT NULL,
+	ods_code varchar(100) NOT NULL,
 
 	CONSTRAINT emisorganisationmap_guid_pk PRIMARY KEY (guid)
 );
