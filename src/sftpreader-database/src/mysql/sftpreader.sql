@@ -77,8 +77,7 @@ CREATE TABLE eds_endpoint (
 	keycloak_password varchar(100),
 	keycloak_clientid varchar(100),
 
-	CONSTRAINT edsendpoint_singlerowlock_pk PRIMARY KEY (single_row_lock),
-	CONSTRAINT edsendpoint_edsurl_ck CHECK ((char_length(btrim((eds_url)::text)) > 0))
+	CONSTRAINT edsendpoint_singlerowlock_pk PRIMARY KEY (single_row_lock)
 );
 
 CREATE TABLE emis_organisation_map (
@@ -89,13 +88,13 @@ CREATE TABLE emis_organisation_map (
 	CONSTRAINT emisorganisationmap_guid_pk PRIMARY KEY (guid)
 );
 
-CREATE INDEX configuration_emisorganisationmap_guid_ix ON emis_organisation_map USING btree (guid);
+CREATE INDEX configuration_emisorganisationmap_guid_ix ON emis_organisation_map (guid);
 
 CREATE TABLE instance (
 	instance_name varchar(100) NOT NULL,
 	hostname varchar(500),
 	http_management_port integer,
-	last_config_get_date timestamp without time zone,
+	last_config_get_date datetime,
 
 	CONSTRAINT instance_instancename_pk PRIMARY KEY (instance_name)
 );
@@ -183,10 +182,9 @@ CREATE TABLE error_digest (
 	log_class varchar(1000) NOT NULL,
 	log_method varchar(1000) NOT NULL,
 	log_message varchar(1000) NOT NULL,
-	exception varchar NOT NULL,
+	exception varchar(8000) NOT NULL,
 
-	CONSTRAINT errordigest_errordigestid_pk PRIMARY KEY (error_digest_id),
-	CONSTRAINT errordigest_logclass_logmethod_logmessage_exception_uq UNIQUE (log_class, log_method, log_message, exception)
+	CONSTRAINT errordigest_errordigestid_pk PRIMARY KEY (error_digest_id)
 );
 
 CREATE TABLE notification_message (
@@ -194,12 +192,12 @@ CREATE TABLE notification_message (
 	batch_id integer NOT NULL,
 	batch_split_id integer NOT NULL,
 	configuration_id varchar(100) NOT NULL,
-	message_uuid uuid NOT NULL,
-	"timestamp" datetime NOT NULL,
-	outbound varchar NOT NULL,
-	inbound varchar,
+	message_uuid varchar(100) NOT NULL,
+	insert_date datetime NOT NULL,
+	outbound text NOT NULL,
+	inbound text,
 	was_success boolean NOT NULL,
-	error_text varchar,
+	error_text text,
 
 	CONSTRAINT notificationmessage_notificationmessageid_pk PRIMARY KEY (notification_message_id),
 	CONSTRAINT notificationmessage_messageuuid_uq UNIQUE (message_uuid),
