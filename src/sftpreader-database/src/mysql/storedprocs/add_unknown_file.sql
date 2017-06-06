@@ -15,9 +15,9 @@ begin
 	if not exists
 	(
 		select *
-		from unknown_file
-		where configuration_id = configuration_id
-		and filename = filename
+		from unknown_file u
+		where u.configuration_id = configuration_id
+		and u.filename = filename
 	)
 	then
 		insert into unknown_file
