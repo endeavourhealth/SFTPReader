@@ -162,7 +162,7 @@ CREATE TABLE batch_file (
 );
 
 CREATE TABLE batch_split (
-	batch_split_id integer NOT NULL,
+	batch_split_id integer NOT NULL AUTO_INCREMENT,
 	batch_id integer NOT NULL,
 	configuration_id varchar(100) NOT NULL,
 	local_relative_path varchar(1000) NOT NULL,
