@@ -1,18 +1,21 @@
+delimiter $$
 
-create or replace function configuration.add_emis_organisation_map
-(
-    _guid varchar,
-    _name varchar,
-    _ods_code varchar
-)
-returns void as
+drop procedure if exists add_emis_organisation_map;
+
 $$
 
-	delete 
-	from configuration.emis_organisation_map
-	where guid = _guid;
+create procedure add_emis_organisation_map
+(
+    guid varchar(100),
+    name varchar(1000),
+    ods_code varchar(100)
+)
+begin
+	delete e
+	from emis_organisation_map e
+	where e.guid = guid;
 
-	insert into configuration.emis_organisation_map
+	insert into emis_organisation_map
 	(
 		guid,
 		name,
@@ -20,9 +23,12 @@ $$
 	)
 	values
 	(
-		_guid,
-		_name,
-		_ods_code
+		guid,
+		name,
+		ods_code
 	);
+end
 
-$$ language sql;
+$$
+
+delimiter ;
