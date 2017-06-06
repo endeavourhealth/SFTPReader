@@ -205,7 +205,7 @@ CREATE TABLE notification_message (
 );
 
 CREATE TABLE unknown_file (
-	unknown_file_id integer NOT NULL,
+	unknown_file_id integer NOT NULL AUTO_INCREMENT,
 	configuration_id varchar(100) NOT NULL,
 	insert_date datetime NOT NULL,
 	filename varchar(1000) NOT NULL,
