@@ -1,10 +1,15 @@
 package org.endeavourhealth.sftpreader;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Strings;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
+import net.gpedro.integrations.slack.SlackApi;
+import net.gpedro.integrations.slack.SlackMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.eds.EdsSender;
 import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
@@ -32,6 +37,9 @@ import java.util.stream.Collectors;
 public class SftpReaderTask implements Runnable {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpReaderTask.class);
+
+    private static Map<Integer, String> notificationErrorrs = new HashMap<>();
+
 
     private Configuration configuration = null;
     private String configurationId = null;
@@ -481,8 +489,45 @@ public class SftpReaderTask implements Runnable {
                     false,
                     getExceptionNameAndMessage(e));
 
+            //notify to Slack, so we don't have to keep monitoring files
+            int batchSplitId = unnotifiedBatchSplit.getBatchSplitId();
+            if (shouldSendSlackAlert(batchSplitId, inboundMessage)) {
+                sendSlackAlert(batchSplitId, organisationId, inboundMessage);
+            }
+
             throw new SftpReaderException("Error notifying EDS for batch split " + unnotifiedBatchSplit.getBatchSplitId(), e);
         }
+    }
+
+    private void sendSlackAlert(int batchSplitId, String organisationId, String errorMessage) {
+
+        String message = "Exception notifying Messaging API for Organisation" + organisationId + " and Batch Spit ID " + batchSplitId + "\r\n" + errorMessage;
+
+        SlackNotifier slackNotifier = new SlackNotifier(configuration);
+        slackNotifier.postMessage(message);
+
+        //add to the map so we don't send the same message again in a few minutes
+        notificationErrorrs.put(batchSplitId, errorMessage);
+    }
+
+    private boolean shouldSendSlackAlert(int batchSplitId, String errorMessage) {
+
+        if (!notificationErrorrs.containsKey(new Integer(batchSplitId))) {
+            return true;
+        }
+
+        String previousError = notificationErrorrs.get(new Integer(batchSplitId));
+        if (previousError == null && errorMessage == null) {
+            return false;
+        }
+
+        if (previousError != null
+            && errorMessage != null
+            && previousError.equals(errorMessage)) {
+            return false;
+        }
+
+        return true;
     }
 
     private static String getExceptionNameAndMessage(Throwable e) {

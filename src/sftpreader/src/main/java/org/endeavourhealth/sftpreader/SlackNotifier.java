@@ -58,7 +58,7 @@ public class SlackNotifier {
         postMessage(message);
     }
 
-    private void postMessage(String slackMessage) {
+    public void postMessage(String slackMessage) {
         try {
             if (!slackConfiguration.isEnabled())
                 return;
