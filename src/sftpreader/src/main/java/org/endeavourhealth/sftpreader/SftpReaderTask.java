@@ -501,7 +501,8 @@ public class SftpReaderTask implements Runnable {
 
     private void sendSlackAlert(int batchSplitId, String organisationId, String errorMessage) {
 
-        String message = "Exception notifying Messaging API for Organisation" + organisationId + " and Batch Spit ID " + batchSplitId + "\r\n" + errorMessage;
+        String organisationName = db.findOrgNameFromOdsCode(organisationId);
+        String message = "Exception notifying Messaging API for Organisation " + organisationId + " (" + organisationName + ") and Batch Spit ID " + batchSplitId + "\r\n" + errorMessage;
 
         SlackNotifier slackNotifier = new SlackNotifier(configuration);
         slackNotifier.postMessage(message);

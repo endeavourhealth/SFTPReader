@@ -6,12 +6,18 @@ import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.IDBDigestLogger;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.model.db.*;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 import java.util.UUID;
 
 public class DataLayer implements IDBDigestLogger {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(DataLayer.class);
+
     private DataSource dataSource;
 
     public DataLayer(DataSource dataSource) {
@@ -338,5 +344,35 @@ public class DataLayer implements IDBDigestLogger {
                 .addParameter("_exception", exception);
 
         pgStoredProc.execute();
+    }
+
+    /*
+    * quick and dirty function to get the name for an org ODS code
+    **/
+    public String findOrgNameFromOdsCode(String odsCode) {
+        try {
+            Connection connection = dataSource.getConnection();
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery("select name from configuration.emis_organisation_map where ods_code = '" + odsCode + "' limit 1;");
+
+            String ret = null;
+
+            //we have multiple names for some orgs in production (e.g. F84636),
+            //so return the name with the longest length (for the sake of having some way to choose
+            //something more interesting that just "The Surgery")
+            while (rs.next()) {
+                String s = rs.getString(1);
+                if (ret == null
+                        || s.length() > ret.length()) {
+                    ret = s;
+                }
+            }
+
+            return ret;
+
+        } catch (Exception ex) {
+            LOG.error("Error getting name for ODS code " + odsCode, ex);
+            return null;
+        }
     }
 }
