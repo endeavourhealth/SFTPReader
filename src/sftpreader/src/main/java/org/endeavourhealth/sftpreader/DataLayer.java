@@ -349,7 +349,7 @@ public class DataLayer implements IDBDigestLogger {
     /*
     * quick and dirty function to get the name for an org ODS code
     **/
-    public String findOrgNameFromOdsCode(String odsCode) {
+    public String findEmisOrgNameFromOdsCode(String odsCode) {
         try {
             Connection connection = dataSource.getConnection();
             Statement statement = connection.createStatement();

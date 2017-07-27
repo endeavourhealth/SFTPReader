@@ -26,5 +26,11 @@ public class ImplementationActivator {
         return new EmisSftpBatchSplitter();
     }
 
-    public static SftpSlackNotifier createSftpSlackNotifier() { return new EmisSftpSlackNotifier(); }
+    public static SftpOrganisationHelper createSftpOrganisationHelper() {
+        return new EmisSftpOrganisationHelper();
+    }
+
+    public static SftpSlackNotifier createSftpSlackNotifier() {
+        return new EmisSftpSlackNotifier();
+    }
 }

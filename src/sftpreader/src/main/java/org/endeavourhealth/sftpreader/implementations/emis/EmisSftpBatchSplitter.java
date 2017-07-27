@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.implementations.emis;
 
+import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -451,11 +452,17 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                 String orgGuid = csvRecord.get("OrganisationGuid");
                 String orgName = csvRecord.get("OrganisationName");
                 String orgOds = csvRecord.get("ODSCode");
+                String orgCdb = csvRecord.get("CDB");
+
+                String combinedName = orgName;
+                if (!Strings.isNullOrEmpty(orgCdb)) {
+                    combinedName += " (CDB " + orgCdb + ")";
+                }
 
                 if (StringUtils.isNotEmpty(orgOds)) {
                     EmisOrganisationMap mapping = new EmisOrganisationMap()
                             .setGuid(orgGuid)
-                            .setName(orgName)
+                            .setName(combinedName)
                             .setOdsCode(orgOds);
 
                     db.addEmisOrganisationMap(mapping);
