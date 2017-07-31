@@ -45,7 +45,7 @@ public class SlackNotifier {
             notifyCompleteBatch(dbConfiguration, batch);
     }
 
-    public void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) {
+    private void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) {
 
         String configurationId = dbConfiguration.getConfigurationId();
         String friendlyName = dbConfiguration.getConfigurationFriendlyName();

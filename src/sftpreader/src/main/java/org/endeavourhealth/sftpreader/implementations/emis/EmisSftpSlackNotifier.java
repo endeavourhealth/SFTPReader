@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class EmisSftpSlackNotifier extends SftpSlackNotifier {
+
     public String getCompleteBatchMessageSuffix(Batch completeBatch) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm");

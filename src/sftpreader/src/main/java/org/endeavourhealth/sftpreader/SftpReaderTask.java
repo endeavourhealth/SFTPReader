@@ -526,7 +526,7 @@ public class SftpReaderTask implements Runnable {
 
         SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper();
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
-        String message = "Exception notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Spit ID " + batchSplitId + "\r\n" + errorMessage;
+        String message = "Exception notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
 
         SlackNotifier slackNotifier = new SlackNotifier(configuration);
         slackNotifier.postMessage(message);
@@ -564,7 +564,7 @@ public class SftpReaderTask implements Runnable {
 
         SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper();
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
-        String message = "Previous error notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Spit ID " + batchSplitId + " is now cleared";
+        String message = "Previous error notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + " is now cleared";
 
         SlackNotifier slackNotifier = new SlackNotifier(configuration);
         slackNotifier.postMessage(message);
