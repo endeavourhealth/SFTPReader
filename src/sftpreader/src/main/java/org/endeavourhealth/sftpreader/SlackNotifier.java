@@ -27,7 +27,7 @@ public class SlackNotifier {
         this.slackConfiguration = configuration.getInstanceConfiguration().getSlackConfiguration();
     }
 
-    public void notifyStartup() {
+    /*public void notifyStartup() {
         String message = Main.PROGRAM_DISPLAY_NAME + " started "
                 + "(" + this.configuration.getInstanceName() + " instance, reading extracts "
                 + this.configuration.getConfigurationIdsForDisplay() + ")";
@@ -38,7 +38,7 @@ public class SlackNotifier {
     public void notifyShutdown() {
         String message = Main.PROGRAM_DISPLAY_NAME + " stopped (" + this.configuration.getInstanceName() + " instance)";
         postMessage(message);
-    }
+    }*/
 
     public void notifyCompleteBatches(DbConfiguration dbConfiguration, List<Batch> batches) {
         for (Batch batch : batches)

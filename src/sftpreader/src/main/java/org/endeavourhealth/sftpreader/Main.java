@@ -14,7 +14,7 @@ public class Main {
     private static Configuration configuration;
     private static SftpReaderTaskScheduler sftpReaderTaskScheduler;
     private static ManagementService managementService;
-    private static SlackNotifier slackNotifier;
+    //private static SlackNotifier slackNotifier;
 
 	public static void main(String[] args) {
 		try {
@@ -30,8 +30,8 @@ public class Main {
                 LOG.info("Instance " + configuration.getInstanceName() + " on host " + configuration.getMachineName());
                 LOG.info("Processing configuration(s): " + configuration.getConfigurationIdsForDisplay());
 
-                slackNotifier = new SlackNotifier(configuration);
-                slackNotifier.notifyStartup();
+                /*slackNotifier = new SlackNotifier(configuration);
+                slackNotifier.notifyStartup();*/
 
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown()));
 
@@ -59,8 +59,8 @@ public class Main {
         try {
             LOG.info("Shutting down...");
 
-            if (slackNotifier != null)
-                slackNotifier.notifyShutdown();
+            /*if (slackNotifier != null)
+                slackNotifier.notifyShutdown();*/
 
             if (managementService != null)
                 managementService.stop();
