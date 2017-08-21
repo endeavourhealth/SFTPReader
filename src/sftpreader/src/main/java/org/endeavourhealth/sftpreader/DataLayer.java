@@ -16,7 +16,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.UUID;
 
-public class DataLayer /*implements IDBDigestLogger*/ {
+public class DataLayer implements IDBDigestLogger {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(DataLayer.class);
 
     private DataSource dataSource;
@@ -336,7 +336,7 @@ public class DataLayer /*implements IDBDigestLogger*/ {
         pgStoredProc.execute();
     }
 
-    /*public void logErrorDigest(String logClass, String logMethod, String logMessage, String exception) throws PgStoredProcException {
+    public void logErrorDigest(String logClass, String logMethod, String logMessage, String exception) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.log_error_digest")
                 .addParameter("_log_class", logClass)
@@ -345,7 +345,7 @@ public class DataLayer /*implements IDBDigestLogger*/ {
                 .addParameter("_exception", exception);
 
         pgStoredProc.execute();
-    }*/
+    }
 
     /*
     * quick and dirty function to get the name for an org ODS code
@@ -378,7 +378,7 @@ public class DataLayer /*implements IDBDigestLogger*/ {
             LOG.error("Error getting name for ODS code " + odsCode, ex);
             return null;
         } finally {
-            
+
             if (connection != null) {
                 try {
                     connection.close();
