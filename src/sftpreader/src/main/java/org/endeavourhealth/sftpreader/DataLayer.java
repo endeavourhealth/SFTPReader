@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.UUID;
@@ -350,8 +351,11 @@ public class DataLayer /*implements IDBDigestLogger*/ {
     * quick and dirty function to get the name for an org ODS code
     **/
     public String findEmisOrgNameFromOdsCode(String odsCode) {
+        Connection connection = null;
+
         try {
-            Connection connection = dataSource.getConnection();
+            connection = dataSource.getConnection();
+
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("select name from configuration.emis_organisation_map where ods_code = '" + odsCode + "';");
 
@@ -373,6 +377,15 @@ public class DataLayer /*implements IDBDigestLogger*/ {
         } catch (Exception ex) {
             LOG.error("Error getting name for ODS code " + odsCode, ex);
             return null;
+        } finally {
+            
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException se) {
+                    LOG.error("Error closing connection", se);
+                }
+            }
         }
     }
 }
