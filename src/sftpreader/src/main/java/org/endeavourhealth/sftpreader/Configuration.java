@@ -57,7 +57,7 @@ public final class Configuration {
         initialiseDBConnectionPool();
         initialiseMachineName();
         retrieveInstanceName();
-        addHL7LogAppender();
+        //addHL7LogAppender();
         loadDbConfiguration();
     }
 
@@ -96,13 +96,13 @@ public final class Configuration {
         postgresPassword = ConfigManager.getConfiguration("postgres-password");
     }
 
-    private void addHL7LogAppender() throws SftpReaderException {
+    /*private void addHL7LogAppender() throws SftpReaderException {
         try {
             LogDigestAppender.addLogAppender(new DataLayer(getDatabaseConnection()));
         } catch (Exception e) {
             throw new SftpReaderException("Error adding SFTP Reader log appender", e);
         }
-    }
+    }*/
 
     private void loadDbConfiguration() throws PgStoredProcException, SQLException, SftpReaderException {
         DataLayer dataLayer = new DataLayer(getDatabaseConnection());
