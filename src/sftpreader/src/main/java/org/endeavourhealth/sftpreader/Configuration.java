@@ -151,7 +151,7 @@ public final class Configuration {
                 hikariDataSource.setJdbcUrl(postgresUrl);
                 hikariDataSource.setUsername(postgresUsername);
                 hikariDataSource.setPassword(postgresPassword);
-                hikariDataSource.setMaximumPoolSize(2);
+                hikariDataSource.setMaximumPoolSize(5);
                 hikariDataSource.setMinimumIdle(1);
                 hikariDataSource.setIdleTimeout(60000);
                 hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
