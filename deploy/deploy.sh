@@ -2,9 +2,9 @@
 
 SERVICE_NAME=sftpreader
 JAR_FILE=sftpreader-1.0-SNAPSHOT.jar
-JENKINS_URL=https://build.endeavourhealth.net/job/sftpreader/lastSuccessfulBuild/artifact/target/
+JENKINS_URL="https://build.endeavourhealth.net/job/Application-SFTP%20Reader/lastSuccessfulBuild/artifact/target/"
 JENKINS_USER=deployuser
-JENKINS_PASS=
+JENKINS_PASS=deploy1234
 DOWNLOAD_LOCATION=/home/sysadmin/sftpreader/
 DEPLOY_LOCATION=/opt/sftpreader/
 
@@ -42,7 +42,7 @@ sudo rm -f $DEPLOY_LOCATION/$JAR_FILE
 
 echo "> Deploying new JAR to $DEPLOY_LOCATION"
 echo
-sudo mv $DOWNLOAD_LOCATION/$JAR_FILE $DEPLOY_LOCATION/
+sudo mv $DOWNLOAD_LOCATION/$JAR_FILE $DEPLOY_LOCATION
 
 echo "> Starting service $SERVICE_NAME"
 echo
