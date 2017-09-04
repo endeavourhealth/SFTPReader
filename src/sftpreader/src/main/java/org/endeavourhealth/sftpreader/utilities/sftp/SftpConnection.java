@@ -39,7 +39,7 @@ public class SftpConnection {
         this.session = jSch.getSession(connectionDetails.getUsername(), connectionDetails.getHostname(), connectionDetails.getPort());
 
         //adding this to try to get past an error with new Emis server
-        this.session.setUserInfo(new TestUserInfo());
+        //this.session.setUserInfo(new TestUserInfo());
 
         this.session.connect();
 
