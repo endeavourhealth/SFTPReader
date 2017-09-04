@@ -39,7 +39,7 @@ public class SftpConnection {
         this.session = jSch.getSession(connectionDetails.getUsername(), connectionDetails.getHostname(), connectionDetails.getPort());
 
         //adding this to try to get past an error with new Emis server
-        //this.session.setUserInfo(new TestUserInfo());
+        this.session.setUserInfo(new TestUserInfo());
 
         this.session.connect();
 
@@ -100,18 +100,20 @@ public class SftpConnection {
 
         @Override
         public String getPassphrase() {
+            LOG.info("UserInfo getPassphrase");
             return null;
         }
 
         @Override
         public String getPassword() {
+            LOG.info("UserInfo getPassword");
             return null;
         }
 
         @Override
         public boolean promptPassword(String message) {
             LOG.info("UserInfo promptPassword: " + message);
-            return false;
+            return true;
         }
 
         @Override
