@@ -58,11 +58,10 @@ public class SftpReaderTask implements Runnable {
             LOG.trace(">>>Starting scheduled SftpReader run, initialising");
             initialise();
 
-            LOG.info("SKIPPING DOWNLOAD");
-            /*LOG.trace(">>>Downloading and decrypting files");
+            LOG.trace(">>>Downloading and decrypting files");
             if (!downloadAndProcessFiles()) {
                 throw new SftpReaderException("Exception occurred downloading and processing files - halting to prevent incorrect ordering of batches.");
-            }*/
+            }
 
             LOG.trace(">>>Validating and sequencing batches");
             if (!validateAndSequenceBatches()) {
