@@ -38,6 +38,9 @@ public class SftpConnection {
 
         this.session = jSch.getSession(connectionDetails.getUsername(), connectionDetails.getHostname(), connectionDetails.getPort());
 
+        //adding this to try to get past an error with new Emis server
+        this.session.setUserInfo(new TestUserInfo());
+
         this.session.connect();
 
         this.channel = (ChannelSftp)session.openChannel("sftp");
@@ -91,5 +94,41 @@ public class SftpConnection {
 
     public SftpConnectionDetails getConnectionDetails() {
         return connectionDetails;
+    }
+
+    class TestUserInfo implements UserInfo {
+
+        @Override
+        public String getPassphrase() {
+            return null;
+        }
+
+        @Override
+        public String getPassword() {
+            return null;
+        }
+
+        @Override
+        public boolean promptPassword(String message) {
+            LOG.info("UserInfo promptPassword: " + message);
+            return false;
+        }
+
+        @Override
+        public boolean promptPassphrase(String message) {
+            LOG.info("UserInfo promptPassphrase: " + message);
+            return false;
+        }
+
+        @Override
+        public boolean promptYesNo(String message) {
+            LOG.info("UserInfo promptYesNo: " + message);
+            return true;
+        }
+
+        @Override
+        public void showMessage(String message) {
+            LOG.info("UserInfo showMessage: " + message);
+        }
     }
 }
