@@ -36,15 +36,40 @@ public class SftpConnection {
         jSch.addIdentity("client-private-key", this.connectionDetails.getClientPrivateKey().getBytes(), null, this.connectionDetails.getClientPrivateKeyPassword().getBytes());
         jSch.setKnownHosts(new ByteArrayInputStream(this.connectionDetails.getKnownHostsString().getBytes()));
 
+        //remove
+        KnownHosts knownHosts = (KnownHosts)jSch.getHostKeyRepository();
+        for (HostKey key: knownHosts.getHostKey()) {
+            LOG.info("Public key: " + key.getKey());
+            LOG.info("Public fingerprint: " + key.getFingerPrint(jSch));
+        }
+
+
         this.session = jSch.getSession(connectionDetails.getUsername(), connectionDetails.getHostname(), connectionDetails.getPort());
 
         //adding this to try to get past an error with new Emis server
         this.session.setUserInfo(new TestUserInfo());
 
-        this.session.connect();
+        try {
+            this.session.connect();
+
+            this.channel = (ChannelSftp)session.openChannel("sftp");
+            this.channel.connect();
+        } catch (Exception ex) {
+
+            HostKey serverHostKey = session.getHostKey();
+            LOG.info("Server Public key: " + serverHostKey.getKey());
+            LOG.info("Server Public fingerprint: " + serverHostKey.getFingerPrint(jSch));
+
+            throw ex;
+        }
+
+
+
+
+        /*this.session.connect();
 
         this.channel = (ChannelSftp)session.openChannel("sftp");
-        this.channel.connect();
+        this.channel.connect();*/
     }
 
     @SuppressWarnings("unchecked")
@@ -107,7 +132,7 @@ public class SftpConnection {
         @Override
         public String getPassword() {
             LOG.info("UserInfo getPassword");
-            return null;
+            return "";
         }
 
         @Override
