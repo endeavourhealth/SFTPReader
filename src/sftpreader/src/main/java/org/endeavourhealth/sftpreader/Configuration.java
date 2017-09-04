@@ -70,7 +70,7 @@ public final class Configuration {
         try {
             machineName = Hostname.getHostname();
         } catch (Exception e) {
-            throw new SftpReaderException("Error getting machine name");
+            throw new SftpReaderException("Error getting machine name", e);
         }
     }
 
