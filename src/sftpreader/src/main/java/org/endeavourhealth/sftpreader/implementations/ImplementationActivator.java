@@ -32,7 +32,7 @@ public class ImplementationActivator {
     }
 
     public static SftpNotificationCreator createSftpNotificationCreator(String interfaceTypeName) {
-        if (interfaceTypeName.equalsIgnoreCase("EMIS-EXTRACT-SERVICE-5-1")) {
+        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpNotificationCreator();
         } else {
             return new BartsSftpNotificationCreator();
@@ -40,7 +40,7 @@ public class ImplementationActivator {
     }
 
     public static SftpBatchSplitter createSftpBatchSplitter(String interfaceTypeName) {
-        if (interfaceTypeName.equalsIgnoreCase("EMIS-EXTRACT-SERVICE-5-1")) {
+        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchSplitter();
         } else {
             return new BartsSftpBatchSplitter();
@@ -48,7 +48,7 @@ public class ImplementationActivator {
     }
 
     public static SftpOrganisationHelper createSftpOrganisationHelper(String interfaceTypeName) {
-        if (interfaceTypeName.equalsIgnoreCase("EMIS-EXTRACT-SERVICE-5-1")) {
+        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpOrganisationHelper();
         } else {
             return new BartsSftpOrganisationHelper();
@@ -56,7 +56,7 @@ public class ImplementationActivator {
     }
 
     public static SftpSlackNotifier createSftpSlackNotifier(String interfaceTypeName) {
-        if (interfaceTypeName.equalsIgnoreCase("EMIS-EXTRACT-SERVICE-5-1")) {
+        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpSlackNotifier();
         } else {
             return new BartsSftpSlackNotifier();
