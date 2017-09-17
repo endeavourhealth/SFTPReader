@@ -1,15 +1,12 @@
 package org.endeavourhealth.sftpreader;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Strings;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-import net.gpedro.integrations.slack.SlackApi;
-import net.gpedro.integrations.slack.SlackMessage;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
-import org.endeavourhealth.common.config.ConfigManager;
+//import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.eds.EdsSender;
 import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
@@ -21,11 +18,9 @@ import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
-import org.endeavourhealth.sftpreader.utilities.PgpUtil;
+import org.endeavourhealth.sftpreader.utilities.*;
 import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection;
-import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnectionDetails;
 import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnectionException;
-import org.endeavourhealth.sftpreader.utilities.sftp.SftpRemoteFile;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -96,22 +91,27 @@ public class SftpReaderTask implements Runnable {
     }
 
     private boolean downloadAndProcessFiles() {
-        SftpConnection sftpConnection = null;
+        Connection connection = null;
 
         try {
-            sftpConnection = openSftpConnection(dbConfiguration.getSftpConfiguration());
+            connection = openSftpConnection(dbConfiguration.getSftpConfiguration());
 
             String remotePath = dbConfiguration.getSftpConfiguration().getRemotePath();
 
-            sftpConnection.cd(remotePath);
-            List<SftpRemoteFile> sftpRemoteFiles = getFileList(sftpConnection, "\\");
+            List<RemoteFile> remoteFiles = null;
+            if (connection instanceof org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection) {
+                connection.cd(remotePath);
+                remoteFiles = getFileList(connection, "\\");
+            } else {
+                remoteFiles = getFileList(connection, remotePath);
+            }
 
             int countAlreadyProcessed = 0;
 
-            LOG.trace("Found {} files in {}", new Integer(sftpRemoteFiles.size()), remotePath);
+            LOG.trace("Found {} files in {}", new Integer(remoteFiles.size()), remotePath);
 
-            for (SftpRemoteFile sftpRemoteFile : sftpRemoteFiles) {
-                SftpFile batchFile = instantiateSftpBatchFile(sftpRemoteFile);
+            for (RemoteFile remoteFile : remoteFiles) {
+                SftpFile batchFile = instantiateSftpBatchFile(remoteFile);
 
                 if (!batchFile.isFilenameValid()) {
                     LOG.error("   Invalid filename, skipping: " + batchFile.getFilename());
@@ -130,7 +130,7 @@ public class SftpReaderTask implements Runnable {
 
                 createBatchDirectory(batchFile);
 
-                downloadFile(sftpConnection, batchFile);
+                downloadFile(connection, batchFile);
 
                 if (batchFile.doesFileNeedDecrypting())
                     decryptFile(batchFile);
@@ -139,34 +139,34 @@ public class SftpReaderTask implements Runnable {
             if (countAlreadyProcessed > 0)
                 LOG.trace("Skipped {} files as already processed them", new Integer(countAlreadyProcessed));
 
-            LOG.info("Completed processing {} files", Integer.toString(sftpRemoteFiles.size()));
+            LOG.info("Completed processing {} files", Integer.toString(remoteFiles.size()));
 
             return true;
         } catch (Exception e) {
             LOG.error("Exception occurred while processing files - cannot continue or may process batches out of order", e);
         } finally {
-            closeConnection(sftpConnection);
+            closeConnection(connection);
         }
 
         return false;
     }
 
-    private static SftpConnection openSftpConnection(DbConfigurationSftp configurationSftp) throws SftpConnectionException, JSchException, IOException {
-        SftpConnection sftpConnection = new SftpConnection(getSftpConnectionDetails(configurationSftp));
+    private Connection openSftpConnection(DbConfigurationSftp configurationSftp) throws Exception, JSchException, IOException {
+        Connection connection = ConnectionActivator.createConnection(dbConfiguration.getInterfaceTypeName(), getSftpConnectionDetails(configurationSftp));
 
-        String hostname = sftpConnection.getConnectionDetails().getHostname();
-        String port = Integer.toString(sftpConnection.getConnectionDetails().getPort());
-        String username = sftpConnection.getConnectionDetails().getUsername();
+        String hostname = connection.getConnectionDetails().getHostname();
+        String port = Integer.toString(connection.getConnectionDetails().getPort());
+        String username = connection.getConnectionDetails().getUsername();
 
-        LOG.info(" Opening SFTP connection to " + hostname + " on port " + port + " with user " + username);
+        LOG.info(" Opening connection to " + hostname + " on port " + port + " with user " + username);
 
-        sftpConnection.open();
+        connection.open();
 
-        return sftpConnection;
+        return connection;
     }
 
-    private static SftpConnectionDetails getSftpConnectionDetails(DbConfigurationSftp configurationSftp) {
-        return new SftpConnectionDetails()
+    private static ConnectionDetails getSftpConnectionDetails(DbConfigurationSftp configurationSftp) {
+        return new ConnectionDetails()
                 .setHostname(configurationSftp.getHostname())
                 .setPort(configurationSftp.getPort())
                 .setUsername(configurationSftp.getUsername())
@@ -175,24 +175,24 @@ public class SftpReaderTask implements Runnable {
                 .setHostPublicKey(configurationSftp.getHostPublicKey());
     }
 
-    private static void closeConnection(SftpConnection sftpConnection) {
-        if (sftpConnection != null)
-            sftpConnection.close();
+    private static void closeConnection(Connection connection) {
+        if (connection != null)
+            connection.close();
     }
 
-    private static List<SftpRemoteFile> getFileList(SftpConnection sftpConnection, String remotePath) throws SftpException {
-        return sftpConnection.getFileList(remotePath);
+    private static List<RemoteFile> getFileList(Connection connection, String remotePath) throws Exception {
+        return connection.getFileList(remotePath);
     }
 
-    private void downloadFile(SftpConnection sftpConnection, SftpFile batchFile) throws Exception {
-        downloadFile(sftpConnection, batchFile.getFilename(), batchFile.getLocalFilePath());
+    private void downloadFile(Connection connection, SftpFile batchFile) throws Exception {
+        downloadFile(connection, batchFile.getFilename(), batchFile.getLocalFilePath(), dbConfiguration.getSftpConfiguration().getRemotePath());
 
         batchFile.setLocalFileSizeBytes(getFileSizeBytes(batchFile.getLocalFilePath()));
 
         db.setFileAsDownloaded(batchFile);
     }
 
-    private static void downloadFile(SftpConnection sftpConnection, String remoteFilePath, String localFilePath) throws SftpException, IOException {
+    private static void downloadFile(Connection connection, String remoteFilePath, String localFilePath, String remotePath) throws Exception, IOException {
         LOG.info("   Downloading file to: " + localFilePath);
 
         File temporaryDownloadFile = new File(localFilePath + ".download");
@@ -201,7 +201,13 @@ public class SftpReaderTask implements Runnable {
             if (!temporaryDownloadFile.delete())
                 throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
 
-        InputStream inputStream = sftpConnection.getFile(remoteFilePath);
+        InputStream inputStream = null;
+        if (connection instanceof org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection) {
+            inputStream = connection.getFile(remoteFilePath);
+        } else {
+            String path = FilenameUtils.concat(remotePath, remoteFilePath);
+            inputStream = connection.getFile(path);
+        }
 
         Files.copy(inputStream, temporaryDownloadFile.toPath());
 
@@ -215,11 +221,11 @@ public class SftpReaderTask implements Runnable {
             throw new IOException("Could not temporary download file to " + localFilePath);
     }
 
-    private SftpFile instantiateSftpBatchFile(SftpRemoteFile sftpRemoteFile) {
-        SftpFilenameParser emisSftpFilenameParser = ImplementationActivator.createFilenameParser(sftpRemoteFile.getFilename(), dbConfiguration);
+    private SftpFile instantiateSftpBatchFile(RemoteFile remoteFile) {
+        SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(remoteFile.getFilename(), dbConfiguration, dbConfiguration.getInterfaceTypeName());
 
-        return new SftpFile(sftpRemoteFile,
-                emisSftpFilenameParser,
+        return new SftpFile(remoteFile,
+                sftpFilenameParser,
                 dbConfiguration.getFullLocalRootPath());
     }
 
@@ -309,7 +315,7 @@ public class SftpReaderTask implements Runnable {
 
         LOG.trace(" Validating batches: " + batchIdentifiers);
 
-        SftpBatchValidator sftpBatchValidator = ImplementationActivator.createSftpBatchValidator();
+        SftpBatchValidator sftpBatchValidator = ImplementationActivator.createSftpBatchValidator(dbConfiguration.getInterfaceTypeName());
         sftpBatchValidator.validateBatches(incompleteBatches, lastCompleteBatch, dbConfiguration);
 
         LOG.trace(" Completed batch validation");
@@ -320,7 +326,7 @@ public class SftpReaderTask implements Runnable {
 
         int nextSequenceNumber = getNextSequenceNumber(lastCompleteBatch);
 
-        SftpBatchSequencer sftpBatchSequencer = ImplementationActivator.createSftpBatchSequencer();
+        SftpBatchSequencer sftpBatchSequencer = ImplementationActivator.createSftpBatchSequencer(dbConfiguration.getInterfaceTypeName());
         Map<Batch, Integer> batchSequence = sftpBatchSequencer.determineBatchSequenceNumbers(incompleteBatches, nextSequenceNumber, lastCompleteBatch);
 
         Map<Batch, Integer> sortedBatchSequence = StreamExtension.sortByValue(batchSequence);
@@ -350,7 +356,7 @@ public class SftpReaderTask implements Runnable {
             //delete any pre-existing splits for this batch
             db.deleteBatchSplits(batch);
 
-            SftpBatchSplitter sftpBatchSplitter = ImplementationActivator.createSftpBatchSplitter();
+            SftpBatchSplitter sftpBatchSplitter = ImplementationActivator.createSftpBatchSplitter(dbConfiguration.getInterfaceTypeName());
             List<BatchSplit> splitBatches = sftpBatchSplitter.splitBatch(batch, db, dbConfiguration);
 
             for (BatchSplit splitBatch: splitBatches)
@@ -450,7 +456,7 @@ public class SftpReaderTask implements Runnable {
 
 
     private void notify(BatchSplit unnotifiedBatchSplit) throws SftpReaderException, PgStoredProcException, IOException {
-        SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator();
+        SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration.getInterfaceTypeName());
 
         String messagePayload = sftpNotificationCreator.createNotificationMessage(dbConfiguration, unnotifiedBatchSplit);
 
@@ -526,7 +532,7 @@ public class SftpReaderTask implements Runnable {
 
     private void sendSlackAlert(int batchSplitId, String organisationId, String errorMessage) {
 
-        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper();
+        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration.getInterfaceTypeName());
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
         String message = "Exception notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
 
@@ -564,7 +570,7 @@ public class SftpReaderTask implements Runnable {
 
     private void sendSlackOk(int batchSplitId, String organisationId) {
 
-        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper();
+        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration.getInterfaceTypeName());
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
         String message = "Previous error notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + " is now cleared";
 

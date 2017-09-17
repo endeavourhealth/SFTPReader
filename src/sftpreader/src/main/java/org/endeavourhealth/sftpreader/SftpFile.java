@@ -4,13 +4,13 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
-import org.endeavourhealth.sftpreader.utilities.sftp.SftpRemoteFile;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDateTime;
 
 public class SftpFile {
 
-    private SftpRemoteFile sftpRemoteFile;
+    private RemoteFile remoteFile;
     private SftpFilenameParser sftpFilenameParser;
     private String fullLocalRootPath;
     protected String pgpFileExtensionFilter;
@@ -18,12 +18,12 @@ public class SftpFile {
     private Long decryptedFileSizeBytes = null;
     private Integer batchFileId = null;
 
-    protected SftpFile(SftpRemoteFile sftpRemoteFile, SftpFilenameParser sftpFilenameParser, String fullLocalRootPath) {
-        Validate.notNull(sftpRemoteFile, "sftpRemoteFile");
+    protected SftpFile(RemoteFile remoteFile, SftpFilenameParser sftpFilenameParser, String fullLocalRootPath) {
+        Validate.notNull(remoteFile, "remoteFile");
         Validate.notNull(sftpFilenameParser, "sftpFilenameParser");
         Validate.notNull(fullLocalRootPath, "fullLocalRootPath");
 
-        this.sftpRemoteFile = sftpRemoteFile;
+        this.remoteFile = remoteFile;
         this.sftpFilenameParser = sftpFilenameParser;
         this.fullLocalRootPath = fullLocalRootPath;
         this.pgpFileExtensionFilter = sftpFilenameParser.getFileExtension();
@@ -42,11 +42,11 @@ public class SftpFile {
     }
 
     public String getRemoteFilePath() {
-        return this.sftpRemoteFile.getFullPath();
+        return this.remoteFile.getFullPath();
     }
 
     public String getFilename() {
-        return this.sftpRemoteFile.getFilename();
+        return this.remoteFile.getFilename();
     }
 
     public String getLocalPath() {
@@ -77,11 +77,11 @@ public class SftpFile {
     }
 
     public long getRemoteFileSizeInBytes() {
-        return sftpRemoteFile.getFileSizeBytes();
+        return remoteFile.getFileSizeBytes();
     }
 
     public LocalDateTime getRemoteLastModifiedDate() {
-        return sftpRemoteFile.getLastModified();
+        return remoteFile.getLastModified();
     }
 
     public long getLocalFileSizeBytes() {

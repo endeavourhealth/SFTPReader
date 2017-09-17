@@ -2,6 +2,9 @@ package org.endeavourhealth.sftpreader.utilities.sftp;
 
 import com.jcraft.jsch.*;
 import org.apache.commons.lang3.Validate;
+import org.endeavourhealth.sftpreader.utilities.Connection;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
+import org.endeavourhealth.sftpreader.utilities.ConnectionDetails;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
@@ -14,27 +17,26 @@ import java.util.List;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
-public class SftpConnection {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpConnection.class);
+public class SftpConnection extends Connection {
+    //private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpConnection.class);
 
-    private SftpConnectionDetails connectionDetails;
+    //private ConnectionDetails connectionDetails;
     private JSch jSch;
     private Session session;
     private ChannelSftp channel;
 
-    public SftpConnection(SftpConnectionDetails connectionDetails) {
+    public SftpConnection(ConnectionDetails connectionDetails) {
+        super(connectionDetails);
         Validate.notEmpty(connectionDetails.getHostname(), "hostname is empty");
         Validate.notEmpty(connectionDetails.getUsername(), "username is empty");
         Validate.isTrue(connectionDetails.getPort() > 0, "port must be positive");
-
-        this.connectionDetails = connectionDetails;
     }
 
     public void open() throws JSchException, IOException, SftpConnectionException {
         this.jSch = new JSch();
 
-        jSch.addIdentity("client-private-key", this.connectionDetails.getClientPrivateKey().getBytes(), null, this.connectionDetails.getClientPrivateKeyPassword().getBytes());
-        jSch.setKnownHosts(new ByteArrayInputStream(this.connectionDetails.getKnownHostsString().getBytes()));
+        jSch.addIdentity("client-private-key", getConnectionDetails().getClientPrivateKey().getBytes(), null, getConnectionDetails().getClientPrivateKeyPassword().getBytes());
+        jSch.setKnownHosts(new ByteArrayInputStream(getConnectionDetails().getKnownHostsString().getBytes()));
 
         //remove
         KnownHosts knownHosts = (KnownHosts)jSch.getHostKeyRepository();
@@ -44,7 +46,7 @@ public class SftpConnection {
         }
 
 
-        this.session = jSch.getSession(connectionDetails.getUsername(), connectionDetails.getHostname(), connectionDetails.getPort());
+        this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
 
         //adding this to try to get past an error with new Emis server
         this.session.setUserInfo(new TestUserInfo());
@@ -73,14 +75,14 @@ public class SftpConnection {
     }
 
     @SuppressWarnings("unchecked")
-    public List<SftpRemoteFile> getFileList(String remotePath) throws SftpException {
+    public List<RemoteFile> getFileList(String remotePath) throws SftpException {
         Vector<ChannelSftp.LsEntry> fileList = channel.ls(remotePath);
 
         return fileList
                 .stream()
                 .filter(t -> !t.getAttrs().isDir())
                 .map(t ->
-                        new SftpRemoteFile(t.getFilename(),
+                        new RemoteFile(t.getFilename(),
                                 remotePath,
                                 t.getAttrs().getSize(),
                                 LocalDateTime.ofInstant(new Date((long)t.getAttrs().getMTime() * 1000L).toInstant(), ZoneId.systemDefault())
@@ -115,10 +117,6 @@ public class SftpConnection {
 
         if (session != null && session.isConnected())
             session.disconnect();
-    }
-
-    public SftpConnectionDetails getConnectionDetails() {
-        return connectionDetails;
     }
 
     class TestUserInfo implements UserInfo {

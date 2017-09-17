@@ -52,7 +52,7 @@ public class SlackNotifier {
 
         String message = friendlyName + " extract (" + configurationId + ") received";
 
-        SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier();
+        SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier(dbConfiguration.getInterfaceTypeName());
         message += slackNotifier.getCompleteBatchMessageSuffix(batch);
 
         postMessage(message);

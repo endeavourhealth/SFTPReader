@@ -1,8 +1,8 @@
-package org.endeavourhealth.sftpreader.utilities.sftp;
+package org.endeavourhealth.sftpreader.utilities;
 
 import java.io.IOException;
 
-public class SftpConnectionDetails {
+public class ConnectionDetails {
     private String hostname;
     private int port;
     private String username;
@@ -14,7 +14,7 @@ public class SftpConnectionDetails {
         return hostname;
     }
 
-    public SftpConnectionDetails setHostname(String hostname) {
+    public ConnectionDetails setHostname(String hostname) {
         this.hostname = hostname;
         return this;
     }
@@ -23,7 +23,7 @@ public class SftpConnectionDetails {
         return port;
     }
 
-    public SftpConnectionDetails setPort(int port) {
+    public ConnectionDetails setPort(int port) {
         this.port = port;
         return this;
     }
@@ -32,7 +32,7 @@ public class SftpConnectionDetails {
         return username;
     }
 
-    public SftpConnectionDetails setUsername(String username) {
+    public ConnectionDetails setUsername(String username) {
         this.username = username;
         return this;
     }
@@ -41,7 +41,7 @@ public class SftpConnectionDetails {
         return clientPrivateKey;
     }
 
-    public SftpConnectionDetails setClientPrivateKey(String clientPrivateKey) {
+    public ConnectionDetails setClientPrivateKey(String clientPrivateKey) {
         this.clientPrivateKey = clientPrivateKey;
         return this;
     }
@@ -50,7 +50,7 @@ public class SftpConnectionDetails {
         return clientPrivateKeyPassword;
     }
 
-    public SftpConnectionDetails setClientPrivateKeyPassword(String clientPrivateKeyPassword) {
+    public ConnectionDetails setClientPrivateKeyPassword(String clientPrivateKeyPassword) {
         this.clientPrivateKeyPassword = clientPrivateKeyPassword;
         return this;
     }
@@ -59,7 +59,7 @@ public class SftpConnectionDetails {
         return hostPublicKey;
     }
 
-    public SftpConnectionDetails setHostPublicKey(String hostPublicKey) {
+    public ConnectionDetails setHostPublicKey(String hostPublicKey) {
         this.hostPublicKey = hostPublicKey;
         return this;
     }

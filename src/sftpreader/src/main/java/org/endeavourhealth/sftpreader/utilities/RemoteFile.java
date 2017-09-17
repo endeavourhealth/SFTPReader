@@ -1,16 +1,16 @@
-package org.endeavourhealth.sftpreader.utilities.sftp;
+package org.endeavourhealth.sftpreader.utilities;
 
 import org.apache.commons.io.FilenameUtils;
 
 import java.time.LocalDateTime;
 
-public class SftpRemoteFile {
+public class RemoteFile {
     private String filename;
     private String remotePath;
     private long fileSizeBytes;
     private LocalDateTime lastModified;
 
-    public SftpRemoteFile(String filename, String remotePath, long fileSizeBytes, LocalDateTime lastModified) {
+    public RemoteFile(String filename, String remotePath, long fileSizeBytes, LocalDateTime lastModified) {
         this.filename = filename;
         this.remotePath = remotePath;
         this.fileSizeBytes = fileSizeBytes;
