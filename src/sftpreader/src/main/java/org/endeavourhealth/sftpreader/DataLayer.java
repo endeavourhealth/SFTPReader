@@ -51,7 +51,11 @@ public class DataLayer implements IDBDigestLogger {
                         .setKeycloakPassword(resultSet.getString("keycloak_password"))
                         .setKeycloakClientId(resultSet.getString("keycloak_clientid")));
 
-        DbInstanceSlack dbInstanceSlack = pgStoredProc.executeMultiQuerySingleRow((resultSet) ->
+        return dbInstance
+                .setConfigurationIds(configurationIds)
+                .setEdsConfiguration(dbInstanceEds);
+
+        /*DbInstanceSlack dbInstanceSlack = pgStoredProc.executeMultiQuerySingleRow((resultSet) ->
                 new DbInstanceSlack()
                         .setEnabled(resultSet.getBoolean("slack_enabled"))
                         .setSlackUrl(resultSet.getString("slack_url")));
@@ -59,7 +63,7 @@ public class DataLayer implements IDBDigestLogger {
         return dbInstance
                 .setConfigurationIds(configurationIds)
                 .setEdsConfiguration(dbInstanceEds)
-                .setSlackConfiguration(dbInstanceSlack);
+                .setSlackConfiguration(dbInstanceSlack);*/
     }
 
     public DbConfiguration getConfiguration(String configurationId) throws PgStoredProcException {

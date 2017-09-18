@@ -48,8 +48,13 @@ public class SftpConnection extends Connection {
 
         this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
 
+        this.session.connect();
+
+        this.channel = (ChannelSftp)session.openChannel("sftp");
+        this.channel.connect();
+
         //adding this to try to get past an error with new Emis server
-        this.session.setUserInfo(new TestUserInfo());
+        /*this.session.setUserInfo(new TestUserInfo());
 
         try {
             this.session.connect();
@@ -63,15 +68,7 @@ public class SftpConnection extends Connection {
             LOG.info("Server Public fingerprint: " + serverHostKey.getFingerPrint(jSch));
 
             throw ex;
-        }
-
-
-
-
-        /*this.session.connect();
-
-        this.channel = (ChannelSftp)session.openChannel("sftp");
-        this.channel.connect();*/
+        }*/
     }
 
     @SuppressWarnings("unchecked")
@@ -119,7 +116,7 @@ public class SftpConnection extends Connection {
             session.disconnect();
     }
 
-    class TestUserInfo implements UserInfo {
+    /*class TestUserInfo implements UserInfo {
 
         @Override
         public String getPassphrase() {
@@ -155,5 +152,5 @@ public class SftpConnection extends Connection {
         public void showMessage(String message) {
             LOG.info("UserInfo showMessage: " + message);
         }
-    }
+    }*/
 }

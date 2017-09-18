@@ -6,7 +6,7 @@ public class DbInstance {
     private String instanceName;
     private Integer httpManagementPort;
     private List<String> configurationIds;
-    private DbInstanceSlack slackConfiguration;
+    //private DbInstanceSlack slackConfiguration;
     private DbInstanceEds edsConfiguration;
 
     public String getInstanceName() {
@@ -36,14 +36,14 @@ public class DbInstance {
         return this;
     }
 
-    public DbInstanceSlack getSlackConfiguration() {
+    /*public DbInstanceSlack getSlackConfiguration() {
         return slackConfiguration;
     }
 
     public DbInstance setSlackConfiguration(DbInstanceSlack slackConfiguration) {
         this.slackConfiguration = slackConfiguration;
         return this;
-    }
+    }*/
 
     public DbInstanceEds getEdsConfiguration() {
         return this.edsConfiguration;
