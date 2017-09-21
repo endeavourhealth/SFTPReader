@@ -98,6 +98,7 @@ public class SftpReaderTask implements Runnable {
 
             String remotePath = dbConfiguration.getSftpConfiguration().getRemotePath();
 
+            //seem to need to specifically CD into the directory since it fails when trying to download files using the path as a prefix
             List<RemoteFile> remoteFiles = null;
             if (connection instanceof org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection) {
                 connection.cd(remotePath);
