@@ -38,23 +38,21 @@ public class SftpConnection extends Connection {
         jSch.addIdentity("client-private-key", getConnectionDetails().getClientPrivateKey().getBytes(), null, getConnectionDetails().getClientPrivateKeyPassword().getBytes());
         jSch.setKnownHosts(new ByteArrayInputStream(getConnectionDetails().getKnownHostsString().getBytes()));
 
-        //remove
-        KnownHosts knownHosts = (KnownHosts)jSch.getHostKeyRepository();
+        this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
+
+        this.session.connect();
+
+        this.channel = (ChannelSftp)session.openChannel("sftp");
+        this.channel.connect();
+
+        //adding this to try to get past an error with new Emis server
+        /*KnownHosts knownHosts = (KnownHosts)jSch.getHostKeyRepository();
         for (HostKey key: knownHosts.getHostKey()) {
             LOG.info("Public key: " + key.getKey());
             LOG.info("Public fingerprint: " + key.getFingerPrint(jSch));
         }
 
-
-        this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
-
-        /*this.session.connect();
-
-        this.channel = (ChannelSftp)session.openChannel("sftp");
-        this.channel.connect();*/
-
-        //adding this to try to get past an error with new Emis server
-        //this.session.setUserInfo(new TestUserInfo());
+        this.session.setUserInfo(new TestUserInfo());
 
         try {
             this.session.connect();
@@ -68,7 +66,7 @@ public class SftpConnection extends Connection {
             LOG.info("Server Public fingerprint: " + serverHostKey.getFingerPrint(jSch));
 
             throw ex;
-        }
+        }*/
     }
 
     @SuppressWarnings("unchecked")
