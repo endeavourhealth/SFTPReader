@@ -25,12 +25,13 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmisSftpBatchSplitter.class);
 
+    public static final String EMIS_AGREEMENTS_FILE_ID = "Agreements_SharingOrganisation";
+    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
+
     private static final String SPLIT_COLUMN_ORG = "OrganisationGuid";
     private static final String SPLIT_COLUMN_PROCESSING_ID = "ProcessingId";
 
     private static final String SPLIT_FOLDER = "Split";
-
-    private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     /**
      * splits the EMIS extract files we use by org GUID and processing ID, so
@@ -377,20 +378,27 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return ret;
     }*/
 
+    public static File findSharingAgreementsFile(Batch batch, String rootPath) {
+
+        String batchRootPath = FilenameUtils.concat(rootPath, batch.getLocalRelativePath());
+
+        for (BatchFile batchFile: batch.getBatchFiles()) {
+            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(EMIS_AGREEMENTS_FILE_ID)) {
+
+                String path = FilenameUtils.concat(batchRootPath, batchFile.getDecryptedFilename());
+                return new File(path);
+            }
+        }
+
+        return null;
+    }
+
     /**
      * goes through the sharing agreements file to find the org GUIDs of those orgs activated in the sharing agreement
      */
     private Set<File> findExpectedOrgFolders(File dstDir, String fullLocalInstancePath, Batch batch) throws Exception {
 
-        File sharingAgreementFile = null;
-        for (BatchFile batchFile: batch.getBatchFiles()) {
-            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase("Agreements_SharingOrganisation")) {
-                String path = FilenameUtils.concat(fullLocalInstancePath, batch.getLocalRelativePath());
-                path = FilenameUtils.concat(path, batchFile.getDecryptedFilename());
-                sharingAgreementFile = new File(path);
-                break;
-            }
-        }
+        File sharingAgreementFile = findSharingAgreementsFile(batch, fullLocalInstancePath);
 
         Set<File> ret = new HashSet<>();
 

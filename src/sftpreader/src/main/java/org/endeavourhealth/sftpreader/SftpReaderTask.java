@@ -317,7 +317,7 @@ public class SftpReaderTask implements Runnable {
         LOG.trace(" Validating batches: " + batchIdentifiers);
 
         SftpBatchValidator sftpBatchValidator = ImplementationActivator.createSftpBatchValidator(dbConfiguration.getInterfaceTypeName());
-        sftpBatchValidator.validateBatches(incompleteBatches, lastCompleteBatch, dbConfiguration);
+        sftpBatchValidator.validateBatches(incompleteBatches, lastCompleteBatch, dbConfiguration, db);
 
         LOG.trace(" Completed batch validation");
     }

@@ -1,6 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.barts;
 
 import org.apache.commons.lang3.Validate;
+import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchFile;
@@ -12,7 +13,7 @@ import java.util.List;
 public class BartsSftpBatchValidator extends SftpBatchValidator {
 
     @Override
-    public void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException {
+    public void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
         Validate.notNull(incompleteBatches, "incompleteBatches is null");
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
         Validate.notNull(dbConfiguration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
