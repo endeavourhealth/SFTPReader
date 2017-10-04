@@ -7,6 +7,6 @@ public class BartsSftpOrganisationHelper extends SftpOrganisationHelper {
 
     @Override
     public String findOrganisationNameFromOdsCode(DataLayer db, String odsCode) {
-        return "RNJ";
+        return "R1H";
     }
 }

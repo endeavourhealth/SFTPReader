@@ -31,7 +31,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
         BatchSplit batchSplit = new BatchSplit();
         batchSplit.setBatchId(batch.getBatchId());
         batchSplit.setLocalRelativePath(batch.getLocalRelativePath());
-        batchSplit.setOrganisationId("RNJ");
+        batchSplit.setOrganisationId("R1H");
 
         ret.add(batchSplit);
 
