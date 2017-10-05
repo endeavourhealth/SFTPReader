@@ -9,9 +9,16 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                                                                         // same as ISO pattern but switch : for . so can be used as filename
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
     private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
+    public static final String FILE_TYPE_SUSOPA = "SUSOPA";
+    public static final String FILE_TYPE_SUSAEA = "SUSAEA";
+    public static final String FILE_TYPE_SUSIP = "SUSIP";
+    public static final String FILE_TYPE_TAILIP = "TAILIP";
+    public static final String FILE_TYPE_TAILOPA = "TAILOPA";
+    public static final String FILE_TYPE_TAILAEA = "TAILAEA";
 
     private String fileTypeIdentifier;
     private String fileUniqueId;
+    private String batchGroup;
 
     public BartsSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
@@ -23,7 +30,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     public String generateBatchIdentifier() {
-        return fileTypeIdentifier + "#" + fileUniqueId;
+        return batchGroup + "#" + fileUniqueId;
     }
 
     @Override
@@ -65,48 +72,55 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         if (filenamePart1.compareToIgnoreCase("susopa") == 0) {
             if (parts.length != 2)
                 throw new SftpFilenameParseException("Barts batch filename could not be parsed");
-            fileTypeIdentifier = "SUSOPA";
+            fileTypeIdentifier = FILE_TYPE_SUSOPA;
+            batchGroup = FILE_TYPE_SUSOPA;
             fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
         } else {
             if (filenamePart1.compareToIgnoreCase("susaea") == 0) {
                 if (parts.length != 2)
                     throw new SftpFilenameParseException("Barts batch filename could not be parsed");
-                fileTypeIdentifier = "SUSAEA";
+                fileTypeIdentifier = FILE_TYPE_SUSAEA;
                 fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
+                batchGroup = FILE_TYPE_SUSAEA;
             } else {
                 if (filenamePart1.compareToIgnoreCase("tailopa") == 0) {
                     if (parts.length != 2)
                         throw new SftpFilenameParseException("Barts batch filename could not be parsed");
-                    fileTypeIdentifier = filenamePart1.toUpperCase();
+                    fileTypeIdentifier = FILE_TYPE_TAILOPA;
                     fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
+                    batchGroup = FILE_TYPE_SUSOPA;
                 } else {
                     if (filenamePart1.compareToIgnoreCase("tailaea") == 0) {
                         if (parts.length != 2)
                             throw new SftpFilenameParseException("Barts batch filename could not be parsed");
-                        fileTypeIdentifier = filenamePart1.toUpperCase();
+                        fileTypeIdentifier = FILE_TYPE_TAILAEA;
                         fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
+                        batchGroup = FILE_TYPE_SUSAEA;
                     } else {
                         String filenamePart3 = parts[2];
 
                         if (filenamePart1.compareToIgnoreCase("tailip") == 0) {
                             if (parts.length != 3)
                                 throw new SftpFilenameParseException("Barts batch filename could not be parsed");
-                            fileTypeIdentifier = filenamePart1.toUpperCase();
-                            fileUniqueId = filenamePart3;
+                            fileTypeIdentifier = FILE_TYPE_TAILIP;
+                            fileUniqueId = filenamePart2.split("\\.")[1];
+                            batchGroup = FILE_TYPE_SUSIP;
                         } else {
                             String filenamePart4 = parts[3];
 
                             if (filenamePart1.compareToIgnoreCase("ip") == 0) {
                                 if (parts.length != 4)
                                     throw new SftpFilenameParseException("Barts batch filename could not be parsed");
-                                fileTypeIdentifier = "SUSIP";
+                                fileTypeIdentifier = FILE_TYPE_SUSIP;
                                 fileUniqueId = filenamePart3;
+                                batchGroup = FILE_TYPE_SUSIP;
                             } else {
                                 if (filenamePart1.compareToIgnoreCase("rnj") == 0) {
                                     if (parts.length != 4)
                                         throw new SftpFilenameParseException("Barts batch filename could not be parsed");
                                     fileTypeIdentifier = filenamePart3.toUpperCase();
                                     fileUniqueId = filenamePart4.substring(0, filenamePart4.indexOf("."));
+                                    batchGroup = fileTypeIdentifier;
                                 } else {
                                     //String filenamePart5 = parts[4];
                                     String filenamePart6 = parts[5];
@@ -115,7 +129,8 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                                         if (parts.length != 6)
                                             throw new SftpFilenameParseException("Barts batch filename could not be parsed");
                                         fileTypeIdentifier = filenamePart3.toUpperCase();
-                                        fileUniqueId = filenamePart6.substring(0, filenamePart6.indexOf("."));
+                                        fileUniqueId = filenamePart4;
+                                        batchGroup = "MATERNITY";
                                     } else {
                                         throw new SftpFilenameParseException("Barts batch filename could not be parsed");
                                     }
