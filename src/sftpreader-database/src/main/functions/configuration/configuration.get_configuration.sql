@@ -23,7 +23,9 @@ begin
 		it.interface_type_name,
 		c.poll_frequency_seconds,	
 		c.local_root_path_prefix,
-		c.local_root_path
+		c.local_root_path,
+		c.software_content_type,
+		c.software_version
 	from configuration.configuration c 
 	inner join configuration.interface_type it on c.interface_type_id = it.interface_type_id
 	where c.configuration_id = _configuration_id;

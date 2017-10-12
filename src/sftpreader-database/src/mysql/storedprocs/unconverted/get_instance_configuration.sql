@@ -96,8 +96,8 @@ begin
 	open configuration_eds for
 	select
 		e.eds_url,
-		e.software_content_type,
-		e.software_version,
+		-- e.software_content_type,
+		-- e.software_version,
 		e.use_keycloak,
 		e.keycloak_token_uri,
 		e.keycloak_realm,

@@ -464,8 +464,10 @@ public class SftpReaderTask implements Runnable {
         UUID messageId = UUID.randomUUID();
         int batchSplitId = unnotifiedBatchSplit.getBatchSplitId();
         String organisationId = unnotifiedBatchSplit.getOrganisationId();
-        String softwareContentType = dbInstanceConfiguration.getEdsConfiguration().getSoftwareContentType();
-        String softwareVersion = dbInstanceConfiguration.getEdsConfiguration().getSoftwareVersion();
+        String softwareContentType = dbConfiguration.getSoftwareContentType();
+        String softwareVersion = dbConfiguration.getSoftwareVersion();
+        /*String softwareContentType = dbInstanceConfiguration.getEdsConfiguration().getSoftwareContentType();
+        String softwareVersion = dbInstanceConfiguration.getEdsConfiguration().getSoftwareVersion();*/
         String outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload);
 
         try {

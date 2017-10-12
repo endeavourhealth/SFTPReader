@@ -21,6 +21,8 @@ CREATE TABLE configuration (
 	local_root_path_prefix varchar(500) NOT NULL,
 	local_root_path varchar(500) NOT NULL,
 	configuration_friendly_name varchar(100) NOT NULL,
+	software_content_type varchar(100) NOT NULL,
+	software_version varchar(100) NOT NULL,
 
 	CONSTRAINT configuration_configurationid_pk PRIMARY KEY (configuration_id),
 	CONSTRAINT configuration_interfacetypeid_fk FOREIGN KEY (interface_type_id) REFERENCES interface_type(interface_type_id),
@@ -68,8 +70,8 @@ CREATE TABLE configuration_sftp (
 CREATE TABLE eds_endpoint (
 	single_row_lock boolean NOT NULL,
 	eds_url varchar(1000) NOT NULL,
-	software_content_type varchar(100) NOT NULL,
-	software_version varchar(100) NOT NULL,
+	-- software_content_type varchar(100) NOT NULL,
+	-- software_version varchar(100) NOT NULL,
 	use_keycloak boolean NOT NULL,
 	keycloak_token_uri varchar(500),
 	keycloak_realm varchar(100),

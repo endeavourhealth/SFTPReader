@@ -42,8 +42,8 @@ public class DataLayer implements IDBDigestLogger {
         DbInstanceEds dbInstanceEds = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbInstanceEds()
                         .setEdsUrl(resultSet.getString("eds_url"))
-                        .setSoftwareContentType(resultSet.getString("software_content_type"))
-                        .setSoftwareVersion(resultSet.getString("software_version"))
+                        /*.setSoftwareContentType(resultSet.getString("software_content_type"))
+                        .setSoftwareVersion(resultSet.getString("software_version"))*/
                         .setUseKeycloak(resultSet.getBoolean("use_keycloak"))
                         .setKeycloakTokenUri(resultSet.getString("keycloak_token_uri"))
                         .setKeycloakRealm(resultSet.getString("keycloak_realm"))
@@ -79,7 +79,9 @@ public class DataLayer implements IDBDigestLogger {
                         .setInterfaceTypeName(resultSet.getString("interface_type_name"))
                         .setPollFrequencySeconds(resultSet.getInt("poll_frequency_seconds"))
                         .setLocalRootPathPrefix(resultSet.getString("local_root_path_prefix"))
-                        .setLocalRootPath(resultSet.getString("local_root_path")));
+                        .setLocalRootPath(resultSet.getString("local_root_path"))
+                        .setSoftwareContentType(resultSet.getString("software_content_type"))
+                        .setSoftwareVersion(resultSet.getString("software_version")));
 
         if (dbConfiguration == null)
             throw new PgStoredProcException("No configuration found with configuration id " + configurationId);

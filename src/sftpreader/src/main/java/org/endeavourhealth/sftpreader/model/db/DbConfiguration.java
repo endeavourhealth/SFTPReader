@@ -11,6 +11,8 @@ public class DbConfiguration {
     private int pollFrequencySeconds;
     private String localRootPathPrefix;
     private String localRootPath;
+    private String softwareContentType;
+    private String softwareVersion;
 
     private DbConfigurationSftp sftpConfiguration;
     private DbConfigurationPgp pgpConfiguration;
@@ -115,6 +117,24 @@ public class DbConfiguration {
 
     public DbConfiguration setDbConfigurationKvp(List<DbConfigurationKvp> kvpConfiguration) {
         this.kvpConfiguration = kvpConfiguration;
+        return this;
+    }
+
+    public String getSoftwareVersion() {
+        return softwareVersion;
+    }
+
+    public DbConfiguration setSoftwareVersion(String softwareVersion) {
+        this.softwareVersion = softwareVersion;
+        return this;
+    }
+
+    public String getSoftwareContentType() {
+        return softwareContentType;
+    }
+
+    public DbConfiguration setSoftwareContentType(String softwareContentType) {
+        this.softwareContentType = softwareContentType;
         return this;
     }
 }
