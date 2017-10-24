@@ -2,6 +2,7 @@ package org.endeavourhealth.sftpreader.implementations;
 
 import org.endeavourhealth.sftpreader.implementations.barts.*;
 import org.endeavourhealth.sftpreader.implementations.emis.*;
+import org.endeavourhealth.sftpreader.implementations.homerton.*;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 
 public class ImplementationActivator {
@@ -11,7 +12,11 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpFilenameParser(filename, dbConfiguration);
         } else {
-            return new BartsSftpFilenameParser(filename, dbConfiguration);
+            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                return new BartsSftpFilenameParser(filename, dbConfiguration);
+            } else {
+                return new HomertonSftpFilenameParser(filename, dbConfiguration);
+            }
         }
     }
 
@@ -19,7 +24,11 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchValidator();
         } else {
-            return new BartsSftpBatchValidator();
+            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                return new BartsSftpBatchValidator();
+            } else {
+                return new HomertonSftpBatchValidator();
+            }
         }
     }
 
@@ -27,7 +36,11 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchSequencer();
         } else {
-            return new BartsSftpBatchSequencer();
+            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                return new BartsSftpBatchSequencer();
+            } else {
+                return new HomertonSftpBatchSequencer();
+            }
         }
     }
 
@@ -35,7 +48,11 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpNotificationCreator();
         } else {
-            return new BartsSftpNotificationCreator();
+            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                return new BartsSftpNotificationCreator();
+            } else {
+                return new HomertonSftpNotificationCreator();
+            }
         }
     }
 
@@ -43,7 +60,11 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchSplitter();
         } else {
-            return new BartsSftpBatchSplitter();
+            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                return new BartsSftpBatchSplitter();
+            } else {
+                return new HomertonSftpBatchSplitter();
+            }
         }
     }
 
@@ -51,7 +72,11 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpOrganisationHelper();
         } else {
-            return new BartsSftpOrganisationHelper();
+            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                return new BartsSftpOrganisationHelper();
+            } else {
+                return new HomertonSftpOrganisationHelper();
+            }
         }
     }
 
@@ -59,7 +84,11 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpSlackNotifier();
         } else {
-            return new BartsSftpSlackNotifier();
+            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                return new BartsSftpSlackNotifier();
+            } else {
+                return new HomertonSftpSlackNotifier();
+            }
         }
     }
 }
