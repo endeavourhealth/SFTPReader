@@ -9,7 +9,7 @@ UPDATE configuration.configuration
 SET
 	software_content_type = eds.software_content_type,
 	software_version = eds.software_version
-FROM configuration.eds
+FROM configuration.eds;
 
 ALTER TABLE configuration.eds
 DROP COLUMN software_content_type;
