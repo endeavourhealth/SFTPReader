@@ -468,11 +468,20 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                 }
 
                 if (StringUtils.isNotEmpty(orgOds)) {
+
+                    //carry over the start date if it was previously set
+                    Date startDate = null;
+                    EmisOrganisationMap existingMapping = db.getEmisOrganisationMap(orgGuid);
+                    if (existingMapping != null) {
+                        startDate = existingMapping.getStartDate();
+                    }
+
+                    //create and save the mapping
                     EmisOrganisationMap mapping = new EmisOrganisationMap()
                             .setGuid(orgGuid)
                             .setName(combinedName)
                             .setOdsCode(orgOds)
-                            .setStartDate(null);
+                            .setStartDate(startDate);
 
                     db.addEmisOrganisationMap(mapping);
                 }
