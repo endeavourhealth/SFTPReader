@@ -1,15 +1,13 @@
 package org.endeavourhealth.sftpreader.utilities.file;
 
-import com.jcraft.jsch.*;
-import com.sun.javaws.exceptions.InvalidArgumentException;
-import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.utilities.Connection;
-import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.endeavourhealth.sftpreader.utilities.ConnectionDetails;
-import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnectionException;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
