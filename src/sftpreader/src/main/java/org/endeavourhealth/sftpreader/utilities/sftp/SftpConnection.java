@@ -71,6 +71,28 @@ public class SftpConnection extends Connection {
 
     @SuppressWarnings("unchecked")
     public List<RemoteFile> getFileList(String remotePath) throws SftpException {
+
+        //an error is raised if we try to list the files without first changing into the directory
+        channel.cd(remotePath);
+
+        Vector<ChannelSftp.LsEntry> fileList = channel.ls("\\");
+
+        return fileList
+                .stream()
+                .filter(t -> !t.getAttrs().isDir())
+                .map(t ->
+                        new RemoteFile(t.getFilename(),
+                                "\\",
+                                t.getAttrs().getSize(),
+                                LocalDateTime.ofInstant(new Date((long)t.getAttrs().getMTime() * 1000L).toInstant(), ZoneId.systemDefault())
+                        )
+                )
+                .collect(Collectors.toList());
+    }
+
+    /*@SuppressWarnings("unchecked")
+    public List<RemoteFile> getFileList(String remotePath) throws SftpException {
+
         Vector<ChannelSftp.LsEntry> fileList = channel.ls(remotePath);
 
         return fileList
@@ -84,7 +106,7 @@ public class SftpConnection extends Connection {
                         )
                 )
                 .collect(Collectors.toList());
-    }
+    }*/
 
     public InputStream getFile(String remotePath) throws SftpException {
         return channel.get(remotePath);
@@ -94,9 +116,9 @@ public class SftpConnection extends Connection {
         channel.rm(remotePath);
     }
 
-    public void cd(String remotePath) throws SftpException {
+    /*public void cd(String remotePath) throws SftpException {
         channel.cd(remotePath);
-    }
+    }*/
 
     public void put(String localPath, String destinationPath) throws SftpException {
         channel.put(localPath, destinationPath);

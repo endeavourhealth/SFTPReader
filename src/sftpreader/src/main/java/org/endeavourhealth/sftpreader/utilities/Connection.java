@@ -27,7 +27,7 @@ public abstract class Connection {
     public abstract void deleteFile(String remotePath) throws Exception;
 
     // Change remote default directory
-    public abstract void cd(String remotePath) throws Exception;
+    //public abstract void cd(String remotePath) throws Exception;
 
     // Upload/save local file to remote
     public abstract void put(String localPath, String destinationPath) throws Exception;

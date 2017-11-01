@@ -1,6 +1,7 @@
 package org.endeavourhealth.sftpreader.utilities.file;
 
 import com.jcraft.jsch.*;
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.utilities.Connection;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
@@ -29,8 +30,49 @@ public class FileConnection extends Connection {
         // No concept of 'open connection'
     }
 
-    @SuppressWarnings("unchecked")
     public List<RemoteFile> getFileList(String remotePath) throws Exception {
+        LOG.info("Retrieving files from: " + remotePath);
+
+        List<RemoteFile> ret = new Vector<>();
+
+        if (remotePath.endsWith("*")) {
+            //if the path ends with a *, then we want to recurse into sub-directories
+            File dir = new File(remotePath);
+            LOG.info("" + dir.getPath());
+            File dirParent = dir.getParentFile();
+            String dirName = dir.getName();
+            if (!dirName.equals("*")) {
+                throw new Exception("Invalid remote path");
+            }
+
+            File[] children = dirParent.listFiles();
+            for (File child: children) {
+                if (child.isDirectory()) {
+                    String subDirPath = child.getPath();
+                    List<RemoteFile> subDirFiles = getFileList(subDirPath);
+                    ret.addAll(subDirFiles);
+                }
+            }
+
+        } else {
+            Path dir = new File(remotePath).toPath();
+            DirectoryStream<Path> stream = Files.newDirectoryStream(dir);
+            for (Path file: stream) {
+                File tempFile = file.toFile();
+                if (tempFile.isFile()) {
+                    RemoteFile remoteFile = new RemoteFile(tempFile.getName(),
+                            remotePath,
+                            tempFile.length(),
+                            LocalDateTime.ofInstant(new Date(tempFile.lastModified()).toInstant(), ZoneId.systemDefault()));
+                    ret.add(remoteFile);
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    /*public List<RemoteFile> getFileList(String remotePath) throws Exception {
         LOG.info("Retrieving files from: " + remotePath);
 
         List<RemoteFile> ret = new Vector<RemoteFile>();
@@ -47,7 +89,7 @@ public class FileConnection extends Connection {
             }
         }
         return ret;
-    }
+    }*/
 
     public InputStream getFile(String remotePath) throws Exception {
         LOG.info("Retrieving single file: " + remotePath);
@@ -60,9 +102,9 @@ public class FileConnection extends Connection {
         Files.delete(p);
     }
 
-    public void cd(String remotePath) throws SftpException {
+    /*public void cd(String remotePath) throws SftpException {
         // no concept of 'current location'
-    }
+    }*/
 
     public void put(String localPath, String destinationPath) throws Exception {
         LOG.info("Save file: " + localPath + "==>" + destinationPath);

@@ -98,14 +98,7 @@ public class SftpReaderTask implements Runnable {
 
             String remotePath = dbConfiguration.getSftpConfiguration().getRemotePath();
 
-            //seem to need to specifically CD into the directory since it fails when trying to download files using the path as a prefix
-            List<RemoteFile> remoteFiles = null;
-            if (connection instanceof org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection) {
-                connection.cd(remotePath);
-                remoteFiles = getFileList(connection, "\\");
-            } else {
-                remoteFiles = getFileList(connection, remotePath);
-            }
+            List<RemoteFile> remoteFiles = getFileList(connection, remotePath);
 
             int countAlreadyProcessed = 0;
 
@@ -186,40 +179,35 @@ public class SftpReaderTask implements Runnable {
     }
 
     private void downloadFile(Connection connection, SftpFile batchFile) throws Exception {
-        downloadFile(connection, batchFile.getFilename(), batchFile.getLocalFilePath(), dbConfiguration.getSftpConfiguration().getRemotePath());
-
-        batchFile.setLocalFileSizeBytes(getFileSizeBytes(batchFile.getLocalFilePath()));
-
-        db.setFileAsDownloaded(batchFile);
-    }
-
-    private static void downloadFile(Connection connection, String remoteFilePath, String localFilePath, String remotePath) throws Exception, IOException {
-        LOG.info("   Downloading file to: " + localFilePath);
-
+        String localFilePath = batchFile.getLocalFilePath();
+        LOG.info("Downloading file to: " + localFilePath);
         File temporaryDownloadFile = new File(localFilePath + ".download");
 
-        if (temporaryDownloadFile.exists())
-            if (!temporaryDownloadFile.delete())
+        if (temporaryDownloadFile.exists()) {
+            if (!temporaryDownloadFile.delete()) {
                 throw new IOException("Could not delete existing temporary download file " + temporaryDownloadFile);
-
-        InputStream inputStream = null;
-        if (connection instanceof org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection) {
-            inputStream = connection.getFile(remoteFilePath);
-        } else {
-            String path = FilenameUtils.concat(remotePath, remoteFilePath);
-            inputStream = connection.getFile(path);
+            }
         }
 
+        String remoteFilePath = batchFile.getRemoteFilePath();
+
+        InputStream inputStream = connection.getFile(remoteFilePath);
         Files.copy(inputStream, temporaryDownloadFile.toPath());
 
         //if we previously failure during decryption, the renamed file will already exist, so delete it
         File destination = new File(localFilePath);
 
-        if (destination.exists())
+        if (destination.exists()) {
             destination.delete();
+        }
 
-        if (!temporaryDownloadFile.renameTo(destination))
+        if (!temporaryDownloadFile.renameTo(destination)) {
             throw new IOException("Could not temporary download file to " + localFilePath);
+        }
+
+        batchFile.setLocalFileSizeBytes(getFileSizeBytes(batchFile.getLocalFilePath()));
+
+        db.setFileAsDownloaded(batchFile);
     }
 
     private SftpFile instantiateSftpBatchFile(RemoteFile remoteFile) {
