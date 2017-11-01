@@ -36,7 +36,7 @@ public class FileConnection extends Connection {
         if (remotePath.endsWith("*")) {
             //if the path ends with a *, then we want to recurse into sub-directories
             File dir = new File(remotePath);
-            LOG.info("" + dir.getPath());
+            //LOG.info("" + dir.getPath());
             File dirParent = dir.getParentFile();
             String dirName = dir.getName();
             if (!dirName.equals("*")) {
@@ -63,6 +63,7 @@ public class FileConnection extends Connection {
                             tempFile.length(),
                             LocalDateTime.ofInstant(new Date(tempFile.lastModified()).toInstant(), ZoneId.systemDefault()));
                     ret.add(remoteFile);
+                    LOG.info("Found " + remoteFile.getFullPath());
                 }
             }
         }
