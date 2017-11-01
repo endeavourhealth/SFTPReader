@@ -471,7 +471,8 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                     EmisOrganisationMap mapping = new EmisOrganisationMap()
                             .setGuid(orgGuid)
                             .setName(combinedName)
-                            .setOdsCode(orgOds);
+                            .setOdsCode(orgOds)
+                            .setStartDate(null);
 
                     db.addEmisOrganisationMap(mapping);
                 }

@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader;
 
+import com.google.common.base.Strings;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
 import org.apache.commons.io.FilenameUtils;
@@ -445,9 +446,6 @@ public class SftpReaderTask implements Runnable {
 
 
     private void notify(BatchSplit unnotifiedBatchSplit) throws SftpReaderException, PgStoredProcException, IOException {
-        SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration.getInterfaceTypeName());
-
-        String messagePayload = sftpNotificationCreator.createNotificationMessage(dbConfiguration, unnotifiedBatchSplit);
 
         UUID messageId = UUID.randomUUID();
         int batchSplitId = unnotifiedBatchSplit.getBatchSplitId();
@@ -456,13 +454,30 @@ public class SftpReaderTask implements Runnable {
         String softwareVersion = dbConfiguration.getSoftwareVersion();
         /*String softwareContentType = dbInstanceConfiguration.getEdsConfiguration().getSoftwareContentType();
         String softwareVersion = dbInstanceConfiguration.getEdsConfiguration().getSoftwareVersion();*/
-        String outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload);
+
+        String outboundMessage = null;
 
         try {
-            String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
-            boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
+            SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration.getInterfaceTypeName());
+            String messagePayload = sftpNotificationCreator.createNotificationMessage(organisationId, db, dbConfiguration, unnotifiedBatchSplit);
 
-            EdsSenderResponse edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage);
+            EdsSenderResponse edsSenderResponse = null;
+
+            if (Strings.isNullOrEmpty(messagePayload)) {
+                //if an empty message payload is returned, this means to NOT fail the batch but also not notify the messaging API for it
+                //which allows us to skip earlier extracts for an organisation received BEFORE a bulk or re-bulk
+                edsSenderResponse = new EdsSenderResponse();
+                edsSenderResponse.setStatusLine("Not Sent To Messaging API");
+                edsSenderResponse.setResponseBody("Outbound message payload was empty, so message not being sent to Messaging API");
+
+            } else {
+                outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload);
+
+                String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
+                boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
+
+                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage);
+            }
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),
                     batchSplitId,
@@ -525,7 +540,7 @@ public class SftpReaderTask implements Runnable {
 
         SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration.getInterfaceTypeName());
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
-        String message = "Exception notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
+        String message = "Exception notifying batch for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
 
         SlackNotifier slackNotifier = new SlackNotifier(configuration);
         slackNotifier.postMessage(message);

@@ -2,6 +2,7 @@ package org.endeavourhealth.sftpreader.implementations.homerton;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpNotificationCreator;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
@@ -13,7 +14,7 @@ import java.util.List;
 public class HomertonSftpNotificationCreator extends SftpNotificationCreator {
 
     @Override
-    public String createNotificationMessage(DbConfiguration dbConfiguration, BatchSplit batchSplit) {
+    public String createNotificationMessage(String organisationId, DataLayer db, DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
         String relativePath = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batchSplit.getLocalRelativePath());
         String fullPath = FilenameUtils.concat(dbConfiguration.getLocalRootPathPrefix(), relativePath);
