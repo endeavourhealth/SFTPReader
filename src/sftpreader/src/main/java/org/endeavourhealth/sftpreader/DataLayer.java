@@ -138,7 +138,7 @@ public class DataLayer implements IDBDigestLogger {
 
         LocalDate localDate = null;
         if (mapping.getStartDate() != null) {
-            Date d = mapping.getStartDate();
+            java.util.Date d = mapping.getStartDate();
             localDate = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         }
 
@@ -425,9 +425,10 @@ public class DataLayer implements IDBDigestLogger {
             //we have multiple names for some orgs in production (e.g. F84636),
             //so return any non-null date we find
             while (rs.next()) {
-                Date d = rs.getDate(1);
+                java.sql.Date d = rs.getDate(1);
                 if (d != null) {
-                    ret = d;
+                    //create a java util date from the sql date, since sql Date doesn't support the toInstant function
+                    ret = new java.util.Date(d.getTime());
                 }
             }
 
