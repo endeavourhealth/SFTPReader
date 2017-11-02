@@ -161,7 +161,7 @@ public class DataLayer implements IDBDigestLogger {
                 .setGuid(resultSet.getString("guid"))
                 .setName(resultSet.getString("name"))
                 .setOdsCode(resultSet.getString("ods_code"))
-                .setStartDate(resultSet.getDate("start_date")));
+                .setStartDate(new java.util.Date(resultSet.getDate("start_date").getTime()))); //convert to util date
 
         if (mappings.isEmpty())
             return null;
