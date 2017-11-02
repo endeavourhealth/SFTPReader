@@ -8,6 +8,7 @@ import org.endeavourhealth.sftpreader.utilities.ConnectionDetails;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -109,7 +110,12 @@ public class SftpConnection extends Connection {
     }*/
 
     public InputStream getFile(String remotePath) throws SftpException {
-        return channel.get(remotePath);
+
+        //when listing the files we change into the directory, so want to remove the path and just download by filename
+        File f = new File(remotePath);
+        String name = f.getName();
+
+        return channel.get(name);
     }
 
     public void deleteFile(String remotePath) throws SftpException {
