@@ -13,6 +13,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -136,10 +137,14 @@ public class DataLayer implements IDBDigestLogger {
 
     public void addEmisOrganisationMap(EmisOrganisationMap mapping) throws PgStoredProcException {
 
+        //potgre driver only supports LocalDate, rather than regular Date, so we need to convert
         LocalDate localDate = null;
         if (mapping.getStartDate() != null) {
-            java.util.Date d = mapping.getStartDate();
-            localDate = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            //the start date may be a java.sql.Date, which weirdly doesn't support the toInstant()
+            //function, so we need to create a new java.util.Date from it
+            java.util.Date d = new java.util.Date(mapping.getStartDate().getTime());
+            Instant instant = d.toInstant();
+            localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
         }
 
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
@@ -161,7 +166,7 @@ public class DataLayer implements IDBDigestLogger {
                 .setGuid(resultSet.getString("guid"))
                 .setName(resultSet.getString("name"))
                 .setOdsCode(resultSet.getString("ods_code"))
-                .setStartDate(new java.util.Date(resultSet.getDate("start_date").getTime()))); //convert to util date
+                .setStartDate(resultSet.getDate("start_date")));
 
         if (mappings.isEmpty())
             return null;
@@ -427,8 +432,7 @@ public class DataLayer implements IDBDigestLogger {
             while (rs.next()) {
                 java.sql.Date d = rs.getDate(1);
                 if (d != null) {
-                    //create a java util date from the sql date, since sql Date doesn't support the toInstant function
-                    ret = new java.util.Date(d.getTime());
+                    ret = d;
                 }
             }
 
