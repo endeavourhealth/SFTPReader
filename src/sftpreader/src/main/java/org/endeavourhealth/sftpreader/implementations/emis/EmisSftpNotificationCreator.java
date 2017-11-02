@@ -2,6 +2,8 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
+import org.endeavourhealth.common.eds.EdsSenderResponse;
 import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpNotificationCreator;
 import org.endeavourhealth.sftpreader.model.db.Batch;
@@ -25,7 +27,10 @@ public class EmisSftpNotificationCreator extends SftpNotificationCreator {
         //find the start date we've set for this organisation in the emis org map
         Date startDate = db.findEmisOrgStartDateFromOdsCode(organisationId);
         if (startDate == null) {
-            throw new Exception("Organisation start date not set for " + organisationId + " in emis_organisation_map table");
+            EdsSenderResponse r = new EdsSenderResponse();
+            r.setStatusLine("Error creating payload for " + organisationId);
+            r.setResponseBody("No start date set in emis_organisation_map table");
+            throw new EdsSenderHttpErrorResponseException("Organisation start date not set for " + organisationId + " in emis_organisation_map table", r);
         }
 
         Batch batch = batchSplit.getBatch();
