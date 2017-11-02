@@ -13,6 +13,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -132,12 +135,19 @@ public class DataLayer implements IDBDigestLogger {
     }
 
     public void addEmisOrganisationMap(EmisOrganisationMap mapping) throws PgStoredProcException {
+
+        LocalDate localDate = null;
+        if (mapping.getStartDate() != null) {
+            Date d = mapping.getStartDate();
+            localDate = d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        }
+
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("configuration.add_emis_organisation_map")
                 .addParameter("_guid", mapping.getGuid())
                 .addParameter("_name", mapping.getName())
                 .addParameter("_ods_code", mapping.getOdsCode())
-                .addParameter("_start_date", mapping.getStartDate());;
+                .addParameter("_start_date", localDate);
 
         pgStoredProc.execute();
     }
