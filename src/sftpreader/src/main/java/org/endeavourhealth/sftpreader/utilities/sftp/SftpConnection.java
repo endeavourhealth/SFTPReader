@@ -76,14 +76,16 @@ public class SftpConnection extends Connection {
         //an error is raised if we try to list the files without first changing into the directory
         channel.cd(remotePath);
 
-        Vector<ChannelSftp.LsEntry> fileList = channel.ls("\\");
+        //trying alternatives that work on all known SFTP servers
+        Vector<ChannelSftp.LsEntry> fileList = channel.ls(".");
+        //Vector<ChannelSftp.LsEntry> fileList = channel.ls("\\");
 
         return fileList
                 .stream()
                 .filter(t -> !t.getAttrs().isDir())
                 .map(t ->
                         new RemoteFile(t.getFilename(),
-                                "\\",
+                                "", //"\\", //trying alternatives that work on all known SFTP servers
                                 t.getAttrs().getSize(),
                                 LocalDateTime.ofInstant(new Date((long)t.getAttrs().getMTime() * 1000L).toInstant(), ZoneId.systemDefault())
                         )
