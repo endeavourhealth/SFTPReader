@@ -7,12 +7,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
-//import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.eds.EdsSender;
 import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
-import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
+import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.implementations.*;
 import org.endeavourhealth.sftpreader.model.db.*;
@@ -21,14 +20,19 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.*;
 import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection;
-import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnectionException;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.endeavourhealth.sftpreader.utilities.ZipUtil.unZipFile;
+
+//import org.endeavourhealth.common.config.ConfigManager;
 
 public class SftpReaderTask implements Runnable {
 
@@ -62,6 +66,11 @@ public class SftpReaderTask implements Runnable {
             LOG.trace(">>>Validating and sequencing batches");
             if (!validateAndSequenceBatches()) {
                 throw new SftpReaderException("Exception occurred validating and sequencing batches - halting to prevent incorrect ordering of batches.");
+            }
+
+            LOG.trace(">>>Processing archived files");
+            if (!processBatchArchives()) {
+                throw new SftpReaderException("Exception occurred processing archived files - halting to prevent incorrect ordering of batches.");
             }
 
             LOG.trace(">>>Notifying EDS");
@@ -253,6 +262,42 @@ public class SftpReaderTask implements Runnable {
     private static long getFileSizeBytes(String filePath) {
         File file = new File(filePath);
         return file.length();
+    }
+
+    //checks for the presence of zip archives in the batch, extracts, validate and replaces the zip with the csv contents
+    private boolean processBatchArchives() {
+        try {
+            List<BatchSplit> unnotifiedBatchSplits = db.getUnnotifiedBatchSplits(dbConfiguration.getConfigurationId());
+            LOG.debug("There are {} complete split batches for archive validation and processing", unnotifiedBatchSplits.size());
+
+            if (unnotifiedBatchSplits.isEmpty()) {
+                return true;
+            }
+
+            for (BatchSplit batchSplit: unnotifiedBatchSplits) {
+                String relativeBatchPath = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batchSplit.getLocalRelativePath());
+                String fullBatchPath = FilenameUtils.concat(dbConfiguration.getLocalRootPathPrefix(), relativeBatchPath);
+                Batch batch = batchSplit.getBatch();
+                List<BatchFile> batchFiles = batch.getBatchFiles();
+                for (BatchFile batchFile: batchFiles) {
+                    String fullFilePath = FilenameUtils.concat(fullBatchPath, batchFile.getFilename());
+                    File file = new File(fullFilePath);
+                    //Check if a valid zip file and then if it contains valid file types
+                    if (!ZipUtil.validZipFile(file, dbConfiguration))
+                        continue;
+
+                    //Extract zip file and delete source zip (or multi-part zip)
+                    List <File> extractedFiles = unZipFile (file, fullBatchPath, true);
+                    LOG.debug("There are {} file(s) extracted to: "+fullBatchPath+" for zip file: "+file.getName(), extractedFiles.size());
+                }
+            }
+
+            return true;
+        } catch (Exception e) {
+            LOG.error("Error occurred during archived file processing", e);
+
+            return false;
+        }
     }
 
     private boolean validateAndSequenceBatches() {

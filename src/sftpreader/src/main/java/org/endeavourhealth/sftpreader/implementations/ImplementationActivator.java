@@ -3,6 +3,7 @@ package org.endeavourhealth.sftpreader.implementations;
 import org.endeavourhealth.sftpreader.implementations.barts.*;
 import org.endeavourhealth.sftpreader.implementations.emis.*;
 import org.endeavourhealth.sftpreader.implementations.homerton.*;
+import org.endeavourhealth.sftpreader.implementations.vision.*;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 
 public class ImplementationActivator {
@@ -12,10 +13,14 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpFilenameParser(filename, dbConfiguration);
         } else {
-            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                return new BartsSftpFilenameParser(filename, dbConfiguration);
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpFilenameParser(filename, dbConfiguration);
             } else {
-                return new HomertonSftpFilenameParser(filename, dbConfiguration);
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpFilenameParser(filename, dbConfiguration);
+                } else {
+                    return new HomertonSftpFilenameParser(filename, dbConfiguration);
+                }
             }
         }
     }
@@ -24,34 +29,14 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchValidator();
         } else {
-            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                return new BartsSftpBatchValidator();
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpBatchValidator();
             } else {
-                return new HomertonSftpBatchValidator();
-            }
-        }
-    }
-
-    public static SftpBatchSequencer createSftpBatchSequencer(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpBatchSequencer();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                return new BartsSftpBatchSequencer();
-            } else {
-                return new HomertonSftpBatchSequencer();
-            }
-        }
-    }
-
-    public static SftpNotificationCreator createSftpNotificationCreator(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpNotificationCreator();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                return new BartsSftpNotificationCreator();
-            } else {
-                return new HomertonSftpNotificationCreator();
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpBatchValidator();
+                } else {
+                    return new HomertonSftpBatchValidator();
+                }
             }
         }
     }
@@ -60,22 +45,64 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchSplitter();
         } else {
-            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                return new BartsSftpBatchSplitter();
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpBatchSplitter();
             } else {
-                return new HomertonSftpBatchSplitter();
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpBatchSplitter();
+                } else {
+                    return new HomertonSftpBatchSplitter();
+                }
             }
         }
     }
+
+    public static SftpBatchSequencer createSftpBatchSequencer(String interfaceTypeName) {
+        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
+            return new EmisSftpBatchSequencer();
+        } else {
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpBatchSequencer();
+            } else {
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpBatchSequencer();
+                } else {
+                    return new HomertonSftpBatchSequencer();
+                }
+            }
+        }
+    }
+
+    public static SftpNotificationCreator createSftpNotificationCreator(String interfaceTypeName) {
+        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
+            return new EmisSftpNotificationCreator();
+        } else {
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpNotificationCreator();
+            } else {
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpNotificationCreator();
+                } else {
+                    return new HomertonSftpNotificationCreator();
+                }
+            }
+        }
+    }
+
+
 
     public static SftpOrganisationHelper createSftpOrganisationHelper(String interfaceTypeName) {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpOrganisationHelper();
         } else {
-            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                return new BartsSftpOrganisationHelper();
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpOrganisationHelper();
             } else {
-                return new HomertonSftpOrganisationHelper();
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpOrganisationHelper();
+                } else {
+                    return new HomertonSftpOrganisationHelper();
+                }
             }
         }
     }
@@ -84,10 +111,14 @@ public class ImplementationActivator {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpSlackNotifier();
         } else {
-            if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                return new BartsSftpSlackNotifier();
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpSlackNotifier();
             } else {
-                return new HomertonSftpSlackNotifier();
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpSlackNotifier();
+                } else {
+                    return new HomertonSftpSlackNotifier();
+                }
             }
         }
     }

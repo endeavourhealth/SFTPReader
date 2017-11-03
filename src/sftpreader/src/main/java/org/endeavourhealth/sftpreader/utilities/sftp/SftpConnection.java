@@ -1,11 +1,11 @@
 package org.endeavourhealth.sftpreader.utilities.sftp;
 
 import com.jcraft.jsch.*;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.utilities.Connection;
-import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.endeavourhealth.sftpreader.utilities.ConnectionDetails;
-import org.slf4j.LoggerFactory;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -37,10 +37,16 @@ public class SftpConnection extends Connection {
         this.jSch = new JSch();
 
         jSch.addIdentity("client-private-key", getConnectionDetails().getClientPrivateKey().getBytes(), null, getConnectionDetails().getClientPrivateKeyPassword().getBytes());
-        jSch.setKnownHosts(new ByteArrayInputStream(getConnectionDetails().getKnownHostsString().getBytes()));
 
-        this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
-
+        String hostPublicKey = getConnectionDetails().getHostPublicKey();
+        if (StringUtils.isNotBlank(hostPublicKey)) {
+            String knownHosts = getConnectionDetails().getKnownHostsString();
+            jSch.setKnownHosts(new ByteArrayInputStream(knownHosts.getBytes()));
+            this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
+        } else {
+            this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
+            this.session.setConfig("StrictHostKeyChecking", "no");
+        }
         this.session.connect();
 
         this.channel = (ChannelSftp)session.openChannel("sftp");

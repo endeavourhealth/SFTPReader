@@ -15,7 +15,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
@@ -112,8 +111,9 @@ public class DataLayer implements IDBDigestLogger {
                         .setPgpRecipientPrivateKey(resultSet.getString("pgp_recipient_private_key"))
                         .setPgpRecipientPrivateKeyPassword(resultSet.getString("pgp_recipient_private_key_password")));
 
-        if (dbConfigurationPgp == null)
-            throw new PgStoredProcException("No PGP configuration details found for configuration id " + configurationId);
+        //No Pgp needed for non EMIS
+//        if (dbConfigurationPgp == null)
+//            throw new PgStoredProcException("No PGP configuration details found for configuration id " + configurationId);
 
         List<DbConfigurationKvp> dbConfigurationKvp = pgStoredProc.executeMultiQuery((resultSet) ->
                 new DbConfigurationKvp()
