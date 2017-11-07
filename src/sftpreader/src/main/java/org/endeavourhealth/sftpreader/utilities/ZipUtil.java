@@ -14,10 +14,14 @@ import java.util.List;
 
 public class ZipUtil {
 
-    public static boolean validZipFile(File file, DbConfiguration dbConfiguration) throws SftpValidationException
-    {
-        try
-        {
+    public static boolean validZipFile(File file, DbConfiguration dbConfiguration) throws SftpValidationException{
+
+        try {
+            String fullFilePath = file.getPath().toLowerCase();
+            if (!fullFilePath.endsWith(".zip")) {
+                return false;
+            }
+
             // is the file a valid zip?
             ZipFile zip = new ZipFile(file.getPath());
             if (!zip.isValidZipFile())
