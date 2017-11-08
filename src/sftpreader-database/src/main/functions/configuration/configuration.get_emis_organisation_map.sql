@@ -10,16 +10,14 @@ returns table
 (
 	guid varchar,
 	name varchar,
-	ods_code varchar,
-	start_date date
+	ods_code varchar
 )
 as $$
 
 	select
 		guid,
 		name,
-		ods_code,
-		start_date
+		ods_code
 	from configuration.emis_organisation_map
 	where guid = _guid;
 

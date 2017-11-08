@@ -24,26 +24,6 @@ public class EmisSftpNotificationCreator extends SftpNotificationCreator {
     @Override
     public String createNotificationMessage(String organisationId, DataLayer db, DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
-        //find the start date we've set for this organisation in the emis org map
-        Date startDate = db.findEmisOrgStartDateFromOdsCode(organisationId);
-        if (startDate == null) {
-            EdsSenderResponse r = new EdsSenderResponse();
-            r.setStatusLine("Error creating payload for " + organisationId);
-            r.setResponseBody("No start date set in emis_organisation_map table");
-            throw new EdsSenderHttpErrorResponseException("Organisation start date not set for " + organisationId + " in emis_organisation_map table", r);
-        }
-
-        Batch batch = batchSplit.getBatch();
-        String batchDateStr = batch.getBatchIdentifier();
-        LocalDateTime localDateTime = EmisSftpFilenameParser.parseBatchIdentifier(batchDateStr);
-        ZonedDateTime zonedDateTime = localDateTime.atZone(ZoneId.systemDefault());
-        Date batchDate = Date.from(zonedDateTime.toInstant());
-
-        //if the batch date is BEFORE the start date, then return null to indicate we don't want to send on to the messaging API
-        if (batchDate.before(startDate)) {
-            return null;
-        }
-
         //if we pass the start date check, then return the payload for the notification ot the messaging API
         String relativePath = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batchSplit.getLocalRelativePath());
         String fullPath = FilenameUtils.concat(dbConfiguration.getLocalRootPathPrefix(), relativePath);

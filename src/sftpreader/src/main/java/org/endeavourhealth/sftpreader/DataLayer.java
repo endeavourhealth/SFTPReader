@@ -137,22 +137,11 @@ public class DataLayer implements IDBDigestLogger {
 
     public void addEmisOrganisationMap(EmisOrganisationMap mapping) throws PgStoredProcException {
 
-        //potgre driver only supports LocalDate, rather than regular Date, so we need to convert
-        LocalDate localDate = null;
-        if (mapping.getStartDate() != null) {
-            //the start date may be a java.sql.Date, which weirdly doesn't support the toInstant()
-            //function, so we need to create a new java.util.Date from it
-            java.util.Date d = new java.util.Date(mapping.getStartDate().getTime());
-            Instant instant = d.toInstant();
-            localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
-        }
-
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("configuration.add_emis_organisation_map")
                 .addParameter("_guid", mapping.getGuid())
                 .addParameter("_name", mapping.getName())
-                .addParameter("_ods_code", mapping.getOdsCode())
-                .addParameter("_start_date", localDate);
+                .addParameter("_ods_code", mapping.getOdsCode());
 
         pgStoredProc.execute();
     }
@@ -165,8 +154,7 @@ public class DataLayer implements IDBDigestLogger {
         List<EmisOrganisationMap> mappings = pgStoredProc.executeQuery(resultSet -> new EmisOrganisationMap()
                 .setGuid(resultSet.getString("guid"))
                 .setName(resultSet.getString("name"))
-                .setOdsCode(resultSet.getString("ods_code"))
-                .setStartDate(resultSet.getDate("start_date")));
+                .setOdsCode(resultSet.getString("ods_code")));
 
         if (mappings.isEmpty())
             return null;
@@ -413,43 +401,4 @@ public class DataLayer implements IDBDigestLogger {
         }
     }
 
-    /*
-    * runs sql to get the start date for an emis practice
-    **/
-    public Date findEmisOrgStartDateFromOdsCode(String odsCode) {
-        Connection connection = null;
-
-        try {
-            connection = dataSource.getConnection();
-
-            Statement statement = connection.createStatement();
-            ResultSet rs = statement.executeQuery("select start_date from configuration.emis_organisation_map where ods_code = '" + odsCode + "';");
-
-            Date ret = null;
-
-            //we have multiple names for some orgs in production (e.g. F84636),
-            //so return any non-null date we find
-            while (rs.next()) {
-                java.sql.Date d = rs.getDate(1);
-                if (d != null) {
-                    ret = d;
-                }
-            }
-
-            return ret;
-
-        } catch (Exception ex) {
-            LOG.error("Error getting start date for ODS code " + odsCode, ex);
-            return null;
-        } finally {
-
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException se) {
-                    LOG.error("Error closing connection", se);
-                }
-            }
-        }
-    }
 }

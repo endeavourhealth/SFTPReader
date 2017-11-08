@@ -6,8 +6,6 @@ public class EmisOrganisationMap {
     private String guid = null;
     private String name = null;
     private String odsCode = null;
-    private Date startDate = null;
-
 
     public EmisOrganisationMap() {
     }
@@ -36,15 +34,6 @@ public class EmisOrganisationMap {
 
     public EmisOrganisationMap setOdsCode(String odsCode) {
         this.odsCode = odsCode;
-        return this;
-    }
-
-    public Date getStartDate() {
-        return startDate;
-    }
-
-    public EmisOrganisationMap setStartDate(Date startDate) {
-        this.startDate = startDate;
         return this;
     }
 
