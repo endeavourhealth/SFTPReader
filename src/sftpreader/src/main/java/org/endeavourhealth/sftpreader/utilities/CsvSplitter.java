@@ -215,11 +215,29 @@ public class CsvSplitter {
             filesCreated.add(f);
 
             //LOG.debug("Creating " + f);
-            FileWriter fileWriter = new FileWriter(f);
-            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
+            try {
+                FileWriter fileWriter = new FileWriter(f);
+                BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+                csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
 
-            csvPrinterMap.put(mapKey, csvPrinter);
+                csvPrinterMap.put(mapKey, csvPrinter);
+            } catch (Exception ex) {
+                LOG.error("Error opening writer to " + f);
+                LOG.error("Currently got " + csvPrinterMap.size() + " files open");
+                LOG.error("Folder exists " + folder.exists());
+                LOG.error("File exists " + f.exists());
+
+                try {
+                    FileWriter fileWriter2 = new FileWriter(f);
+                    LOG.error("Successfully opened on second attempt");
+                    fileWriter2.close();
+
+                } catch (Exception ex2) {
+                    LOG.error("Failed to open on second attempt");
+                }
+                
+                throw ex;
+            }
         }
         return csvPrinter;
     }
