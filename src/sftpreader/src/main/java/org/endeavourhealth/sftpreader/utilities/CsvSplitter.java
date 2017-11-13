@@ -221,6 +221,7 @@ public class CsvSplitter {
                 csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
 
                 csvPrinterMap.put(mapKey, csvPrinter);
+
             } catch (Exception ex) {
                 LOG.error("Error opening writer to " + f);
                 LOG.error("Currently got " + csvPrinterMap.size() + " files open");
@@ -228,15 +229,18 @@ public class CsvSplitter {
                 LOG.error("File exists " + f.exists());
 
                 try {
-                    FileWriter fileWriter2 = new FileWriter(f);
+                    FileWriter fileWriter = new FileWriter(f);
                     LOG.error("Successfully opened on second attempt");
-                    fileWriter2.close();
+                    BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+                    csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
+
+                    csvPrinterMap.put(mapKey, csvPrinter);
+                    return csvPrinter;
 
                 } catch (Exception ex2) {
                     LOG.error("Failed to open on second attempt");
+                    throw ex;
                 }
-                
-                throw ex;
             }
         }
         return csvPrinter;
