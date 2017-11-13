@@ -188,7 +188,31 @@ public class SftpReaderTask implements Runnable {
         return connection.getFileList(remotePath);
     }
 
+    /**
+     * temporarily changed to download directly as a .GPG file rather than a .download file
+     */
     private void downloadFile(Connection connection, SftpFile batchFile) throws Exception {
+        String localFilePath = batchFile.getLocalFilePath();
+        LOG.info("Downloading file to: " + localFilePath);
+
+        File destination = new File(localFilePath);
+
+        if (destination.exists()) {
+            if (!destination.delete()) {
+                throw new IOException("Could not delete existing download file " + localFilePath);
+            }
+        }
+
+        String remoteFilePath = batchFile.getRemoteFilePath();
+
+        InputStream inputStream = connection.getFile(remoteFilePath);
+        Files.copy(inputStream, destination.toPath());
+
+        batchFile.setLocalFileSizeBytes(getFileSizeBytes(batchFile.getLocalFilePath()));
+
+        db.setFileAsDownloaded(batchFile);
+    }
+    /*private void downloadFile(Connection connection, SftpFile batchFile) throws Exception {
         String localFilePath = batchFile.getLocalFilePath();
         LOG.info("Downloading file to: " + localFilePath);
         File temporaryDownloadFile = new File(localFilePath + ".download");
@@ -218,7 +242,7 @@ public class SftpReaderTask implements Runnable {
         batchFile.setLocalFileSizeBytes(getFileSizeBytes(batchFile.getLocalFilePath()));
 
         db.setFileAsDownloaded(batchFile);
-    }
+    }*/
 
     private SftpFile instantiateSftpBatchFile(RemoteFile remoteFile) {
         SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(remoteFile.getFilename(), dbConfiguration, dbConfiguration.getInterfaceTypeName());
