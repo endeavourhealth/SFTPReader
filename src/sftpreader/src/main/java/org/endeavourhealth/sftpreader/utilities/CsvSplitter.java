@@ -7,10 +7,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -150,13 +147,42 @@ public class CsvSplitter {
 
 
         } finally {
-            csvParser.close();
+
+            //adding try/catch to get around AWS problem
+            try {
+                csvParser.close();
+            } catch (Exception ex) {
+                LOG.error("Failed to close parser " + ex.getMessage());
+                try {
+                    csvParser.close();
+                    LOG.error("Worked on second attempt");
+                } catch (Exception ex2) {
+                    LOG.error("Failed on second attempt");
+                    throw ex;
+                }
+            }
+
 
             //close all the csv printers created
             Iterator<CSVPrinter> printerIterator = csvPrinterMap.values().iterator();
             while (printerIterator.hasNext()) {
                 CSVPrinter csvPrinter = printerIterator.next();
-                csvPrinter.close();
+
+                //adding try/catch to get around AWS problem
+                try {
+                    csvPrinter.close();
+                } catch (Exception ex) {
+                    LOG.error("Failed to close printer " + ex.getMessage());
+                    try {
+                        csvPrinter.close();
+                        LOG.error("Worked on second attempt");
+                    } catch (Exception ex2) {
+                        LOG.error("Failed on second attempt");
+                        throw ex;
+                    }
+                }
+
+
             }
         }
 
