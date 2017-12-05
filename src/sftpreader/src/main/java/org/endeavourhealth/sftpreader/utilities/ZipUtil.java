@@ -90,7 +90,7 @@ public class ZipUtil {
     {
         //eventually move to db lookup for interface type
         switch (interfaceType) {
-            case "VISION-EXTRACT-SERVICE-1":
+            case "VISION-EXTRACT-SERVICE-0-18":
                 return "csv";
             case "TPP-EXTRACT-SERVICE-1":
                 return "csv";

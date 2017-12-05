@@ -45,31 +45,28 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     @Override
     protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
 
-        //fileType_contentType_nacsCode_(serviceIdentifier)_formatVersion-dateTime.zip
+        //fileType_contentType_nacsCode-(serviceIdentifier)-formatVersion_2015-04-22-130917.zip
         //fileType = FULL / INCREMENTAL / ADDITIONAL
         //fileContentType = PATIENT / CLINICAL / ADMIN
         //nacsCode = Practice odsCode code
         //serviceIdentifier = Extract Service name
-        //format version = v1.0.0
-        //dateTime = YYYY-MM-DD_HHMMSS
+        //format version = V1.0.0
+        //dateTime = YYYY-MM-DD-HHMMSS
 
-        String[] parts = filename.split("_");
-
-        if (parts.length != 6)
+        // get the three main parts of the filename
+        String[] parts = filename.split("-", 3);
+        if (parts.length != 3)
             throw new SftpFilenameParseException("Vision batch filename could not be parsed");
 
-        String fileType = parts[0];
-        String fileContentType = parts[1];
-        String nacsCode = parts[2];
-        String serviceIdentifier = parts[3];
-        String extractFormatAndDate = parts[4];
-        String [] endParts = extractFormatAndDate.split("-");
-        String formatVersionPart = endParts[0];
-        String extractDateYearPart = endParts[1];
-        String extractDateMonthPart = endParts[2];
-        String extractDateDayPart = endParts[3];
-        String extractDateTimePart = parts[5].replace(".zip", "");
-        String extractDateTime = extractDateYearPart.concat(extractDateMonthPart).concat(extractDateDayPart).concat(extractDateTimePart);
+        String fileTypeParts [] = parts[0].split("_");
+        String serviceIdentifier = parts[1].replace("(","").replace(")","");;
+        String fileFormatAndDateSectionParts [] = parts[2].split("_");
+        String fileType = fileTypeParts [0];
+        String fileContentType = fileTypeParts [1];
+        String nacsCode = fileTypeParts [2];
+
+        String formatVersionPart = fileFormatAndDateSectionParts[0];
+        String extractDateTime = fileFormatAndDateSectionParts[1].replace(".zip", "");;
 
         if (StringUtils.isEmpty(fileType))
             throw new SftpFilenameParseException("FileType is empty");
@@ -96,9 +93,10 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
 
         this.formatIdentifier = formatVersionPart;
 
-        if (StringUtils.isEmpty(extractDateTimePart))
+        if (StringUtils.isEmpty(extractDateTime))
             throw new SftpFilenameParseException("Extract date/time is empty");
 
+        extractDateTime = extractDateTime.replace("-","");
         this.extractDateTime = LocalDateTime.parse(extractDateTime, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
         //this will be a .zip for Vision extract files

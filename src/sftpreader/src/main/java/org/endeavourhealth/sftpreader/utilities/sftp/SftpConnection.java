@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.utilities.sftp;
 
+import com.google.common.base.Strings;
 import com.jcraft.jsch.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -36,7 +37,11 @@ public class SftpConnection extends Connection {
     public void open() throws JSchException, IOException, SftpConnectionException {
         this.jSch = new JSch();
 
-        jSch.addIdentity("client-private-key", getConnectionDetails().getClientPrivateKey().getBytes(), null, getConnectionDetails().getClientPrivateKeyPassword().getBytes());
+        String prvKey = getConnectionDetails().getClientPrivateKey().trim();
+        String pw = getConnectionDetails().getClientPrivateKeyPassword().trim();
+        if (!Strings.isNullOrEmpty(prvKey)) {
+            jSch.addIdentity("client-private-key", prvKey.getBytes(), null, pw.getBytes());
+        }
 
         String hostPublicKey = getConnectionDetails().getHostPublicKey();
         if (StringUtils.isNotBlank(hostPublicKey)) {
@@ -47,6 +52,12 @@ public class SftpConnection extends Connection {
             this.session = jSch.getSession(getConnectionDetails().getUsername(), getConnectionDetails().getHostname(), getConnectionDetails().getPort());
             this.session.setConfig("StrictHostKeyChecking", "no");
         }
+
+        // no private key supplied and using standard password authentication
+        if (Strings.isNullOrEmpty(prvKey) && !Strings.isNullOrEmpty(pw)) {
+            session.setPassword(pw);
+        }
+
         this.session.connect();
 
         this.channel = (ChannelSftp)session.openChannel("sftp");
