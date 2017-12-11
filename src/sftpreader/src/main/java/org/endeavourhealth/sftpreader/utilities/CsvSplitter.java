@@ -4,6 +4,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +17,7 @@ public class CsvSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(CsvSplitter.class);
 
-    private File srcFile = null;
+    private String srcFilePath = null;
     private File dstDir = null;
     private CSVFormat csvFormat = null;
     private String[] splitColumns = null;
@@ -23,72 +25,10 @@ public class CsvSplitter {
     private Map<String, CSVPrinter> csvPrinterMap = new HashMap<>();
     private Set<File> filesCreated = null;
 
-    /*public static void main(String[] args) {
 
-        try {
-            javax.swing.JFileChooser f = new javax.swing.JFileChooser();
-            f.setFileSelectionMode(javax.swing.JFileChooser.FILES_ONLY);
-            f.setMultiSelectionEnabled(false);
-            f.setCurrentDirectory(new File("C:\\SFTPData"));
+    public CsvSplitter(String srcFilePath, File dstDir, CSVFormat csvFormat, String... splitColumns) {
 
-            int r = f.showOpenDialog(null);
-            if (r == javax.swing.JFileChooser.CANCEL_OPTION) {
-                return;
-            }
-
-            File file = f.getSelectedFile();
-            File dir = file.getParentFile();
-
-            File dst = new File(dir, "Split");
-
-            CsvSplitter splitter = new CsvSplitter(file, dst, CSVFormat.DEFAULT, "ProcessingId");
-            splitter.go();
-
-            List<File> splitFiles = new ArrayList<>();
-            List<File> splitDirs = findDirectoriesAndOrderByNumber(dst);
-            for (File splitDir: splitDirs) {
-                File splitFile = new File(splitDir, file.getName());
-                splitFiles.add(splitFile);
-            }
-
-            File newFile = new File(dst, file.getName());
-            CsvJoiner joiner = new CsvJoiner(splitFiles, newFile, CSVFormat.DEFAULT);
-            joiner.go();
-
-        } catch (Exception ex) {
-            LOG.error("", ex);
-        }
-    }
-
-    private static List<File> findDirectoriesAndOrderByNumber(File rootDir) {
-
-        //the org directory contains a sub-directory for each processing ID, which must be processed in order
-        List<Integer> processingIds = new ArrayList<>();
-        Map<Integer, File> hmFiles = new HashMap<>();
-
-        for (File file: rootDir.listFiles()) {
-            if (file.isDirectory()) {
-                Integer processingId = Integer.valueOf(file.getName());
-                processingIds.add(processingId);
-                hmFiles.put(processingId, file);
-            }
-        }
-
-        Collections.sort(processingIds);
-
-        List<File> ret = new ArrayList<>();
-
-        for (Integer processingId: processingIds) {
-            File f = hmFiles.get(processingId);
-            ret.add(f);
-        }
-
-        return ret;
-    }*/
-
-    public CsvSplitter(File srcFile, File dstDir, CSVFormat csvFormat, String... splitColumns) {
-
-        this.srcFile = srcFile;
+        this.srcFilePath = srcFilePath;
         this.dstDir = dstDir;
         this.csvFormat = csvFormat;
         this.splitColumns = splitColumns;
@@ -98,7 +38,8 @@ public class CsvSplitter {
 
         //adding .withHeader() to the csvFormat forces it to treat the first row as the column headers,
         //and read them in, instead of ignoring them
-        CSVParser csvParser = CSVParser.parse(srcFile, Charset.defaultCharset(), csvFormat.withHeader());
+        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath);
+        CSVParser csvParser = new CSVParser(reader, csvFormat.withHeader());
         filesCreated = new HashSet<>();
 
         try
@@ -112,7 +53,7 @@ public class CsvSplitter {
 
                 Integer columnIndex = headerMap.get(splitColumn);
                 if (columnIndex == null) {
-                    throw new IllegalArgumentException("No column [" + splitColumn + "] in " + srcFile);
+                    throw new IllegalArgumentException("No column [" + splitColumn + "] in " + srcFilePath);
                 }
                 splitIndexes[i] = columnIndex.intValue();
             }
@@ -162,7 +103,6 @@ public class CsvSplitter {
                 }
             }
 
-
             //close all the csv printers created
             Iterator<CSVPrinter> printerIterator = csvPrinterMap.values().iterator();
             while (printerIterator.hasNext()) {
@@ -181,8 +121,6 @@ public class CsvSplitter {
                         throw ex;
                     }
                 }
-
-
             }
         }
 
@@ -236,7 +174,7 @@ public class CsvSplitter {
                 }
             }
 
-            String fileName = srcFile.getName();
+            String fileName = FilenameUtils.getName(srcFilePath);
             File f = new File(folder, fileName);
             filesCreated.add(f);
 

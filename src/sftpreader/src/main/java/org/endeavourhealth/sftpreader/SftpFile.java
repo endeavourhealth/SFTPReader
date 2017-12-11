@@ -57,9 +57,9 @@ public class SftpFile {
         return this.getBatchIdentifier();
     }
 
-    public String getLocalFilePath() {
+    /*public String getLocalFilePath() {
         return FilenameUtils.concat(getLocalPath(), getFilename());
-    }
+    }*/
 
     public boolean doesFileNeedDecrypting() {
         if (StringUtils.isEmpty(pgpFileExtensionFilter))
@@ -68,9 +68,9 @@ public class SftpFile {
         return (getFilename().endsWith(pgpFileExtensionFilter));
     }
 
-    public String getDecryptedLocalFilePath() {
+    /*public String getDecryptedLocalFilePath() {
         return FilenameUtils.concat(getLocalPath(), getDecryptedFilename());
-    }
+    }*/
 
     public String getDecryptedFilename() {
         return StringUtils.removeEnd(getFilename(), this.pgpFileExtensionFilter);

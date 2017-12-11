@@ -6,10 +6,12 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.slf4j.Logger;
@@ -26,6 +28,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     private static final Logger LOG = LoggerFactory.getLogger(EmisSftpBatchSplitter.class);
 
     public static final String EMIS_AGREEMENTS_FILE_ID = "Agreements_SharingOrganisation";
+    public static final String EMIS_ORGANISATION_FILE_ID = "Admin_Organisation";
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     private static final String SPLIT_COLUMN_ORG = "OrganisationGuid";
@@ -39,22 +42,27 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
      * returns a list of directories containing split file sets
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
-        String fullLocalRootPath = dbConfiguration.getFullLocalRootPath();
+        String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
+        String tempDir = instanceConfiguration.getTempDirectory();
+        String configurationDir = dbConfiguration.getLocalRootPath();
+        String batchDir = batch.getLocalRelativePath();
 
-        String path = FilenameUtils.concat(fullLocalRootPath, batch.getLocalRelativePath());
-        File srcDir = new File(path);
+        //the big CSV files should already be in our temp storage. If so, use those files rather than the ones from permanent storage
+        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
+        sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
 
-        LOG.trace("Splitting CSV files in {}", srcDir);
+        String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
+        sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
 
-        if (!srcDir.exists()) {
-            throw new FileNotFoundException("Source directory " + srcDir + " doesn't exist");
-        }
+        String splitTempDir = FilenameUtils.concat(tempDir, configurationDir);
+        splitTempDir = FilenameUtils.concat(splitTempDir, batchDir);
+        splitTempDir = FilenameUtils.concat(splitTempDir, SPLIT_FOLDER);
 
-        //split into a sub-folder called "split"
-        path = FilenameUtils.concat(path, SPLIT_FOLDER);
-        File dstDir = new File(path);
+        LOG.trace("Splitting CSV files to " + splitTempDir);
+
+        File dstDir = new File(splitTempDir);
 
         //if the folder does exist, delete all content within it, since if we're re-splitting a file
         //we want to make sure that all previous content is deleted
@@ -72,22 +80,23 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         List<String> processingIdFiles = new ArrayList<>();
         List<String> orgAndProcessingIdFiles = new ArrayList<>();
         List<String> orgIdFiles = new ArrayList<>();
-        identifyFiles(batch, srcDir, orgAndProcessingIdFiles, processingIdFiles, orgIdFiles, dbConfiguration);
+        Map<String, String> headersCache = new HashMap<>();
+
+        identifyFiles(batch, sourceTempDir, sourcePermDir, orgAndProcessingIdFiles, processingIdFiles, orgIdFiles, dbConfiguration, headersCache);
 
         Set<File> orgIdDirs = new HashSet<>();
         Map<File, Set<File>> processingIdDirsByOrgId = new HashMap<>();
 
         //split the org ID-only files (i.e. sharing agreements file) so we have a directory per organisation ID
         for (String fileName: orgIdFiles) {
-            File f = new File(srcDir, fileName);
-            LOG.trace("Splitting {} into {}", f, dstDir);
-            Set<File> splitFiles = splitFile(f, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
+            LOG.trace("Splitting " + fileName + " into " +  dstDir);
+            Set<File> splitFiles = splitFile(fileName, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
             appendOrgIdsToSet(splitFiles, orgIdDirs);
         }
 
         //splitting the sharing agreements file will have created a folder for every org listed,
         //including the non-active ones in there. So delete any folder for orgs that aren't active in the sharing agreement
-        Set<File> expectedOrgFolders = findExpectedOrgFolders(dstDir, fullLocalRootPath, batch);
+        Set<File> expectedOrgFolders = findExpectedOrgFolders(instanceConfiguration, dbConfiguration, batch, dstDir);
         for (File orgDir: orgIdDirs) {
             if (!expectedOrgFolders.contains(orgDir)) {
                 deleteRecursive(orgDir);
@@ -97,16 +106,19 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         LOG.trace("Created " + orgIdDirs.size() + " org ID folders");
 
         //split the clinical files by org and processing ID, which creates the org ID -> processing ID folder structure
-        for (String fileName: orgAndProcessingIdFiles) {
-            File f = new File(srcDir, fileName);
-            LOG.trace("Splitting {} into {}", f, dstDir);
-            Set<File> splitFiles = splitFile(f, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
+        for (String sourceFilePath: orgAndProcessingIdFiles) {
+            LOG.trace("Splitting " + sourceFilePath + " into " + dstDir);
+            Set<File> splitFiles = splitFile(sourceFilePath, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
+
+            String fileName = FilenameUtils.getName(sourceFilePath);
 
             //having split the file, we then want to join the files back together so we have one per
             //organisation but ordered by processing ID
             for (File orgDir: orgIdDirs) {
+                File joinedFile = new File(orgDir, fileName);
                 Set<File> splitFilesForOrg = filterOrgAndProcessingFilesByParent(splitFiles, orgDir);
-                joinFiles(fileName, orgDir, splitFilesForOrg);
+
+                joinFiles(joinedFile, splitFilesForOrg);
             }
 
             //keep track of all the processing ID folders we've created
@@ -114,21 +126,24 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         }
 
         //for the files with just a processing ID, each org folder we want a copy of the non-clinical data, but in processing ID order
-        for (String fileName : processingIdFiles) {
-            File f = new File(srcDir, fileName);
+        for (String sourceFilePath : processingIdFiles) {
 
             File reorderedFile = null;
+
+            String fileName = FilenameUtils.getName(sourceFilePath);
 
             for (File orgDir: orgIdDirs) {
 
                 //if we've not split and re-ordered the file, do it now into this org dir
                 if (reorderedFile == null) {
-                    LOG.trace("Splitting processing ID file {} into {}", f, orgDir);
-                    Set<File> splitFiles = splitFile(f, orgDir, CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
+                    LOG.trace("Splitting processing ID file " + sourceFilePath + " into " + orgDir);
+                    Set<File> splitFiles = splitFile(sourceFilePath, orgDir, CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
                     LOG.trace("Splitting into " + splitFiles.size() + " files");
 
                     //join them back together
-                    reorderedFile = joinFiles(fileName, orgDir, splitFiles);
+                    File joinedFile = new File(orgDir, fileName);
+
+                    reorderedFile = joinFiles(joinedFile, splitFiles);
                     LOG.trace("Joined back into " + reorderedFile);
                     if (reorderedFile != null) {
                         LOG.trace("Joined file size " + reorderedFile.length());
@@ -181,18 +196,23 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         //the splitter only creates files when required, so we'll have incomplete file sets,
         //so create any missing files, so there's a full set of files in every folder
         for (BatchFile batchFile: batch.getBatchFiles()) {
-            File f = new File(srcDir, batchFile.getDecryptedFilename());
-            createMissingFiles(f, orgIdDirs);
+            String fileName = batchFile.getDecryptedFilename();
+            String headers = headersCache.get(fileName);
+
+            //iterate through any directories, creating any missing files in their sub-directories
+            for (File orgDir: orgIdDirs) {
+                createMissingFile(fileName, headers, orgDir);
+            }
         }
 
         //if any of our ORG folders contains child folders, then something has gone wrong with the splitting and joining,
         //so check for this and throw an exception if this is the case
-        validateSplitFolders(srcDir, orgIdDirs);
+        validateSplitFolders(orgIdDirs);
 
-        LOG.trace("Completed CSV file splitting from {} to {}", srcDir, dstDir);
+        LOG.trace("Completed CSV file splitting to " + dstDir);
 
         //we need to parse the organisation file, to store the mappings for later
-        saveAllOdsCodes(db, fullLocalRootPath, batch);
+        saveAllOdsCodes(db, instanceConfiguration, dbConfiguration, batch);
 
         //build a list of the folders containing file sets, to return
         List<BatchSplit> ret = new ArrayList<>();
@@ -213,6 +233,24 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
             batchSplit.setOrganisationId(odsCode);
 
             ret.add(batchSplit);
+
+            //if we're using separate temp storage to our permanent storage, then copy everything to it
+            if (!FilenameUtils.equals(tempDir, sharedStorageDir)) {
+
+                String storagePath = FilenameUtils.concat(sourcePermDir, SPLIT_FOLDER);
+                storagePath = FilenameUtils.concat(storagePath, orgGuid);
+
+                File[] splitFiles = orgDir.listFiles();
+                LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
+
+                for (File splitFile: splitFiles) {
+
+                    String fileName = splitFile.getName();
+                    String storageFilePath = FilenameUtils.concat(storagePath, fileName);
+
+                    FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
+                }
+            }
         }
 
         return ret;
@@ -260,7 +298,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
      * and that the total size of the split files is larger than the original (it'll be larger due to duplication
      * of CSV header lines and that some files aren't split by org)
      */
-    private void validateSplitFolders(File srcDir, Set<File> orgIdsFolders) throws Exception {
+    private void validateSplitFolders(Set<File> orgIdsFolders) throws Exception {
 
         Map<String, Long> fileNamesAndSizes = new HashMap<>();
 
@@ -305,9 +343,8 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         }*/
     }
 
-    private static File joinFiles(String fileName, File directory, Set<File> splitFiles) throws Exception {
+    private static File joinFiles(File joinedFile, Set<File> splitFiles) throws Exception {
 
-        File joinedFile = new File(directory, fileName);
         List<File> separateFiles = orderFilesByProcessingId(splitFiles);
 
         CsvJoiner joiner = new CsvJoiner(separateFiles, joinedFile, CSV_FORMAT);
@@ -378,7 +415,56 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return ret;
     }*/
 
-    public static File findSharingAgreementsFile(Batch batch, String rootPath) {
+    public static String findSharingAgreementsFile(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws SftpValidationException {
+        return findFile(instanceConfiguration, dbConfiguration, batch, EMIS_AGREEMENTS_FILE_ID);
+    }
+
+    public static String findOrganisationFile(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws SftpValidationException {
+        return findFile(instanceConfiguration, dbConfiguration, batch, EMIS_ORGANISATION_FILE_ID);
+    }
+
+    public static String findFile(DbInstanceEds instanceConfiguration,
+                                  DbConfiguration dbConfiguration,
+                                  Batch batch,
+                                  String fileIdentifier) throws SftpValidationException {
+
+        String fileName = null;
+
+        for (BatchFile batchFile: batch.getBatchFiles()) {
+            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(fileIdentifier)) {
+                fileName = batchFile.getDecryptedFilename();
+            }
+        }
+
+        if (Strings.isNullOrEmpty(fileName)) {
+            throw new SftpValidationException("Failed to find file for identifier " + fileIdentifier + " in batch " + batch.getBatchId());
+        }
+
+        String tempStoragePath = instanceConfiguration.getTempDirectory();
+        String sharedStoragePath = instanceConfiguration.getSharedStoragePath();
+        String configurationPath = dbConfiguration.getLocalRootPath();
+        String batchPath = batch.getLocalRelativePath();
+
+        String tempPath = FilenameUtils.concat(tempStoragePath, configurationPath);
+        tempPath = FilenameUtils.concat(tempPath, batchPath);
+        tempPath = FilenameUtils.concat(tempPath, fileName);
+
+        //in most cases, we should be able to find the file in our temporary storage,
+        //even through it will also have been written to permanent storage.
+        File tempFile = new File(tempPath);
+        if (tempFile.exists()) {
+            return tempPath;
+        }
+
+        //if it doesn't exist in temp, then we need to return the permanent path
+        String permanentPath = FilenameUtils.concat(sharedStoragePath, configurationPath);
+        permanentPath = FilenameUtils.concat(permanentPath, batchPath);
+        permanentPath = FilenameUtils.concat(permanentPath, fileName);
+
+        return permanentPath;
+    }
+
+    /*public static File findSharingAgreementsFile(Batch batch, String rootPath) {
 
         String batchRootPath = FilenameUtils.concat(rootPath, batch.getLocalRelativePath());
 
@@ -391,18 +477,23 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         }
 
         return null;
-    }
+    }*/
 
     /**
      * goes through the sharing agreements file to find the org GUIDs of those orgs activated in the sharing agreement
      */
-    private Set<File> findExpectedOrgFolders(File dstDir, String fullLocalInstancePath, Batch batch) throws Exception {
+    private Set<File> findExpectedOrgFolders(DbInstanceEds instanceConfiguration,
+                                             DbConfiguration dbConfiguration,
+                                             Batch batch,
+                                             File splitTempDir) throws Exception {
 
-        File sharingAgreementFile = findSharingAgreementsFile(batch, fullLocalInstancePath);
+        String sharingAgreementFile = findSharingAgreementsFile(instanceConfiguration, dbConfiguration, batch);
 
         Set<File> ret = new HashSet<>();
 
-        CSVParser csvParser = CSVParser.parse(sharingAgreementFile, Charset.defaultCharset(), CSV_FORMAT.withHeader());
+        InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(sharingAgreementFile);
+        CSVParser csvParser = new CSVParser(isr, CSV_FORMAT.withHeader());
+
         try {
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
 
@@ -413,7 +504,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                 String activated = csvRecord.get("IsActivated");
                 if (activated.equalsIgnoreCase("true")) {
 
-                    File orgDir = new File(dstDir, orgGuid);
+                    File orgDir = new File(splitTempDir, orgGuid);
                     ret.add(orgDir);
                 }
             }
@@ -438,19 +529,14 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    private static void saveAllOdsCodes(DataLayer db, String fullLocalInstancePath, Batch batch) throws Exception {
+    private static void saveAllOdsCodes(DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         //go through our Admin_Organisation file, saving all new org details to our PostgreSQL DB
-        File adminCsvFile = null;
-        for (BatchFile batchFile: batch.getBatchFiles()) {
-            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase("Admin_Organisation")) {
-                String path = FilenameUtils.concat(fullLocalInstancePath, batch.getLocalRelativePath());
-                path = FilenameUtils.concat(path, batchFile.getDecryptedFilename());
-                adminCsvFile = new File(path);
-            }
-        }
+        String adminFilePath = findOrganisationFile(instanceConfiguration, dbConfiguration, batch);
 
-        CSVParser csvParser = CSVParser.parse(adminCsvFile, Charset.defaultCharset(), CSV_FORMAT.withHeader());
+        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(adminFilePath);
+        CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+
         try {
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
 
@@ -497,59 +583,71 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     /**
      * scans through the files in the folder and works out which are admin and which are clinical
      */
-    private static void identifyFiles(Batch batch, File srcDir, List<String> orgAndProcessingIdFiles, List<String> processingIdFiles,
-                                      List<String> orgIdFiles, DbConfiguration dbConfiguration) throws Exception {
+    private static void identifyFiles(Batch batch, String sourceTempDir, String sourcePermDir, List<String> orgAndProcessingIdFiles, List<String> processingIdFiles,
+                                      List<String> orgIdFiles, DbConfiguration dbConfiguration, Map<String, String> headersCache) throws Exception {
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
 
             String fileName = batchFile.getDecryptedFilename();
+
+            //first try to use a file in our temporary storage
+            String filePath = FilenameUtils.concat(sourceTempDir, fileName);
+            if (!new File(filePath).exists()) {
+                //if not in temp storage, refer to the perm version
+                filePath = FilenameUtils.concat(sourcePermDir, fileName);
+            }
+
             EmisSftpFilenameParser nameParser = new EmisSftpFilenameParser(fileName, dbConfiguration, ".csv");
             String fileType = nameParser.generateFileTypeIdentifier();
 
             //we work out what columns to split by, by looking at the CSV file headers
-            File f = new File(srcDir, fileName);
-            CSVParser csvParser = CSVParser.parse(f, Charset.defaultCharset(), CSV_FORMAT.withHeader());
-            Map<String, Integer> headers = csvParser.getHeaderMap();
-            csvParser.close();
+            String fileStart = FileHelper.readFirstCharactersFromSharedStorage(filePath, 1024);
+            StringReader reader = new StringReader(fileStart);
+            //InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
+            CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+            try {
+                Map<String, Integer> headers = csvParser.getHeaderMap();
 
-            boolean splitByOrgId = headers.containsKey(SPLIT_COLUMN_ORG)
-                    && !fileType.equals("Admin_Organisation") //these three files have an OrganisationGuid column, but don't want splitting by it
-                    && !fileType.equals("Admin_OrganisationLocation")
-                    && !fileType.equals("Admin_UserInRole");
+                boolean splitByOrgId = headers.containsKey(SPLIT_COLUMN_ORG)
+                        && !fileType.equals("Admin_Organisation") //these three files have an OrganisationGuid column, but don't want splitting by it
+                        && !fileType.equals("Admin_OrganisationLocation")
+                        && !fileType.equals("Admin_UserInRole");
 
-            boolean splitByProcessingId = headers.containsKey(SPLIT_COLUMN_PROCESSING_ID);
+                boolean splitByProcessingId = headers.containsKey(SPLIT_COLUMN_PROCESSING_ID);
 
-            if (splitByOrgId && splitByProcessingId) {
-                orgAndProcessingIdFiles.add(fileName);
+                if (splitByOrgId && splitByProcessingId) {
+                    orgAndProcessingIdFiles.add(filePath);
 
-            } else if (splitByOrgId) {
-                orgIdFiles.add(fileName);
+                } else if (splitByOrgId) {
+                    orgIdFiles.add(filePath);
 
-            } else if (splitByProcessingId) {
-                processingIdFiles.add(fileName);
+                } else if (splitByProcessingId) {
+                    processingIdFiles.add(filePath);
 
-            } else {
-                throw new SftpFilenameParseException("Unknown EMIS CSV file type for " + fileName);
+                } else {
+                    throw new SftpFilenameParseException("Unknown EMIS CSV file type for " + fileName);
+                }
+
+            } finally {
+                csvParser.close();
+            }
+
+            //we also need to cache the headers for later, when we're creating missing files, so turn the map into a String and add to the map
+            BufferedReader bufferedReader = null;
+            try {
+                bufferedReader = new BufferedReader(new StringReader(fileStart));
+                String headersStr = bufferedReader.readLine();
+                headersCache.put(fileName, headersStr);
+            } finally {
+                bufferedReader.close();
             }
         }
     }
 
-    private static void createMissingFiles(File srcFile, Set<File> orgDirs) throws Exception {
-
-        //read in the first line of the source file, as we use that as the content for the empty files
-        String headers = readFileHeaders(srcFile);
-        String fileName = srcFile.getName();
-
-        //iterate through any directories, creating any missing files in their sub-directories
-        for (File orgDir: orgDirs) {
-            createMissingFile(fileName, headers, orgDir);
-        }
-    }
 
     private static void createMissingFile(String fileName, String headers, File dstDir) throws Exception {
 
         File dstFile = new File(dstDir, fileName);
-        //TODO - fix this
         if (dstFile.exists()) {
             return;
         }
@@ -590,8 +688,8 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return headers;
     }
 
-    private static Set<File> splitFile(File srcFile, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, csvFormat, splitColmumns);
+    private static Set<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
+        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat, splitColmumns);
         return csvSplitter.go();
     }
 }

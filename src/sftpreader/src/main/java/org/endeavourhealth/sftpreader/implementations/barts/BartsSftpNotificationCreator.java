@@ -4,8 +4,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpNotificationCreator;
-import org.endeavourhealth.sftpreader.model.db.BatchSplit;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.endeavourhealth.sftpreader.model.db.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -14,6 +13,13 @@ import java.util.List;
 public class BartsSftpNotificationCreator extends SftpNotificationCreator {
 
     @Override
+    public String createNotificationMessage(String organisationId, DataLayer db, DbInstanceEds instanceConfiguration,
+                                            DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
+
+        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit);
+    }
+
+    /*@Override
     public String createNotificationMessage(String organisationId, DataLayer db, DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
         String relativePath = FilenameUtils.concat(dbConfiguration.getLocalRootPath(), batchSplit.getLocalRelativePath());
@@ -39,5 +45,5 @@ public class BartsSftpNotificationCreator extends SftpNotificationCreator {
         }
 
         return result;
-    }
+    }*/
 }

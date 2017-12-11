@@ -122,4 +122,22 @@ public class ImplementationActivator {
             }
         }
     }
+
+    public static SftpBatchUnzipperDecrypter createSftpUnzipperDecrypter(String interfaceTypeName) {
+        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
+            return new EmisSftpBatchUnzipperDecrypter();
+        } else {
+            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
+                return new VisionSftpBatchUnzipperDecrypter();
+            } else {
+                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+                    return new BartsSftpBatchUnzipperDecrypter();
+                } else {
+                    return new HomertonSftpBatchUnzipperDecrypter();
+                }
+            }
+        }
+    }
+
+
 }

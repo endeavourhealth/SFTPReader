@@ -2,21 +2,17 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
-import org.endeavourhealth.sftpreader.model.db.Batch;
-import org.endeavourhealth.sftpreader.model.db.BatchFile;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.EmisOrganisationMap;
+import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -24,47 +20,46 @@ import java.util.*;
 public class EmisSftpBatchValidator extends SftpBatchValidator {
 
     @Override
-    public void validateBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
-        Validate.notNull(incompleteBatches, "incompleteBatches is null");
+    public void validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
+
+        Validate.notNull(incompleteBatch, "incompleteBatch is null");
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
         Validate.notNull(dbConfiguration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
         Validate.notEmpty(dbConfiguration.getInterfaceFileTypes(), "No interface file types configured");
 
-        checkExtractDateTimesIncrementBetweenBatches(incompleteBatches, lastCompleteBatch);
+        checkExtractDateTimesIncrementBetweenBatches(incompleteBatch, lastCompleteBatch);
 
-        for (Batch incompleteBatch : incompleteBatches) {
-            checkFilenamesAreConsistentAcrossBatch(incompleteBatch, dbConfiguration);
-            checkAllFilesArePresentInBatch(incompleteBatch, dbConfiguration);
+        checkFilenamesAreConsistentAcrossBatch(incompleteBatch, dbConfiguration);
+        checkAllFilesArePresentInBatch(incompleteBatch, dbConfiguration);
 
-            //check the newly received sharing agreements file to see if any orgs have become deleted or deactivated since last time
-            checkForDeactivatesOrDeletedOrganisations(incompleteBatch, lastCompleteBatch, dbConfiguration, db);
+        //check the newly received sharing agreements file to see if any orgs have become deleted or deactivated since last time
+        checkForDeactivatedOrDeletedOrganisations(incompleteBatch, lastCompleteBatch, instanceConfiguration, dbConfiguration, db);
 
-            // further checks to complete
-            //
-            // check that remote bytes == downloaded bytes
-            // check all file attributes are complete
-        }
+        // further checks to complete
+        //
+        // check that remote bytes == downloaded bytes
+        // check all file attributes are complete
     }
 
     /**
      * checks the newly received sharing agreements file to see if any orgs have become deleted or deactivated since last time
      */
-    private void checkForDeactivatesOrDeletedOrganisations(Batch incompleteBatch, Batch lastCompleteBatch, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
+    private void checkForDeactivatedOrDeletedOrganisations(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration,
+                                                           DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
 
         //if this is the first extract, then this will be null
         if (lastCompleteBatch == null) {
             return;
         }
 
-        String rootPath = dbConfiguration.getFullLocalRootPath();
-        File sharingAgreementFileOld = EmisSftpBatchSplitter.findSharingAgreementsFile(lastCompleteBatch, rootPath);
+        String sharingAgreementFileOld = EmisSftpBatchSplitter.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, lastCompleteBatch);
 
         Map<String, String> hmActivatedOld = new HashMap<>();
         Map<String, String> hmDisabledOld = new HashMap<>();
         Map<String, String> hmDeletedOld = new HashMap<>();
         readSharingAgreementsFile(sharingAgreementFileOld, hmActivatedOld, hmDisabledOld, hmDeletedOld);
 
-        File sharingAgreementFileNew = EmisSftpBatchSplitter.findSharingAgreementsFile(incompleteBatch, rootPath);
+        String sharingAgreementFileNew = EmisSftpBatchSplitter.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, incompleteBatch);
         
         Map<String, String> hmActivatedNew = new HashMap<>();
         Map<String, String> hmDisabledNew = new HashMap<>();
@@ -136,15 +131,16 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, alert);
     }
 
-    private static void readSharingAgreementsFile(File file,
+    private static void readSharingAgreementsFile(String filePath,
                                                   Map<String, String> hmActivated,
                                                   Map<String, String> hmDisabled,
                                                   Map<String, String> hmDeleted) throws SftpValidationException {
 
-
         CSVParser csvParser = null;
         try {
-            csvParser = CSVParser.parse(file, Charset.defaultCharset(), EmisSftpBatchSplitter.CSV_FORMAT.withHeader());
+            InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(filePath);
+            csvParser = new CSVParser(isr, EmisSftpBatchSplitter.CSV_FORMAT.withHeader());
+
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
 
             while (csvIterator.hasNext()) {
@@ -160,7 +156,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
                 hmDeleted.put(orgGuid, deleted);
             }
         } catch (Exception ex) {
-            throw new SftpValidationException("Failed to read sharing agreements file " + file, ex);
+            throw new SftpValidationException("Failed to read sharing agreements file " + filePath, ex);
 
         } finally {
             try {
@@ -173,26 +169,19 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         }
     }
 
-    private void checkExtractDateTimesIncrementBetweenBatches(List<Batch> incompleteBatches, Batch lastCompleteBatch) throws SftpValidationException {
-        if (incompleteBatches
-                .stream()
-                .map(t -> t.getBatchIdentifier())
-                .distinct()
-                .count() != incompleteBatches.size()) {
-            throw new SftpValidationException("Unsequenced batches have a duplicate extract date time");
+    private void checkExtractDateTimesIncrementBetweenBatches(Batch incompleteBatch, Batch lastCompleteBatch) throws SftpValidationException {
+
+        if (lastCompleteBatch == null) {
+            return;
         }
 
-        Batch firstIncompleteBatch = incompleteBatches
-                .stream()
-                .sorted(Comparator.comparing(t -> EmisSftpFilenameParser.parseBatchIdentifier(t.getBatchIdentifier())))
-                .collect(StreamExtension.firstOrNullCollector());
+        LocalDateTime firstIncompleteBatchDatetime = EmisSftpFilenameParser.parseBatchIdentifier(incompleteBatch.getBatchIdentifier());
+        LocalDateTime lastCompleteBatchDateTime = EmisSftpFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
 
-        if ((firstIncompleteBatch != null) && (lastCompleteBatch != null)) {
-            LocalDateTime lastCompleteBatchDateTime = EmisSftpFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
-            LocalDateTime firstIncompleteBatchDatetime = EmisSftpFilenameParser.parseBatchIdentifier(firstIncompleteBatch.getBatchIdentifier());
+        if ((firstIncompleteBatchDatetime.isBefore(lastCompleteBatchDateTime))
+                || (firstIncompleteBatchDatetime.isEqual(lastCompleteBatchDateTime))) {
 
-            if ((firstIncompleteBatchDatetime.isBefore(lastCompleteBatchDateTime)) || (firstIncompleteBatchDatetime.isEqual(lastCompleteBatchDateTime)))
-                throw new SftpValidationException("First unsequenced batch extract date time is before last sequenced batch extract date time.");
+            throw new SftpValidationException("First unsequenced batch extract date time is before last sequenced batch extract date time.");
         }
     }
 
@@ -246,4 +235,6 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         if (incompleteBatch.getBatchFiles().size() != dbConfiguration.getInterfaceFileTypes().size())
             throw new SftpValidationException("Incorrect number of files in batch. Batch identifier = " + incompleteBatch.getBatchIdentifier());
     }
+
+
 }

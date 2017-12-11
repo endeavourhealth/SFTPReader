@@ -19,7 +19,24 @@ public class PgpUtil {
 
     private static final int BUFFER_SIZE = 10000000; //use approx 10MB for buffered streams, as a fair balance between disk IO and memory
 
-    public static void decryptAndVerify(String inputFileName,
+    public static void decryptAndVerify(InputStream inputStream,
+                                        String outputFileName,
+                                        String secretKey,
+                                        String secretKeyPassword,
+                                        String publicKey) throws IOException, NoSuchProviderException, PGPException, SignatureException
+    {
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+
+        try (InputStream fileIn = new BufferedInputStream(inputStream, BUFFER_SIZE);
+             InputStream secretKeyIn = new BufferedInputStream(new ByteArrayInputStream(secretKey.getBytes()));
+             BufferedOutputStream fileOut = new BufferedOutputStream(new FileOutputStream(outputFileName), BUFFER_SIZE);
+             InputStream publicKeyStream = new ByteArrayInputStream(publicKey.getBytes()); )
+        {
+            decryptAndVerify(fileIn, fileOut, secretKeyIn, secretKeyPassword, publicKeyStream);
+        }
+    }
+
+    /*public static void decryptAndVerify(String inputFileName,
                                         String secretKey,
                                         String secretKeyPassword,
                                         String outputFileName,
@@ -34,7 +51,7 @@ public class PgpUtil {
         {
             decryptAndVerify(fileIn, fileOut, secretKeyIn, secretKeyPassword, publicKeyStream);
         }
-    }
+    }*/
 
     private static void decryptAndVerify(InputStream fileIn,
                                          OutputStream fileOut,

@@ -22,7 +22,7 @@ begin
 		c.configuration_friendly_name,
 		it.interface_type_name,
 		c.poll_frequency_seconds,	
-		c.local_root_path_prefix,
+		-- c.local_root_path_prefix,
 		c.local_root_path,
 		c.software_content_type,
 		c.software_version

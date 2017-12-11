@@ -10,6 +10,8 @@ public class DbInstanceEds {
     private String keycloakUsername;
     private String keycloakPassword;
     private String keycloakClientId;
+    private String tempDirectory;
+    private String sharedStoragePath;
 
     public String getEdsUrl() {
         return edsUrl;
@@ -89,6 +91,24 @@ public class DbInstanceEds {
 
     public DbInstanceEds setKeycloakClientId(String keycloakClientId) {
         this.keycloakClientId = keycloakClientId;
+        return this;
+    }
+
+    public String getTempDirectory() {
+        return tempDirectory;
+    }
+
+    public DbInstanceEds setTempDirectory(String tempDirectory) {
+        this.tempDirectory = tempDirectory;
+        return this;
+    }
+
+    public String getSharedStoragePath() {
+        return sharedStoragePath;
+    }
+
+    public DbInstanceEds setSharedStoragePath(String sharedStoragePath) {
+        this.sharedStoragePath = sharedStoragePath;
         return this;
     }
 }

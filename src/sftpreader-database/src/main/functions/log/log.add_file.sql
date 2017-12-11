@@ -60,7 +60,7 @@ begin
 
 	select 
 		bf.batch_file_id,
-		(is_downloaded and ((not requires_decryption) or is_decrypted))
+		is_downloaded
 	into
 		_batch_file_id,
 		_file_already_processed 

@@ -102,7 +102,9 @@ begin
 		e.keycloak_realm,
 		e.keycloak_username,
 		e.keycloak_password,
-		e.keycloak_clientid
+		e.keycloak_clientid,
+		e.temp_directory,
+		e.shared_storage_path
 	from configuration.eds e;
 
 	return next configuration_eds;

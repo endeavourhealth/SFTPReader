@@ -2,6 +2,7 @@ package org.endeavourhealth.sftpreader.utilities.sftp;
 
 import com.google.common.base.Strings;
 import com.jcraft.jsch.*;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.utilities.Connection;
@@ -131,8 +132,9 @@ public class SftpConnection extends Connection {
     public InputStream getFile(String remotePath) throws SftpException {
 
         //when listing the files we change into the directory, so want to remove the path and just download by filename
-        File f = new File(remotePath);
-        String name = f.getName();
+        /*File f = new File(remotePath);
+        String name = f.getName();*/
+        String name = FilenameUtils.getName(remotePath);
 
         return channel.get(name);
     }

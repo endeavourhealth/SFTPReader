@@ -46,14 +46,14 @@ public class DataLayer implements IDBDigestLogger {
         DbInstanceEds dbInstanceEds = pgStoredProc.executeMultiQuerySingleOrEmptyRow((resultSet) ->
                 new DbInstanceEds()
                         .setEdsUrl(resultSet.getString("eds_url"))
-                        /*.setSoftwareContentType(resultSet.getString("software_content_type"))
-                        .setSoftwareVersion(resultSet.getString("software_version"))*/
                         .setUseKeycloak(resultSet.getBoolean("use_keycloak"))
                         .setKeycloakTokenUri(resultSet.getString("keycloak_token_uri"))
                         .setKeycloakRealm(resultSet.getString("keycloak_realm"))
                         .setKeycloakUsername(resultSet.getString("keycloak_username"))
                         .setKeycloakPassword(resultSet.getString("keycloak_password"))
-                        .setKeycloakClientId(resultSet.getString("keycloak_clientid")));
+                        .setKeycloakClientId(resultSet.getString("keycloak_clientid"))
+                        .setTempDirectory(resultSet.getString("temp_directory"))
+                        .setSharedStoragePath(resultSet.getString("shared_storage_path")));
 
         return dbInstance
                 .setConfigurationIds(configurationIds)
@@ -82,7 +82,7 @@ public class DataLayer implements IDBDigestLogger {
                         .setConfigurationFriendlyName(resultSet.getString("configuration_friendly_name"))
                         .setInterfaceTypeName(resultSet.getString("interface_type_name"))
                         .setPollFrequencySeconds(resultSet.getInt("poll_frequency_seconds"))
-                        .setLocalRootPathPrefix(resultSet.getString("local_root_path_prefix"))
+                        //.setLocalRootPathPrefix(resultSet.getString("local_root_path_prefix"))
                         .setLocalRootPath(resultSet.getString("local_root_path"))
                         .setSoftwareContentType(resultSet.getString("software_content_type"))
                         .setSoftwareVersion(resultSet.getString("software_version")));
@@ -162,17 +162,17 @@ public class DataLayer implements IDBDigestLogger {
         return mappings.get(0);
     }
 
-    public AddFileResult addFile(String configurationId, SftpFile batchFile) throws PgStoredProcException {
+    public AddFileResult addFile(String configurationId, SftpFile sftpFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.add_file")
                 .addParameter("_configuration_id", configurationId)
-                .addParameter("_batch_identifier", batchFile.getBatchIdentifier())
-                .addParameter("_file_type_identifier", batchFile.getFileTypeIdentifier())
-                .addParameter("_filename", batchFile.getFilename())
-                .addParameter("_local_relative_path", batchFile.getLocalRelativePath())
-                .addParameter("_remote_size_bytes", batchFile.getRemoteFileSizeInBytes())
-                .addParameter("_remote_created_date", batchFile.getRemoteLastModifiedDate())
-                .addParameter("_requires_decryption", batchFile.doesFileNeedDecrypting());
+                .addParameter("_batch_identifier", sftpFile.getBatchIdentifier())
+                .addParameter("_file_type_identifier", sftpFile.getFileTypeIdentifier())
+                .addParameter("_filename", sftpFile.getFilename())
+                .addParameter("_local_relative_path", sftpFile.getLocalRelativePath())
+                .addParameter("_remote_size_bytes", sftpFile.getRemoteFileSizeInBytes())
+                .addParameter("_remote_created_date", sftpFile.getRemoteLastModifiedDate())
+                .addParameter("_requires_decryption", sftpFile.doesFileNeedDecrypting());
 
         return pgStoredProc.executeSingleRow((resultSet) ->
                 new AddFileResult()
@@ -189,12 +189,12 @@ public class DataLayer implements IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void setFileAsDecrypted(SftpFile batchFile) throws PgStoredProcException {
+    public void setFileAsDecrypted(BatchFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.set_file_as_decrypted")
                 .addParameter("_batch_file_id", batchFile.getBatchFileId())
                 .addParameter("_decrypted_filename", batchFile.getDecryptedFilename())
-                .addParameter("_decrypted_size_bytes", batchFile.getDecryptedFileSizeBytes());
+                .addParameter("_decrypted_size_bytes", batchFile.getDecryptedSizeBytes());
 
         pgStoredProc.execute();
     }
@@ -305,9 +305,17 @@ public class DataLayer implements IDBDigestLogger {
         return batches;
     }
 
-    public void setBatchAsComplete(Batch batch, int sequenceNumber) throws PgStoredProcException {
+    public void setBatchAsComplete(Batch batch) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.set_batch_as_complete")
+                .addParameter("_batch_id", batch.getBatchId());
+
+        pgStoredProc.execute();
+    }
+
+    public void setBatchSequenceNumber(Batch batch, int sequenceNumber) throws PgStoredProcException {
+        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+                .setName("log.set_batch_sequence_number")
                 .addParameter("_batch_id", batch.getBatchId())
                 .addParameter("_sequence_number", Integer.toString(sequenceNumber));
 

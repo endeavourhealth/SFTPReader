@@ -9,10 +9,11 @@ public class DbConfiguration {
     private String configurationFriendlyName;
     private String interfaceTypeName;
     private int pollFrequencySeconds;
-    private String localRootPathPrefix;
+    //private String localRootPathPrefix;
     private String localRootPath;
     private String softwareContentType;
     private String softwareVersion;
+
 
     private DbConfigurationSftp sftpConfiguration;
     private DbConfigurationPgp pgpConfiguration;
@@ -55,18 +56,18 @@ public class DbConfiguration {
         return this;
     }
 
-    public String getLocalRootPathPrefix() {
+    /*public String getLocalRootPathPrefix() {
         return localRootPathPrefix;
     }
 
     public DbConfiguration setLocalRootPathPrefix(String localRootPathPrefix) {
         this.localRootPathPrefix = localRootPathPrefix;
         return this;
-    }
+    }*/
 
-    public String getFullLocalRootPath() {
+    /*public String getFullLocalRootPath() {
         return FilenameUtils.concat(getLocalRootPathPrefix(), getLocalRootPath());
-    }
+    }*/
 
     public String getLocalRootPath() {
         return localRootPath;
@@ -137,4 +138,6 @@ public class DbConfiguration {
         this.softwareContentType = softwareContentType;
         return this;
     }
+
+
 }

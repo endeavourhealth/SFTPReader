@@ -24,7 +24,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
      * No further splitting into sub-batches for Barts
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         List<BatchSplit> ret = new ArrayList<>();
 

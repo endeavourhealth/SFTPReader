@@ -6,9 +6,7 @@ import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
 import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpNotificationCreator;
-import org.endeavourhealth.sftpreader.model.db.Batch;
-import org.endeavourhealth.sftpreader.model.db.BatchSplit;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.endeavourhealth.sftpreader.model.db.*;
 
 import java.io.File;
 import java.time.LocalDate;
@@ -22,6 +20,14 @@ import java.util.List;
 public class EmisSftpNotificationCreator extends SftpNotificationCreator {
 
     @Override
+    public String createNotificationMessage(String organisationId, DataLayer db, DbInstanceEds instanceConfiguration,
+                                            DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
+
+        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit);
+    }
+
+
+    /*@Override
     public String createNotificationMessage(String organisationId, DataLayer db, DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
         //if we pass the start date check, then return the payload for the notification ot the messaging API
@@ -48,5 +54,5 @@ public class EmisSftpNotificationCreator extends SftpNotificationCreator {
         }
 
         return result;
-    }
+    }*/
 }
