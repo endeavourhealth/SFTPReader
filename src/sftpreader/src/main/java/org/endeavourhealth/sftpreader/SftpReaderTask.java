@@ -119,9 +119,6 @@ public class SftpReaderTask implements Runnable {
 
         File f = new File(tempDir);
         FileUtils.forceDelete(f);
-
-        //todo - need to assume files are in temp when splitting etc.
-        //
     }
 
     private void completeBatch(Batch batch) throws Exception {
