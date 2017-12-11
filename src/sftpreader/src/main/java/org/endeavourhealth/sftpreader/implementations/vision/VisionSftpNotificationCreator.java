@@ -18,7 +18,7 @@ public class VisionSftpNotificationCreator extends SftpNotificationCreator {
     public String createNotificationMessage(String organisationId, DataLayer db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
-        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit);
+        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit, "csv");
     }
 
     /*@Override

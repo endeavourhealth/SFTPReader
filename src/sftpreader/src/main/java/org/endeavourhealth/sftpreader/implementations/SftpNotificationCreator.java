@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.implementations;
 
+import com.google.common.base.Strings;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
@@ -21,7 +22,9 @@ public abstract class SftpNotificationCreator {
      * creates default notification message which is a list of files found
      */
     public String createDefaultNotificationMessage(DbInstanceEds instanceConfiguration,
-                                                    DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
+                                                   DbConfiguration dbConfiguration,
+                                                   BatchSplit batchSplit,
+                                                   String requiredFileExtension) throws Exception {
 
         String sharedStoragePath = instanceConfiguration.getSharedStoragePath();
         String configurationPath = dbConfiguration.getLocalRootPath();
@@ -38,6 +41,13 @@ public abstract class SftpNotificationCreator {
         for (String file: files) {
             if (!file.startsWith(sharedStoragePath)) {
                 throw new Exception("File " + file + " doesn't start with expected " + sharedStoragePath);
+            }
+
+            if (!Strings.isNullOrEmpty(requiredFileExtension)) {
+                String fileExtension = FilenameUtils.getExtension(file);
+                if (!fileExtension.equalsIgnoreCase(requiredFileExtension)) {
+                    continue;
+                }
             }
 
             //substring by the shared path PLUS ONE to remove the separator after it
