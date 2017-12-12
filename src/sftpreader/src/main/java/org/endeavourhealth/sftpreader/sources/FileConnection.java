@@ -45,7 +45,8 @@ public class FileConnection extends Connection {
 
             String fileName = FilenameUtils.getName(path);
             if (Strings.isNullOrEmpty(fileName)) {
-                LOG.info("Ingoring " + path + " as it's not a file");
+                LOG.info("Ignoring " + path + " as it's not a file");
+                continue;
             }
 
             LocalDateTime lastModifiedLocalDate = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
