@@ -32,6 +32,7 @@ public class Main {
                     String bucket = args[1];
                     String path = args[2];
                     fixS3(bucket, path);
+                    System.exit(0);
                 }
             }
 
