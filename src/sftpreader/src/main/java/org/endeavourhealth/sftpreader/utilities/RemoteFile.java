@@ -5,28 +5,22 @@ import org.apache.commons.io.FilenameUtils;
 import java.time.LocalDateTime;
 
 public class RemoteFile {
-    private String filename;
-    private String remotePath;
+    private String filePath;
     private long fileSizeBytes;
     private LocalDateTime lastModified;
 
-    public RemoteFile(String filename, String remotePath, long fileSizeBytes, LocalDateTime lastModified) {
-        this.filename = filename;
-        this.remotePath = remotePath;
+    public RemoteFile(String filePath, long fileSizeBytes, LocalDateTime lastModified) {
+        this.filePath = filePath;
         this.fileSizeBytes = fileSizeBytes;
         this.lastModified = lastModified;
     }
 
     public String getFullPath() {
-        return FilenameUtils.concat(remotePath, filename);
+        return filePath;
     }
 
     public String getFilename() {
-        return filename;
-    }
-
-    public String getRemotePath() {
-        return remotePath;
+        return FilenameUtils.getName(filePath);
     }
 
     public long getFileSizeBytes() {

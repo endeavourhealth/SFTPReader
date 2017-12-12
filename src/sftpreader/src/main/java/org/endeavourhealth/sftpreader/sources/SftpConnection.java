@@ -1,16 +1,13 @@
-package org.endeavourhealth.sftpreader.utilities.sftp;
+package org.endeavourhealth.sftpreader.sources;
 
 import com.google.common.base.Strings;
 import com.jcraft.jsch.*;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
-import org.endeavourhealth.sftpreader.utilities.Connection;
-import org.endeavourhealth.sftpreader.utilities.ConnectionDetails;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -103,7 +100,6 @@ public class SftpConnection extends Connection {
                 .filter(t -> !t.getAttrs().isDir())
                 .map(t ->
                         new RemoteFile(t.getFilename(),
-                                "", //"\\", //trying alternatives that work on all known SFTP servers
                                 t.getAttrs().getSize(),
                                 LocalDateTime.ofInstant(new Date((long)t.getAttrs().getMTime() * 1000L).toInstant(), ZoneId.systemDefault())
                         )
@@ -139,21 +135,21 @@ public class SftpConnection extends Connection {
         return channel.get(name);
     }
 
-    public void deleteFile(String remotePath) throws SftpException {
+    /*public void deleteFile(String remotePath) throws SftpException {
         channel.rm(remotePath);
-    }
+    }*/
 
     /*public void cd(String remotePath) throws SftpException {
         channel.cd(remotePath);
     }*/
 
-    public void put(String localPath, String destinationPath) throws SftpException {
+    /*public void put(String localPath, String destinationPath) throws SftpException {
         channel.put(localPath, destinationPath);
-    }
+    }*/
 
-    public void mkDir(String path) throws SftpException {
+    /*public void mkDir(String path) throws SftpException {
         channel.mkdir(path);
-    }
+    }*/
 
     public void close() {
         if (channel != null && channel.isConnected())

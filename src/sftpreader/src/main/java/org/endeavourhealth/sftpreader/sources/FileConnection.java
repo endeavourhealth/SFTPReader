@@ -1,7 +1,8 @@
-package org.endeavourhealth.sftpreader.utilities.file;
+package org.endeavourhealth.sftpreader.sources;
 
-import org.endeavourhealth.sftpreader.utilities.Connection;
-import org.endeavourhealth.sftpreader.utilities.ConnectionDetails;
+import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 public class FileConnection extends Connection {
@@ -29,6 +31,26 @@ public class FileConnection extends Connection {
     }
 
     public List<RemoteFile> getFileList(String remotePath) throws Exception {
+        LOG.info("Retrieving files from: " + remotePath);
+
+        List<RemoteFile> ret = new Vector<>();
+
+        List<FileInfo> listing = FileHelper.listFilesInSharedStorageWithInfo(remotePath);
+        for (FileInfo fileInfo: listing) {
+            String path = fileInfo.getFilePath();
+            Date lastModified = fileInfo.getLastModified();
+            long size = fileInfo.getSize();
+
+            LocalDateTime lastModifiedLocalDate = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
+
+            RemoteFile remoteFile = new RemoteFile(path, size, lastModifiedLocalDate);
+            ret.add(remoteFile);
+        }
+
+        return ret;
+    }
+
+    /*public List<RemoteFile> getFileList(String remotePath) throws Exception {
         LOG.info("Retrieving files from: " + remotePath);
 
         List<RemoteFile> ret = new Vector<>();
@@ -58,10 +80,12 @@ public class FileConnection extends Connection {
             for (Path file: stream) {
                 File tempFile = file.toFile();
                 if (tempFile.isFile()) {
-                    RemoteFile remoteFile = new RemoteFile(tempFile.getName(),
-                            remotePath,
-                            tempFile.length(),
-                            LocalDateTime.ofInstant(new Date(tempFile.lastModified()).toInstant(), ZoneId.systemDefault()));
+                    String fileName = tempFile.getName();
+                    String filePath = FilenameUtils.concat(remotePath, fileName);
+                    long len = tempFile.length();
+                    LocalDateTime modified = LocalDateTime.ofInstant(new Date(tempFile.lastModified()).toInstant(), ZoneId.systemDefault());
+
+                    RemoteFile remoteFile = new RemoteFile(filePath, len, modified);
                     ret.add(remoteFile);
                     LOG.info("Found " + remoteFile.getFullPath());
                 }
@@ -69,43 +93,27 @@ public class FileConnection extends Connection {
         }
 
         return ret;
-    }
-
-    /*public List<RemoteFile> getFileList(String remotePath) throws Exception {
-        LOG.info("Retrieving files from: " + remotePath);
-
-        List<RemoteFile> ret = new Vector<RemoteFile>();
-        Path dir = new File(remotePath).toPath();
-        DirectoryStream<Path> stream = Files.newDirectoryStream(dir);
-        for (Path file: stream) {
-            File tempFile = file.toFile();
-            if (tempFile.isFile()) {
-                RemoteFile remoteFile = new RemoteFile(tempFile.getName(),
-                        remotePath,
-                        tempFile.length(),
-                        LocalDateTime.ofInstant(new Date(tempFile.lastModified()).toInstant(), ZoneId.systemDefault()));
-                ret.add(remoteFile);
-            }
-        }
-        return ret;
     }*/
+
+
 
     public InputStream getFile(String remotePath) throws Exception {
         LOG.info("Retrieving single file: " + remotePath);
-        return new FileInputStream(new File(remotePath));
+        return FileHelper.readFileFromSharedStorage(remotePath);
+        //return new FileInputStream(new File(remotePath));
     }
 
-    public void deleteFile(String remotePath) throws Exception {
+    /*public void deleteFile(String remotePath) throws Exception {
         LOG.info("Delete single file: " + remotePath);
         Path p = new File(remotePath).toPath();
         Files.delete(p);
-    }
+    }*/
 
     /*public void cd(String remotePath) throws SftpException {
         // no concept of 'current location'
     }*/
 
-    public void put(String localPath, String destinationPath) throws Exception {
+    /*public void put(String localPath, String destinationPath) throws Exception {
         LOG.info("Save file: " + localPath + "==>" + destinationPath);
         Path from = new File(localPath).toPath();
         Path to = new File(destinationPath).toPath();
@@ -115,7 +123,7 @@ public class FileConnection extends Connection {
     public void mkDir(String path) throws Exception {
         Path p = new File(path).toPath();
         Files.createDirectory(p);
-    }
+    }*/
 
     public void close() {
         // no concept of 'close connection'

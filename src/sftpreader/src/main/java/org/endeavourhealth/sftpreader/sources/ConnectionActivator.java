@@ -1,7 +1,4 @@
-package org.endeavourhealth.sftpreader.utilities;
-
-import org.endeavourhealth.sftpreader.utilities.file.FileConnection;
-import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection;
+package org.endeavourhealth.sftpreader.sources;
 
 public class ConnectionActivator {
     // do this properly - instatiate dynamically based on configuration against interface type

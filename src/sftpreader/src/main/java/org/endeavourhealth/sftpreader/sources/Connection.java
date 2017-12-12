@@ -1,5 +1,6 @@
-package org.endeavourhealth.sftpreader.utilities;
+package org.endeavourhealth.sftpreader.sources;
 
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
@@ -15,12 +16,14 @@ public abstract class Connection {
 
     public abstract void open() throws Exception;
 
+    public abstract void close();
+
     public abstract List<RemoteFile> getFileList(String remotePath) throws Exception;
 
     // Return a single remote file
     public abstract InputStream getFile(String remotePath) throws Exception;
 
-    // Delete remote file
+    /*
     public abstract void deleteFile(String remotePath) throws Exception;
 
     // Change remote default directory
@@ -31,9 +34,7 @@ public abstract class Connection {
 
     // Create new remote directory
     public abstract void mkDir(String path) throws Exception;
-
-    // Close external connection
-    public abstract void close();
+    */
 
     public ConnectionDetails getConnectionDetails() {
         return this.connectionDetails;

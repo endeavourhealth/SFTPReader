@@ -2,10 +2,8 @@ package org.endeavourhealth.sftpreader;
 
 import com.google.common.base.Strings;
 import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
 import org.endeavourhealth.common.eds.EdsSender;
@@ -20,8 +18,10 @@ import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
+import org.endeavourhealth.sftpreader.sources.Connection;
+import org.endeavourhealth.sftpreader.sources.ConnectionActivator;
+import org.endeavourhealth.sftpreader.sources.ConnectionDetails;
 import org.endeavourhealth.sftpreader.utilities.*;
-import org.endeavourhealth.sftpreader.utilities.sftp.SftpConnection;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -31,8 +31,6 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.endeavourhealth.sftpreader.utilities.ZipUtil.unZipFile;
 
 //import org.endeavourhealth.common.config.ConfigManager;
 

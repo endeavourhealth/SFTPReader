@@ -1,4 +1,4 @@
-package org.endeavourhealth.sftpreader.utilities;
+package org.endeavourhealth.sftpreader.sources;
 
 import java.io.IOException;
 
