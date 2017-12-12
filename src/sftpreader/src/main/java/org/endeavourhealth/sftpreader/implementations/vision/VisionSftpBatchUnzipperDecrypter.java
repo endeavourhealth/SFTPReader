@@ -52,7 +52,7 @@ public class VisionSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter
                 //if we have a different temp to shared storage path, then we need to copy the file
                 //from our storage to temp for the unzipping (since the unzipping library can't work with S3)
                 String tempFilePath = FilenameUtils.concat(tempDir, fileName);
-                zipFile = new File(tempFilePath, fileName);
+                zipFile = new File(tempFilePath);
 
                 InputStream inputStream = FileHelper.readFileFromSharedStorage(storageFilePath);
                 try {
