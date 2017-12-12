@@ -2,6 +2,8 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.utility.FileHelper;
@@ -52,12 +54,11 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
             return;
         }
 
-        String sharingAgreementFileOld = EmisSftpBatchSplitter.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, lastCompleteBatch);
-
         Map<String, String> hmActivatedOld = new HashMap<>();
         Map<String, String> hmDisabledOld = new HashMap<>();
         Map<String, String> hmDeletedOld = new HashMap<>();
-        readSharingAgreementsFile(sharingAgreementFileOld, hmActivatedOld, hmDisabledOld, hmDeletedOld);
+        readOldSharingAgreementFiles(instanceConfiguration, dbConfiguration, lastCompleteBatch, hmActivatedOld, hmDisabledOld, hmDeletedOld);
+
 
         String sharingAgreementFileNew = EmisSftpBatchSplitter.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, incompleteBatch);
         
@@ -103,6 +104,49 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         for (String orgGuid: hmActivatedOld.keySet()) {
             if (!hmActivatedNew.containsKey(orgGuid)) {
                 sendSlackAlert(orgGuid, "Has been removed from the sharing agreements file", db);
+            }
+        }
+    }
+
+    /**
+     * the previous sharing agreement file will have been split over all the org directories, so we need
+     * to read them all to recreate it as a whole
+     */
+    private void readOldSharingAgreementFiles(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration,
+                                              Batch lastCompleteBatch, Map<String, String> hmActivatedOld,
+                                              Map<String, String> hmDisabledOld, Map<String, String> hmDeletedOld) throws SftpValidationException {
+
+        //all the split files will have the same file name, which we can find from the batch file list
+        String fileName = null;
+        for (BatchFile batchFile: lastCompleteBatch.getBatchFiles()) {
+            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(EmisSftpBatchSplitter.EMIS_AGREEMENTS_FILE_ID)) {
+                fileName = batchFile.getDecryptedFilename();
+            }
+        }
+
+        String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
+        String configurationDir = dbConfiguration.getLocalRootPath();
+        String batchDir = lastCompleteBatch.getLocalRelativePath();
+        String splitDir = EmisSftpBatchSplitter.SPLIT_FOLDER;
+
+        String dir = FilenameUtils.concat(sharedStorageDir, configurationDir);
+        dir = FilenameUtils.concat(dir, batchDir);
+        dir = FilenameUtils.concat(dir, splitDir);
+
+        List<String> files = null;
+        try {
+            files = FileHelper.listFilesInSharedStorage(dir);
+
+        } catch (Exception ex) {
+            throw new SftpValidationException(ex);
+        }
+
+        for (String filePath: files) {
+
+            String splitFileName = FilenameUtils.getName(filePath);
+            if (splitFileName.equalsIgnoreCase(fileName)) {
+
+                readSharingAgreementsFile(filePath, hmActivatedOld, hmDisabledOld, hmDeletedOld);
             }
         }
     }

@@ -46,10 +46,11 @@ public class EmisSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
             String encryptedFilename = batchFile.getFilename();
 
             //if this one has already been decrypted, skip it
-            if (batchFile.isDecrypted()) {
+            //we delete the decrypted file after splitting, so it we're back in this function, we need to decrypt it again
+            /*if (batchFile.isDecrypted()) {
                 LOG.info("" + encryptedFilename + " has already been decrypted");
                 continue;
-            }
+            }*/
 
             String extension = dbConfiguration.getPgpFileExtensionFilter();
             String decryptedFilename = StringUtils.removeEnd(encryptedFilename, extension);
@@ -79,7 +80,8 @@ public class EmisSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
             }
 
             //if we're using separate temp and permanent storage, then we want to move the decrypted file into permanent storage
-            if (!FilenameUtils.equals(sharedStoragePath, tempRootDir)) {
+            //taking out, since we store the split versions of the files in S3, there's no need to store the un-split versions too
+            /*if (!FilenameUtils.equals(sharedStoragePath, tempRootDir)) {
 
                 String decryptedPermanent = FilenameUtils.concat(sharedStoragePath, configurationDir);
                 decryptedPermanent = FilenameUtils.concat(decryptedPermanent, batchDir);
@@ -87,7 +89,7 @@ public class EmisSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
 
                 File decryptedSource = new File(decryptedTempFile);
                 FileHelper.writeFileToSharedStorage(decryptedPermanent, decryptedSource);
-            }
+            }*/
         }
     }
 }

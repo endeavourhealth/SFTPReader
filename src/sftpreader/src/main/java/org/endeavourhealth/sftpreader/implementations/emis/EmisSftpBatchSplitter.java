@@ -34,7 +34,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     private static final String SPLIT_COLUMN_ORG = "OrganisationGuid";
     private static final String SPLIT_COLUMN_PROCESSING_ID = "ProcessingId";
 
-    private static final String SPLIT_FOLDER = "Split";
+    public static final String SPLIT_FOLDER = "Split";
 
     /**
      * splits the EMIS extract files we use by org GUID and processing ID, so
@@ -82,7 +82,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         List<String> orgIdFiles = new ArrayList<>();
         Map<String, String> headersCache = new HashMap<>();
 
-        identifyFiles(batch, sourceTempDir, sourcePermDir, orgAndProcessingIdFiles, processingIdFiles, orgIdFiles, dbConfiguration, headersCache);
+        identifyFiles(batch, sourceTempDir, orgAndProcessingIdFiles, processingIdFiles, orgIdFiles, dbConfiguration, headersCache);
 
         Set<File> orgIdDirs = new HashSet<>();
         Map<File, Set<File>> processingIdDirsByOrgId = new HashMap<>();
@@ -583,7 +583,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
     /**
      * scans through the files in the folder and works out which are admin and which are clinical
      */
-    private static void identifyFiles(Batch batch, String sourceTempDir, String sourcePermDir, List<String> orgAndProcessingIdFiles, List<String> processingIdFiles,
+    private static void identifyFiles(Batch batch, String sourceTempDir, List<String> orgAndProcessingIdFiles, List<String> processingIdFiles,
                                       List<String> orgIdFiles, DbConfiguration dbConfiguration, Map<String, String> headersCache) throws Exception {
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
@@ -592,10 +592,6 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
             //first try to use a file in our temporary storage
             String filePath = FilenameUtils.concat(sourceTempDir, fileName);
-            if (!new File(filePath).exists()) {
-                //if not in temp storage, refer to the perm version
-                filePath = FilenameUtils.concat(sourcePermDir, fileName);
-            }
 
             EmisSftpFilenameParser nameParser = new EmisSftpFilenameParser(fileName, dbConfiguration, ".csv");
             String fileType = nameParser.generateFileTypeIdentifier();

@@ -1,7 +1,14 @@
 package org.endeavourhealth.sftpreader;
 
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.*;
+import com.google.common.base.Strings;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.postgres.PgAppLock.PgAppLock;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +26,14 @@ public class Main {
 	public static void main(String[] args) {
 		try {
             configuration = Configuration.getInstance();
+
+            if (args.length > 0) {
+                if (args[0].equalsIgnoreCase("FixS3")) {
+                    String bucket = args[1];
+                    String path = args[2];
+                    fixS3(bucket, path);
+                }
+            }
 
             PgAppLock pgAppLock = new PgAppLock(configuration.getInstanceName(), configuration.getNonPooledDatabaseConnection());
             try {
@@ -55,6 +70,8 @@ public class Main {
         }
 	}
 
+
+
     private static void shutdown() {
         try {
             LOG.info("Shutting down...");
@@ -76,6 +93,60 @@ public class Main {
 
     private static void printToErrorConsole(String message, Exception e) {
         System.err.println(message + " [" + e.getClass().getName() + "] " + e.getMessage());
+    }
+
+    private static void fixS3(String bucket, String path) {
+        LOG.info("Fixing S3 " + bucket + " for " + path);
+
+        ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
+
+        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
+                .standard()
+                .withCredentials(credentialsProvider)
+                .withRegion(Regions.EU_WEST_2);
+
+        AmazonS3 s3Client = clientBuilder.build();
+
+        ListObjectsV2Request request = new ListObjectsV2Request();
+        request.setBucketName(bucket);
+        request.setPrefix(path);
+
+        ListObjectsV2Result result = s3Client.listObjectsV2(request);
+        if (result.getObjectSummaries() != null) {
+            for (S3ObjectSummary objectSummary: result.getObjectSummaries()) {
+                String key = objectSummary.getKey();
+
+                GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
+                ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
+                String encryption = metadata.getSSEAlgorithm();
+                LOG.info("" + key + " has encryption " + encryption);
+
+                if (Strings.isNullOrEmpty(encryption)) {
+
+                    String key2 = key + "_COPY";
+
+                    //copy to backup
+                    CopyObjectRequest copyRequest = new CopyObjectRequest(bucket, key, bucket, key2);
+                    s3Client.copyObject(copyRequest);
+
+                    ObjectMetadata objectMetadata = new ObjectMetadata();
+                    objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+
+                    //copy back to original but WITH encryption
+                    copyRequest = new CopyObjectRequest(bucket, key2, bucket, key);
+                    copyRequest.setNewObjectMetadata(objectMetadata);
+                    s3Client.copyObject(copyRequest);
+
+                    //delete backup
+                    DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucket, key2);
+                    s3Client.deleteObject(deleteRequest);
+
+                    LOG.info("Fixed " + key);
+                }
+            }
+        }
+
+        LOG.info("Finished Fixing S3 " + bucket + " for " + path);
     }
 }
 
