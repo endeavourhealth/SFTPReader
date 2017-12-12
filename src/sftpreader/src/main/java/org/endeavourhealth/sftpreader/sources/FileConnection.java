@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.sources;
 
+import com.google.common.base.Strings;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
@@ -41,6 +42,11 @@ public class FileConnection extends Connection {
             Date lastModified = fileInfo.getLastModified();
             long size = fileInfo.getSize();
             LOG.info("Found " + path);
+
+            String fileName = FilenameUtils.getName(path);
+            if (Strings.isNullOrEmpty(fileName)) {
+                LOG.info("Ingoring " + path + " as it's not a file");
+            }
 
             LocalDateTime lastModifiedLocalDate = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
 
