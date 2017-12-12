@@ -40,6 +40,7 @@ public class FileConnection extends Connection {
             String path = fileInfo.getFilePath();
             Date lastModified = fileInfo.getLastModified();
             long size = fileInfo.getSize();
+            LOG.info("Found " + path);
 
             LocalDateTime lastModifiedLocalDate = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
 
