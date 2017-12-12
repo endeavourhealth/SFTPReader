@@ -89,7 +89,10 @@ public class VisionSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter
                     String unzippedFileName = unzippedFile.getName();
                     String storagePath = FilenameUtils.concat(storageDir, unzippedFileName);
 
-                    FileHelper.writeFileToSharedStorage(storagePath, unzippedFile);
+                    //the unzipped file doesn't have the path, so we need to create a properly qualified file
+                    File unzippedFileWithPath = new File(unzipDir, unzippedFileName);
+
+                    FileHelper.writeFileToSharedStorage(storagePath, unzippedFileWithPath);
                 }
             }
         }

@@ -49,7 +49,7 @@ public class ZipUtil {
         return true;
     }
 
-    public static List<File> unZipFile (File file, String fullRelativePath, boolean deleteZipOnCompletion) throws SftpValidationException
+    public static List<File> unZipFile(File file, String fullRelativePath, boolean deleteZipOnCompletion) throws SftpValidationException
     {
         try {
             ZipFile zipFile = new ZipFile(file);
