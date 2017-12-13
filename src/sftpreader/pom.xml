@@ -18,7 +18,7 @@
         <endeavour-config.version>1.12-SNAPSHOT</endeavour-config.version>
         <endeavour-security.version>1.0-SNAPSHOT</endeavour-security.version>
         <endeavour-postgres.version>1.08-SNAPSHOT</endeavour-postgres.version>
-        <endeavour-utility.version>1.15-SNAPSHOT</endeavour-utility.version>
+        <endeavour-utility.version>1.16-SNAPSHOT</endeavour-utility.version>
         <endeavour-edsclient.version>1.0-SNAPSHOT</endeavour-edsclient.version>
         <eds-datasharing.version>0.0.2-SNAPSHOT</eds-datasharing.version>
 
