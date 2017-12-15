@@ -6,6 +6,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -18,7 +19,7 @@ import java.util.Vector;
 import java.util.stream.Collectors;
 
 public class SftpConnection extends Connection {
-    //private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpConnection.class);
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpConnection.class);
 
     //private ConnectionDetails connectionDetails;
     private JSch jSch;
@@ -33,6 +34,8 @@ public class SftpConnection extends Connection {
     }
 
     public void open() throws JSchException, IOException, SftpConnectionException {
+
+        JSch.setLogger(new Logger());
         this.jSch = new JSch();
 
         String prvKey = getConnectionDetails().getClientPrivateKey().trim();
@@ -83,6 +86,24 @@ public class SftpConnection extends Connection {
 
             throw ex;
         }*/
+    }
+
+    public static class Logger implements com.jcraft.jsch.Logger {
+        static java.util.Hashtable name=new java.util.Hashtable();
+        static{
+            name.put(new Integer(DEBUG), "DEBUG: ");
+            name.put(new Integer(INFO), "INFO: ");
+            name.put(new Integer(WARN), "WARN: ");
+            name.put(new Integer(ERROR), "ERROR: ");
+            name.put(new Integer(FATAL), "FATAL: ");
+        }
+        public boolean isEnabled(int level){
+            return true;
+        }
+        public void log(int level, String message){
+            LOG.info(name.get(new Integer(level)).toString());
+            LOG.info(message);
+        }
     }
 
     @SuppressWarnings("unchecked")
