@@ -170,7 +170,7 @@ public class SftpReaderTask implements Runnable {
                 SftpFile batchFile = instantiateSftpBatchFile(remoteFile);
 
                 if (!batchFile.isFileNeeded()) {
-                    LOG.error("   Filename not needed, skipping: " + batchFile.getFilename());
+                    LOG.trace("   Filename not needed, skipping: " + batchFile.getFilename());
                     continue;
                 }
 
