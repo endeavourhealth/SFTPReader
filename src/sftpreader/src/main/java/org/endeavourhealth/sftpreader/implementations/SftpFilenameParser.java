@@ -9,6 +9,7 @@ public abstract class SftpFilenameParser {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpFilenameParser.class);
 
     private boolean isFilenameValid = false;
+    private boolean isFileNeeded = true;
     protected DbConfiguration dbConfiguration;
     private String fileExtension = null;
 
@@ -25,12 +26,14 @@ public abstract class SftpFilenameParser {
         try {
             parseFilename(filename, this.fileExtension);
 
+            this.isFileNeeded = isFileNeeded();
+
             if (!dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier()))
                 throw new SftpFilenameParseException("File type " + generateFileTypeIdentifier() + " not recognised");
 
-            isFilenameValid = true;
+            this.isFilenameValid = true;
         } catch (Exception e) {
-            isFilenameValid = false;
+            this.isFilenameValid = false;
             LOG.error("Error parsing filename: " + filename, e);
         }
     }
@@ -38,9 +41,15 @@ public abstract class SftpFilenameParser {
     protected abstract void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException;
     protected abstract String generateBatchIdentifier();
     protected abstract String generateFileTypeIdentifier();
+    protected abstract boolean isFileNeeded();
+
 
     public boolean isFilenameValid() {
         return this.isFilenameValid;
+    }
+
+    public boolean isFileNameNeeded() {
+        return this.isFileNeeded;
     }
 
     public String getBatchIdentifier() {

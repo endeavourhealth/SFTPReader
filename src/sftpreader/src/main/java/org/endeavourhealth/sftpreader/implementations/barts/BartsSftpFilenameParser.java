@@ -52,6 +52,11 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         return fileTypeIdentifier;
     }
 
+    @Override
+    public boolean isFileNeeded(){
+        return true;
+    }
+
     public static String parseBatchIdentifier(String batchIdentifier) {
         return batchIdentifier;
     }

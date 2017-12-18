@@ -169,6 +169,11 @@ public class SftpReaderTask implements Runnable {
             for (RemoteFile remoteFile : remoteFiles) {
                 SftpFile batchFile = instantiateSftpBatchFile(remoteFile);
 
+                if (!batchFile.isFileNeeded()) {
+                    LOG.error("   Filename not needed, skipping: " + batchFile.getFilename());
+                    continue;
+                }
+
                 if (!batchFile.isFilenameValid()) {
                     LOG.error("   Invalid filename, skipping: " + batchFile.getFilename());
                     db.addUnknownFile(dbConfiguration.getConfigurationId(), batchFile);

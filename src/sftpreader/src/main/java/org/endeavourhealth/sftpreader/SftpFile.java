@@ -33,6 +33,10 @@ public class SftpFile {
         return this.sftpFilenameParser.isFilenameValid();
     }
 
+    public boolean isFileNeeded() {
+        return this.sftpFilenameParser.isFileNameNeeded();
+    }
+
     public String getBatchIdentifier() {
         return this.sftpFilenameParser.getBatchIdentifier();
     }

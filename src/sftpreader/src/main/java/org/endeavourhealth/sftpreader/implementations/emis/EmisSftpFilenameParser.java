@@ -44,6 +44,11 @@ public class EmisSftpFilenameParser extends SftpFilenameParser {
     }
 
     @Override
+    public boolean isFileNeeded(){
+        return true;
+    }
+
+    @Override
     protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
         String[] parts = filename.split("_");
 

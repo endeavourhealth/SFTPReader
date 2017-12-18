@@ -19,6 +19,7 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     private String nacsCode;
     private String serviceIdentifier;
     private String formatIdentifier;
+    private boolean isFileNeeded = true;
 
     public VisionSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
@@ -40,6 +41,11 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     @Override
     public String generateFileTypeIdentifier() {
         return fileTypeIdentifier + "_" + fileContentTypeIdentifier;
+    }
+
+    @Override
+    public boolean isFileNeeded(){
+        return this.isFileNeeded;
     }
 
     @Override
@@ -102,5 +108,8 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         //this will be a .zip for Vision extract files
         if (!StringUtils.endsWith(filename, ".zip"))
             throw new SftpFilenameParseException("File does not end with .zip");
+
+        // Exclude FULL extracts as everything is supplied in INCREMENTAL extracts
+        this.isFileNeeded = !this.fileTypeIdentifier.equalsIgnoreCase("FULL");
     }
 }

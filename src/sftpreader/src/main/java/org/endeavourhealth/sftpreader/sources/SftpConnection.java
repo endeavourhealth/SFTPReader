@@ -35,7 +35,8 @@ public class SftpConnection extends Connection {
 
     public void open() throws JSchException, IOException, SftpConnectionException {
 
-        JSch.setLogger(new Logger());
+        //JSch.setLogger(new Logger());   //uncomment to enable JSch verbose SSH logging
+
         this.jSch = new JSch();
 
         String prvKey = getConnectionDetails().getClientPrivateKey().trim();
