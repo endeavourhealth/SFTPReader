@@ -41,6 +41,11 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         return true;
     }
 
+    @Override
+    public boolean ignoreUnknownFileTypes() {
+        return false;
+    }
+
     public static String parseBatchIdentifier(String batchIdentifier) {
         return batchIdentifier;
     }

@@ -176,7 +176,9 @@ public class SftpReaderTask implements Runnable {
 
                 if (!batchFile.isFilenameValid()) {
                     LOG.error("   Invalid filename, skipping: " + batchFile.getFilename());
-                    db.addUnknownFile(dbConfiguration.getConfigurationId(), batchFile);
+                    if (!batchFile.ignoreUnknownFileTypes()) {
+                        db.addUnknownFile(dbConfiguration.getConfigurationId(), batchFile);
+                    }
                     continue;
                 }
 

@@ -49,6 +49,11 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     }
 
     @Override
+    public boolean ignoreUnknownFileTypes() {
+        return false;
+    }
+
+    @Override
     protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
 
         //fileType_contentType_nacsCode-(serviceIdentifier)-formatVersion_2015-04-22-130917.zip

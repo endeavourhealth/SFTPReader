@@ -37,6 +37,10 @@ public class SftpFile {
         return this.sftpFilenameParser.isFileNameNeeded();
     }
 
+    public boolean ignoreUnknownFileTypes() {
+        return this.sftpFilenameParser.ignoreUnknownFileTypes();
+    }
+
     public String getBatchIdentifier() {
         return this.sftpFilenameParser.getBatchIdentifier();
     }

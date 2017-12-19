@@ -10,6 +10,7 @@ public abstract class SftpFilenameParser {
 
     private boolean isFilenameValid = false;
     private boolean isFileNeeded = true;
+    private boolean ignoreUnknownFileTypes = false;
     protected DbConfiguration dbConfiguration;
     private String fileExtension = null;
 
@@ -28,6 +29,8 @@ public abstract class SftpFilenameParser {
 
             this.isFileNeeded = isFileNeeded();
 
+            this.ignoreUnknownFileTypes = ignoreUnknownFileTypes();
+
             if (!dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier()))
                 throw new SftpFilenameParseException("File type " + generateFileTypeIdentifier() + " not recognised");
 
@@ -42,6 +45,7 @@ public abstract class SftpFilenameParser {
     protected abstract String generateBatchIdentifier();
     protected abstract String generateFileTypeIdentifier();
     protected abstract boolean isFileNeeded();
+    public abstract boolean ignoreUnknownFileTypes();
 
 
     public boolean isFilenameValid() {
@@ -51,6 +55,8 @@ public abstract class SftpFilenameParser {
     public boolean isFileNameNeeded() {
         return this.isFileNeeded;
     }
+
+
 
     public String getBatchIdentifier() {
         if (!isFilenameValid)
