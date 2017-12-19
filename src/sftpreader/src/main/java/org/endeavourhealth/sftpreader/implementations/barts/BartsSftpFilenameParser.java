@@ -91,6 +91,9 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
         String[] parts = filename.split("_");
 
+        if (parts.length < 2)
+            throw new SftpFilenameParseException("Barts batch filename could not be parsed");
+
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
         if (filenamePart1.compareToIgnoreCase("susopa") == 0) {
