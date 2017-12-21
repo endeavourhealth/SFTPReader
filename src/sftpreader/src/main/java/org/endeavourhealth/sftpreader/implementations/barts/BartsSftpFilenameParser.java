@@ -210,12 +210,12 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 fileUniqueId = filenamePart3.substring(0, 4) + ConvertMMMtoMM(filenamePart3.substring(4));
                 batchGroup = FILE_TYPE_BULK_PROBLEMS;
             }
-            else if (filenamePart2.compareToIgnoreCase("DIAGNOSIS") == 0) {
+            else if (filenamePart2.compareToIgnoreCase("DIAGNOSES") == 0) {
                 fileTypeIdentifier = FILE_TYPE_BULK_DIAGNOSIS;
                 fileUniqueId = filenamePart3.substring(0, 4) + ConvertMMMtoMM(filenamePart3.substring(4));
                 batchGroup = FILE_TYPE_BULK_DIAGNOSIS;
             }
-            else if (filenamePart2.compareToIgnoreCase("PROCEDURE") == 0) {
+            else if (filenamePart2.compareToIgnoreCase("PROCEDURES") == 0) {
                 fileTypeIdentifier = FILE_TYPE_BULK_PROCEDURE;
                 fileUniqueId = filenamePart3.substring(0, 4) + ConvertMMMtoMM(filenamePart3.substring(4));
                 batchGroup = FILE_TYPE_BULK_PROCEDURE;
