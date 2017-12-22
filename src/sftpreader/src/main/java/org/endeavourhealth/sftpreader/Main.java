@@ -125,38 +125,50 @@ public class Main {
         request.setBucketName(bucket);
         request.setPrefix(path);
 
-        ListObjectsV2Result result = s3Client.listObjectsV2(request);
-        if (result.getObjectSummaries() != null) {
-            for (S3ObjectSummary objectSummary: result.getObjectSummaries()) {
-                String key = objectSummary.getKey();
+        while (true) {
 
-                GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
-                ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
-                String encryption = metadata.getSSEAlgorithm();
-                LOG.info("" + key + " has encryption " + encryption);
+            ListObjectsV2Result result = s3Client.listObjectsV2(request);
+            if (result.getObjectSummaries() != null) {
+                for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
+                    String key = objectSummary.getKey();
 
-                if (Strings.isNullOrEmpty(encryption)) {
+                    GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
+                    ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
+                    String encryption = metadata.getSSEAlgorithm();
+                    LOG.info("" + key + " has encryption " + encryption);
 
-                    String key2 = key + "_COPY";
+                    if (Strings.isNullOrEmpty(encryption)) {
 
-                    //copy to backup
-                    CopyObjectRequest copyRequest = new CopyObjectRequest(bucket, key, bucket, key2);
-                    s3Client.copyObject(copyRequest);
+                        String key2 = key + "_COPY";
 
-                    ObjectMetadata objectMetadata = new ObjectMetadata();
-                    objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                        //copy to backup
+                        CopyObjectRequest copyRequest = new CopyObjectRequest(bucket, key, bucket, key2);
+                        s3Client.copyObject(copyRequest);
 
-                    //copy back to original but WITH encryption
-                    copyRequest = new CopyObjectRequest(bucket, key2, bucket, key);
-                    copyRequest.setNewObjectMetadata(objectMetadata);
-                    s3Client.copyObject(copyRequest);
+                        ObjectMetadata objectMetadata = new ObjectMetadata();
+                        objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 
-                    //delete backup
-                    DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucket, key2);
-                    s3Client.deleteObject(deleteRequest);
+                        //copy back to original but WITH encryption
+                        copyRequest = new CopyObjectRequest(bucket, key2, bucket, key);
+                        copyRequest.setNewObjectMetadata(objectMetadata);
+                        s3Client.copyObject(copyRequest);
 
-                    LOG.info("Fixed " + key);
+                        //delete backup
+                        DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucket, key2);
+                        s3Client.deleteObject(deleteRequest);
+
+                        LOG.info("Fixed " + key);
+                    }
                 }
+            }
+
+            if (result.isTruncated()) {
+                String nextToken = result.getNextContinuationToken();
+                request.setContinuationToken(nextToken);
+                continue;
+
+            } else {
+                break;
             }
         }
 
@@ -182,33 +194,45 @@ public class Main {
         request.setBucketName(bucket);
         request.setPrefix(path);
 
-        ListObjectsV2Result result = s3Client.listObjectsV2(request);
-        if (result.getObjectSummaries() != null) {
-            for (S3ObjectSummary objectSummary: result.getObjectSummaries()) {
-                String key = objectSummary.getKey();
+        while (true) {
 
-                //ignore anything that's not a CSV file
-                String extension = FilenameUtils.getExtension(key);
-                if (!extension.equalsIgnoreCase("csv")) {
-                    //LOG.info("Ignoring non-CSV " + key);
-                    continue;
+            ListObjectsV2Result result = s3Client.listObjectsV2(request);
+            if (result.getObjectSummaries() != null) {
+                for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
+                    String key = objectSummary.getKey();
+
+                    //ignore anything that's not a CSV file
+                    String extension = FilenameUtils.getExtension(key);
+                    if (!extension.equalsIgnoreCase("csv")) {
+                        //LOG.info("Ignoring non-CSV " + key);
+                        continue;
+                    }
+
+                    //the only CSV files we want to keep are within the "SPLIT" directory hierarchy
+                    if (key.toLowerCase().indexOf("split") > -1) {
+                        //LOG.info("Ignoring CSV " + key);
+                        continue;
+                    }
+
+                    if (test) {
+                        LOG.info("Would delete " + key);
+
+                    } else {
+                        DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucket, key);
+                        s3Client.deleteObject(deleteRequest);
+
+                        LOG.info("Deleted " + key);
+                    }
                 }
+            }
 
-                //the only CSV files we want to keep are within the "SPLIT" directory hierarchy
-                if (key.toLowerCase().indexOf("split") > -1) {
-                    //LOG.info("Ignoring CSV " + key);
-                    continue;
-                }
+            if (result.isTruncated()) {
+                String nextToken = result.getNextContinuationToken();
+                request.setContinuationToken(nextToken);
+                continue;
 
-                if (test) {
-                    LOG.info("Would delete " + key);
-
-                } else {
-                    DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucket, key);
-                    s3Client.deleteObject(deleteRequest);
-
-                    LOG.info("Deleted " + key);
-                }
+            } else {
+                break;
             }
         }
 
