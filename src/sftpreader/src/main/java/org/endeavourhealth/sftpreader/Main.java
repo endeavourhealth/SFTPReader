@@ -1,11 +1,14 @@
 package org.endeavourhealth.sftpreader;
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
+import com.sun.org.apache.xpath.internal.operations.Bool;
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.postgres.PgAppLock.PgAppLock;
 import org.endeavourhealth.common.utility.FileHelper;
@@ -32,6 +35,16 @@ public class Main {
                     String bucket = args[1];
                     String path = args[2];
                     fixS3(bucket, path);
+                    System.exit(0);
+                }
+            }
+
+            if (args.length > 0) {
+                if (args[0].equalsIgnoreCase("DeleteCsvs")) {
+                    String bucket = args[1];
+                    String path = args[2];
+                    boolean test = Boolean.parseBoolean(args[3]);
+                    deleteCsvs(bucket, path, test);
                     System.exit(0);
                 }
             }
@@ -73,6 +86,7 @@ public class Main {
 
 
 
+
     private static void shutdown() {
         try {
             LOG.info("Shutting down...");
@@ -99,12 +113,11 @@ public class Main {
     private static void fixS3(String bucket, String path) {
         LOG.info("Fixing S3 " + bucket + " for " + path);
 
-        ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
-
         AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
                 .standard()
-                .withCredentials(credentialsProvider)
+                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
                 .withRegion(Regions.EU_WEST_2);
+
 
         AmazonS3 s3Client = clientBuilder.build();
 
@@ -148,6 +161,58 @@ public class Main {
         }
 
         LOG.info("Finished Fixing S3 " + bucket + " for " + path);
+    }
+
+    /**
+     * utility fn to delete unnecessary CSV files left from the Emis SFTP decryption
+     * We keep the raw GPG files and the split CSV files, so don't need the interim large decrypted CSV files
+     */
+    private static void deleteCsvs(String bucket, String path, boolean test) {
+        LOG.info("Deleting unnecessary CSV files from3 " + bucket + " for " + path);
+
+        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
+                .standard()
+                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+                .withRegion(Regions.EU_WEST_2);
+
+
+        AmazonS3 s3Client = clientBuilder.build();
+
+        ListObjectsV2Request request = new ListObjectsV2Request();
+        request.setBucketName(bucket);
+        request.setPrefix(path);
+
+        ListObjectsV2Result result = s3Client.listObjectsV2(request);
+        if (result.getObjectSummaries() != null) {
+            for (S3ObjectSummary objectSummary: result.getObjectSummaries()) {
+                String key = objectSummary.getKey();
+
+                //ignore anything that's not a CSV file
+                String extension = FilenameUtils.getExtension(key);
+                if (!extension.equalsIgnoreCase("csv")) {
+                    //LOG.info("Ignoring non-CSV " + key);
+                    continue;
+                }
+
+                //the only CSV files we want to keep are within the "SPLIT" directory hierarchy
+                if (key.toLowerCase().indexOf("split") > -1) {
+                    //LOG.info("Ignoring CSV " + key);
+                    continue;
+                }
+
+                if (test) {
+                    LOG.info("Would delete " + key);
+
+                } else {
+                    DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucket, key);
+                    s3Client.deleteObject(deleteRequest);
+
+                    LOG.info("Deleted " + key);
+                }
+            }
+        }
+
+        LOG.info("Finished deleting unnecessary CSV files from3 " + bucket + " for " + path);
     }
 }
 
