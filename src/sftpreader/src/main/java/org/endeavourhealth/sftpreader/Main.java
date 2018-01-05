@@ -34,7 +34,8 @@ public class Main {
                 if (args[0].equalsIgnoreCase("FixS3")) {
                     String bucket = args[1];
                     String path = args[2];
-                    fixS3(bucket, path);
+                    boolean test = Boolean.parseBoolean(args[3]);
+                    fixS3(bucket, path, test);
                     System.exit(0);
                 }
             }
@@ -110,7 +111,7 @@ public class Main {
         System.err.println(message + " [" + e.getClass().getName() + "] " + e.getMessage());
     }
 
-    private static void fixS3(String bucket, String path) {
+    private static void fixS3(String bucket, String path, boolean test) {
         LOG.info("Fixing S3 " + bucket + " for " + path);
 
         AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
@@ -137,7 +138,8 @@ public class Main {
                     String encryption = metadata.getSSEAlgorithm();
                     LOG.info("" + key + " has encryption " + encryption);
 
-                    if (Strings.isNullOrEmpty(encryption)) {
+                    if (!test
+                        && Strings.isNullOrEmpty(encryption)) {
 
                         String key2 = key + "_COPY";
 
