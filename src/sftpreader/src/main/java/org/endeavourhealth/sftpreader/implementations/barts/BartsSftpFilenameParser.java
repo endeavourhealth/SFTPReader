@@ -101,27 +101,27 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 throw new SftpFilenameParseException("Barts batch filename could not be parsed");
             fileTypeIdentifier = FILE_TYPE_SUSOPA;
             batchGroup = FILE_TYPE_SUSOPA;
-            fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
+            fileUniqueId = prefixZeros(filenamePart2.substring(filenamePart2.indexOf(".") + 1));
 
         } else if (filenamePart1.compareToIgnoreCase("susaea") == 0) {
             if (parts.length != 2)
                 throw new SftpFilenameParseException("Barts batch filename could not be parsed");
             fileTypeIdentifier = FILE_TYPE_SUSAEA;
-            fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
+            fileUniqueId = prefixZeros(filenamePart2.substring(filenamePart2.indexOf(".") + 1));
             batchGroup = FILE_TYPE_SUSAEA;
 
         } else if (filenamePart1.compareToIgnoreCase("tailopa") == 0) {
             if (parts.length != 2)
                 throw new SftpFilenameParseException("Barts batch filename could not be parsed");
             fileTypeIdentifier = FILE_TYPE_TAILOPA;
-            fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
+            fileUniqueId = prefixZeros(filenamePart2.substring(filenamePart2.indexOf(".") + 1));
             batchGroup = FILE_TYPE_SUSOPA;
 
         } else if (filenamePart1.compareToIgnoreCase("tailaea") == 0) {
             if (parts.length != 2)
                 throw new SftpFilenameParseException("Barts batch filename could not be parsed");
             fileTypeIdentifier = FILE_TYPE_TAILAEA;
-            fileUniqueId = filenamePart2.substring(filenamePart2.indexOf(".") + 1);
+            fileUniqueId = prefixZeros(filenamePart2.substring(filenamePart2.indexOf(".") + 1));
             batchGroup = FILE_TYPE_SUSAEA;
 
         } else if ((filenamePart1.compareToIgnoreCase("PC") == 0) || (filenamePart1.compareToIgnoreCase("MAT") == 0) || (filenamePart1.compareToIgnoreCase("CDS") == 0)) {
@@ -136,7 +136,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 if (parts.length != 3)
                     throw new SftpFilenameParseException("Barts batch filename could not be parsed");
                 fileTypeIdentifier = FILE_TYPE_TAILIP;
-                fileUniqueId = filenamePart2.split("\\.")[1];
+                fileUniqueId = prefixZeros(filenamePart2.split("\\.")[1]);
                 batchGroup = FILE_TYPE_SUSIP;
             } else {
                 String filenamePart4 = parts[3];
@@ -145,7 +145,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                     if (parts.length != 4)
                         throw new SftpFilenameParseException("Barts batch filename could not be parsed");
                     fileTypeIdentifier = FILE_TYPE_SUSIP;
-                    fileUniqueId = filenamePart3;
+                    fileUniqueId = prefixZeros(filenamePart3);
                     batchGroup = FILE_TYPE_SUSIP;
                 } else {
                     if (filenamePart1.compareToIgnoreCase("rnj") == 0) {
@@ -321,6 +321,14 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         } else {
             return "XX";
         }
+    }
+
+    /*
+     *
+     */
+    private String prefixZeros(String inNumber) {
+        int i = Integer.parseInt(inNumber);
+        return String.format ("%010d", i);
     }
 
 }
