@@ -8,12 +8,15 @@ import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class SftpNotificationCreator {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpNotificationCreator.class);
+
     public abstract String createNotificationMessage(String organisationId, DataLayer db, DbInstanceEds instanceConfiguration,
                                                      DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception;
 
@@ -41,6 +44,13 @@ public abstract class SftpNotificationCreator {
         for (String file: files) {
             if (!file.startsWith(sharedStoragePath)) {
                 throw new Exception("File " + file + " doesn't start with expected " + sharedStoragePath);
+            }
+
+            //ignore files that aren't valid (something caused by S3 or past use of S3FS)
+            String fileName = FilenameUtils.getName(file);
+            if (Strings.isNullOrEmpty(fileName)) {
+                LOG.info("Ignoring " + path + " as it's not a file");
+                continue;
             }
 
             if (!Strings.isNullOrEmpty(requiredFileExtension)) {
