@@ -36,12 +36,14 @@ public abstract class SftpNotificationCreator {
         String path = FilenameUtils.concat(sharedStoragePath, configurationPath);
         path = FilenameUtils.concat(path, batchSplitPath);
 
+        LOG.info("listFilesInSharedStorage:" + path);
         List<String> files = FileHelper.listFilesInSharedStorage(path);
 
         //we need to return the files WITHOUT the shared storage path prefix, so we need to iterate and substring
         List<String> ret = new ArrayList<>();
 
         for (String file: files) {
+            LOG.info("listFilesInSharedStorage file name returned:" + file);
             if (!file.startsWith(sharedStoragePath)) {
                 throw new Exception("File " + file + " doesn't start with expected " + sharedStoragePath);
             }
