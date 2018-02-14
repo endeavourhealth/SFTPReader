@@ -75,7 +75,10 @@ public class SftpReaderTask implements Runnable {
                 unzipDecryptBatch(incompleteBatch);
 
                 LOG.trace(">>>Validating batch " + incompleteBatch.getBatchId());
-                validateBatch(incompleteBatch, lastCompleteBatch);
+                if (!validateBatch(incompleteBatch, lastCompleteBatch)) {
+                    //if the batch fails validation without throwing an exception, just break out leave it as uncomplete
+                    break;
+                }
 
                 LOG.trace(">>>Splitting batch " + incompleteBatch.getBatchId());
                 splitBatch(incompleteBatch);
@@ -318,7 +321,7 @@ public class SftpReaderTask implements Runnable {
 
     private SftpFile instantiateSftpBatchFile(RemoteFile remoteFile) {
 
-        SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(remoteFile.getFilename(), dbConfiguration, dbConfiguration.getInterfaceTypeName());
+        SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(remoteFile.getFilename(), remoteFile.getLastModified(), dbConfiguration, dbConfiguration.getInterfaceTypeName());
         String configurationStorageDir = dbConfiguration.getLocalRootPath();
 
         return new SftpFile(remoteFile,
@@ -386,14 +389,15 @@ public class SftpReaderTask implements Runnable {
         }
     }
 
-    private void validateBatch(Batch incompleteBatch, Batch lastCompleteBatch) throws Exception {
+    private boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch) throws Exception {
 
         LOG.trace(" Validating batches " + incompleteBatch.getBatchIdentifier());
 
         SftpBatchValidator sftpBatchValidator = ImplementationActivator.createSftpBatchValidator(dbConfiguration.getInterfaceTypeName());
-        sftpBatchValidator.validateBatch(incompleteBatch, lastCompleteBatch, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, db);
+        boolean valid = sftpBatchValidator.validateBatch(incompleteBatch, lastCompleteBatch, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, db);
 
         LOG.trace(" Completed batch validation");
+        return valid;
     }
 
     private List<Batch> sequenceBatches() throws SftpValidationException, SftpFilenameParseException, PgStoredProcException {

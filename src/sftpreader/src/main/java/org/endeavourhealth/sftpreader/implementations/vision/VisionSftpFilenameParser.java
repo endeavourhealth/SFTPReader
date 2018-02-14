@@ -21,12 +21,12 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     private String formatIdentifier;
     private boolean isFileNeeded = true;
 
-    public VisionSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
+    /*public VisionSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
-    }
+    }*/
 
-    public VisionSftpFilenameParser(String filename, DbConfiguration dbConfiguration) {
-        super(filename, dbConfiguration);
+    public VisionSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
+        super(filename, lastModified, dbConfiguration);
     }
 
     @Override
@@ -54,7 +54,12 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     }
 
     @Override
-    protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
+    public boolean requiresDecryption() {
+        return false;
+    }
+
+    @Override
+    protected void parseFilename(String filename, LocalDateTime lastModified) throws SftpFilenameParseException {
 
         //fileType_contentType_nacsCode-(serviceIdentifier)-formatVersion_2015-04-22-130917.zip
         //fileType = FULL / INCREMENTAL / ADDITIONAL

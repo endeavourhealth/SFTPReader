@@ -29,6 +29,20 @@ public abstract class SftpNotificationCreator {
                                                    BatchSplit batchSplit,
                                                    String requiredFileExtension) throws Exception {
 
+        List<String> files = findFilesForDefaultNotificationMessage(instanceConfiguration, dbConfiguration,
+                                                                    batchSplit, requiredFileExtension);
+        return combineFilesForNotificationMessage(files);
+    }
+
+    public String combineFilesForNotificationMessage(List<String> files) {
+        return StringUtils.join(files, System.lineSeparator());
+    }
+
+    public List<String> findFilesForDefaultNotificationMessage(DbInstanceEds instanceConfiguration,
+                                                               DbConfiguration dbConfiguration,
+                                                               BatchSplit batchSplit,
+                                                               String requiredFileExtension) throws Exception {
+
         String sharedStoragePath = instanceConfiguration.getSharedStoragePath();
         String configurationPath = dbConfiguration.getLocalRootPath();
         String batchSplitPath = batchSplit.getLocalRelativePath();
@@ -67,6 +81,7 @@ public abstract class SftpNotificationCreator {
             ret.add(file);
         }
 
-        return StringUtils.join(ret, System.lineSeparator());
+        return ret;
     }
+
 }

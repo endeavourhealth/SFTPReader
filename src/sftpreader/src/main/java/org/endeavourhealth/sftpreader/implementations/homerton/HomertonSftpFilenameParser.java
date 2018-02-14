@@ -3,6 +3,8 @@ package org.endeavourhealth.sftpreader.implementations.homerton;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class HomertonSftpFilenameParser extends SftpFilenameParser {
@@ -18,12 +20,12 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
     private String fileUniqueId;
     private String batchGroup;
 
-    public HomertonSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
+    /*public HomertonSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
-    }
+    }*/
 
-    public HomertonSftpFilenameParser(String filename, DbConfiguration dbConfiguration) {
-        super(filename, dbConfiguration);
+    public HomertonSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
+        super(filename, lastModified, dbConfiguration);
     }
 
     @Override
@@ -43,6 +45,11 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     public boolean ignoreUnknownFileTypes() {
+        return false;
+    }
+
+    @Override
+    public boolean requiresDecryption() {
         return false;
     }
 
@@ -72,7 +79,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
                                 = Looks like it is not used outside this class
                                 = Must match value in configuration.configuration_kvp
      */
-    protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
+    protected void parseFilename(String filename, LocalDateTime lastModified) throws SftpFilenameParseException {
         String[] parts = filename.split("_");
 
         if (parts.length != 3)

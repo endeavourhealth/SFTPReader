@@ -1,15 +1,41 @@
 package org.endeavourhealth.sftpreader.implementations.barts;
 
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class BartsSftpFilenameParser extends SftpFilenameParser {
-                                                                        // same as ISO pattern but switch : for . so can be used as filename
-    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
-    private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
-    public static final String FILE_TYPE_SUSOPA = "SUSOPA";
+
+    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    //special constants for the 2.1 files, but we just use the first part of the file name for 2.2 files
+    public static final String TYPE_2_1_SUSOPA = "2.1_SUSOPA";
+    public static final String TYPE_2_1_SUSAEA = "2.1_SUSAEA";
+    public static final String TYPE_2_1_SUSIP = "2.1_SUSIP";
+    public static final String TYPE_2_1_TAILOPA = "2.1_TAILOPA";
+    public static final String TYPE_2_1_TAILAEA = "2.1_TAILAEA";
+    public static final String TYPE_2_1_TAILIP = "2.1_TAILIP";
+    public static final String TYPE_2_1_PROC = "2.1_PROC";
+    public static final String TYPE_2_1_DIAG = "2.1_DIAG";
+    public static final String TYPE_2_1_BIRTH = "2.1_BIRTH";
+    public static final String TYPE_2_1_PREG = "2.1_PREG";
+    public static final String TYPE_2_1_PROB = "2.1_PROB";
+    public static final String TYPE_2_2_SPFIT = "2.2_SPFIT";
+    public static final String TYPE_2_2_CC = "2.2_CC";
+    public static final String TYPE_2_2_HDB = "2.2_HDB";
+
+    private String fileTypeIdentifier;
+    private LocalDate extractDate;
+
+    /*public static final String FILE_TYPE_SUSOPA = "SUSOPA";
     public static final String FILE_TYPE_SUSAEA = "SUSAEA";
     public static final String FILE_TYPE_SUSIP = "SUSIP";
     public static final String FILE_TYPE_TAILIP = "TAILIP";
@@ -33,18 +59,22 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     private String fileTypeIdentifier;
     private String fileUniqueId;
     private String batchGroup;
+*/
 
-    public BartsSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
+
+    /*public BartsSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
-    }
+    }*/
 
-    public BartsSftpFilenameParser(String filename, DbConfiguration dbConfiguration) {
-        super(filename, dbConfiguration);
+    public BartsSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
+        super(filename, lastModified, dbConfiguration);
     }
 
     @Override
     public String generateBatchIdentifier() {
-        return batchGroup + "#" + fileUniqueId;
+        //batch the extract files by date
+        return BATCH_IDENTIFIER_FORMAT.format(extractDate);
+        //return batchGroup + "#" + fileUniqueId;
     }
 
     @Override
@@ -59,36 +89,137 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     public boolean ignoreUnknownFileTypes() {
-        return true;
-    }
-
-    public static String parseBatchIdentifier(String batchIdentifier) {
-        return batchIdentifier;
+        //changing to false for 2.2 so as we now should know what all the files mean
+        return false;
+        //return true;
     }
 
     @Override
-    /*
-    Parse and validate file name in order to identify:
-    processingIds =             Some sort of processing-id-set / batch identifier based on file name item 1
-                                Available through: getProcessingIds()
-                                = Seems to be used in Validator to ensure all files in batch have same value
+    public boolean requiresDecryption() {
+        return false;
+    }
 
-    file type identifier        Available through: generateFileTypeIdentifier()
-                                = Used to save the value into log.batch_file
-                                = Type must exist in configuration.interface_file_type
+    public static LocalDate parseBatchIdentifier(String batchIdentifier) {
+        return LocalDate.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
+    }
 
-    extractDateTime             Available through Getter
-                                Used by: generateBatchIdentifier()
-                                Based on file name item 4
-                                = Seems to be used in Validator to ensure all files in batch have same value
 
-    sharingAgreementUuid        GUID in file name must match configuration_kvp entry
-                                Available through Getter
-                                Based on file name item 5 (last bit before .)
-                                = Looks like it is not used outside this class
-                                = Must match value in configuration.configuration_kvp
-     */
-    protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
+    @Override
+    protected void parseFilename(String fileName, LocalDateTime lastModified) throws SftpFilenameParseException {
+        String baseName = FilenameUtils.getBaseName(fileName); //name without extension
+        String[] toks = baseName.split("_");
+
+        /**
+         cc_BH_182102_susrnj.dat
+         hdb_BH_182102_susrnj.dat
+         */
+
+        String tok1 = toks[0];
+        if (tok1.equalsIgnoreCase("susopa")) {
+            fileTypeIdentifier = TYPE_2_1_SUSOPA;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("susaea")) {
+            fileTypeIdentifier = TYPE_2_1_SUSAEA;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("tailopa")) {
+            fileTypeIdentifier = TYPE_2_1_TAILOPA;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("tailaea")) {
+            fileTypeIdentifier = TYPE_2_1_TAILAEA;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("tailip")) {
+            fileTypeIdentifier = TYPE_2_1_TAILIP;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("ip")) {
+            fileTypeIdentifier = TYPE_2_1_SUSIP;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("cc")) {
+            fileTypeIdentifier = TYPE_2_2_CC;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("hdb")) {
+            fileTypeIdentifier = TYPE_2_2_HDB;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("spfit")) {
+            fileTypeIdentifier = TYPE_2_2_SPFIT;
+            if (toks.length != 6) {
+                throw new SftpFilenameParseException("Expecting six elements in filename [" + fileName + "]");
+            }
+
+            String tok6 = toks[5].substring(0, 8);
+            extractDate = LocalDate.parse(tok6, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        } else if (tok1.equalsIgnoreCase("rnj")) {
+            if (toks.length != 4) {
+                throw new SftpFilenameParseException("Expecting four elements in filename starting rnj [" + fileName + "]");
+            }
+
+            String tok3 = toks[2];
+            if (tok3.equalsIgnoreCase("proc")) {
+                fileTypeIdentifier = TYPE_2_1_PROC;
+
+            } else if (tok3.equalsIgnoreCase("prob")) {
+                fileTypeIdentifier = TYPE_2_1_PROB;
+
+            } else if (tok3.equalsIgnoreCase("diag")) {
+                fileTypeIdentifier = TYPE_2_1_DIAG;
+
+            } else {
+                throw new SftpFilenameParseException("Unexpected third element " + tok3 + " after rnj in filename [" + fileName + "]");
+            }
+
+            String tok4 = toks[3].substring(0, 8);
+            extractDate = LocalDate.parse(tok4, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        } else if (tok1.equalsIgnoreCase("GETL")) {
+            if (toks.length != 6) {
+                throw new SftpFilenameParseException("Expecting four elements in filename starting GETL [" + fileName + "]");
+            }
+
+            String tok3 = toks[2];
+            if (tok3.equalsIgnoreCase("PREG")) {
+                fileTypeIdentifier = TYPE_2_1_PREG;
+
+            } else if (tok3.equalsIgnoreCase("BIRTH")) {
+                fileTypeIdentifier = TYPE_2_1_BIRTH;
+
+            } else {
+                throw new SftpFilenameParseException("Unexpected third element " + tok3 + " after GETL in filename [" + fileName + "]");
+            }
+
+            String tok4 = toks[3].substring(0, 10);
+            extractDate = LocalDate.parse(tok4, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        } else {
+            this.fileTypeIdentifier = tok1;
+
+            if (toks.length < 4) {
+                throw new SftpFilenameParseException("Expecting at least four elements in filename [" + fileName + "]");
+            }
+
+            //file date is either in the third or fourth element
+            String tok3 = toks[2];
+            if (tok3.equalsIgnoreCase("RNJ")) {
+                String tok4 = toks[3];
+                extractDate = LocalDate.parse(tok4, DateTimeFormatter.ofPattern("ddMMyyyy"));
+
+            } else {
+                extractDate = LocalDate.parse(tok3, DateTimeFormatter.ofPattern("ddMMyyyy"));
+
+            }
+        }
+    }
+
+
+
+    /*protected void parseFilename(String filename, LocalDateTime lastModified) throws SftpFilenameParseException {
         String[] parts = filename.split("_");
 
         if (parts.length < 2)
@@ -173,10 +304,10 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         }
     }
 
-    /*
+    *//*
      *
-     */
-    protected void parseBulkFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
+     *//*
+    private void parseBulkFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
         String[] parts = filename.split("_");
 
         String filenamePart1 = parts[0];
@@ -279,9 +410,9 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         }
     }
 
-    /*
+    *//*
      *
-     */
+     *//*
     private String ConvertMMMtoMM(String shortMonth) {
         if (shortMonth.compareToIgnoreCase("Jan") == 0) {
             return "01";
@@ -323,12 +454,12 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         }
     }
 
-    /*
+    *//*
      *
-     */
+     *//*
     private String prefixZeros(String inNumber) {
         int i = Integer.parseInt(inNumber);
         return String.format ("%010d", i);
-    }
+    }*/
 
 }

@@ -13,7 +13,7 @@ public class SftpFile {
     private RemoteFile remoteFile;
     private SftpFilenameParser sftpFilenameParser;
     private String fullLocalRootPath;
-    protected String pgpFileExtensionFilter;
+    //protected String pgpFileExtensionFilter;
     private Long localFileSizeBytes = null;
     private Long decryptedFileSizeBytes = null;
     private Integer batchFileId = null;
@@ -26,7 +26,7 @@ public class SftpFile {
         this.remoteFile = remoteFile;
         this.sftpFilenameParser = sftpFilenameParser;
         this.fullLocalRootPath = fullLocalRootPath;
-        this.pgpFileExtensionFilter = sftpFilenameParser.getFileExtension();
+        //this.pgpFileExtensionFilter = sftpFilenameParser.getFileExtension();
     }
 
     public boolean isFilenameValid() {
@@ -34,7 +34,7 @@ public class SftpFile {
     }
 
     public boolean isFileNeeded() {
-        return this.sftpFilenameParser.isFileNameNeeded();
+        return this.sftpFilenameParser.isFileNeeded();
     }
 
     public boolean ignoreUnknownFileTypes() {
@@ -42,11 +42,19 @@ public class SftpFile {
     }
 
     public String getBatchIdentifier() {
-        return this.sftpFilenameParser.getBatchIdentifier();
+        if (sftpFilenameParser.isFilenameValid()) {
+            return sftpFilenameParser.generateBatchIdentifier();
+        } else {
+            return "UNKNOWN";
+        }
     }
 
     public String getFileTypeIdentifier() {
-        return this.sftpFilenameParser.getFileTypeIdentifier();
+        if (sftpFilenameParser.isFilenameValid()) {
+            return sftpFilenameParser.generateFileTypeIdentifier();
+        } else {
+            return "UNKNOWN";
+        }
     }
 
     public String getRemoteFilePath() {
@@ -70,19 +78,20 @@ public class SftpFile {
     }*/
 
     public boolean doesFileNeedDecrypting() {
-        if (StringUtils.isEmpty(pgpFileExtensionFilter))
+        return sftpFilenameParser.requiresDecryption();
+        /*if (StringUtils.isEmpty(pgpFileExtensionFilter))
             return false;
 
-        return (getFilename().endsWith(pgpFileExtensionFilter));
+        return (getFilename().endsWith(pgpFileExtensionFilter));*/
     }
 
     /*public String getDecryptedLocalFilePath() {
         return FilenameUtils.concat(getLocalPath(), getDecryptedFilename());
     }*/
 
-    public String getDecryptedFilename() {
+    /*public String getDecryptedFilename() {
         return StringUtils.removeEnd(getFilename(), this.pgpFileExtensionFilter);
-    }
+    }*/
 
     public long getRemoteFileSizeInBytes() {
         return remoteFile.getFileSizeBytes();

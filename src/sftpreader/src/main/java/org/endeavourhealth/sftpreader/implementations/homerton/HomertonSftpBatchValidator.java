@@ -18,7 +18,7 @@ public class HomertonSftpBatchValidator extends SftpBatchValidator {
     private static final Logger LOG = LoggerFactory.getLogger(HomertonSftpBatchValidator.class);
 
     @Override
-    public void validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
+    public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
 
         Validate.notNull(incompleteBatch, "incompleteBatch is null");
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
@@ -29,6 +29,8 @@ public class HomertonSftpBatchValidator extends SftpBatchValidator {
         if (incompleteBatch.getBatchFiles().size() != 1) {
             throw new SftpValidationException("Incorrect number of files in batch. Batch identifier = " + incompleteBatch.getBatchIdentifier());
         }
+
+        return true;
     }
 
 }

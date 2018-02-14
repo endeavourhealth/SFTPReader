@@ -7,6 +7,11 @@ public class BartsSftpOrganisationHelper extends SftpOrganisationHelper {
 
     @Override
     public String findOrganisationNameFromOdsCode(DataLayer db, String odsCode) {
-        return "R1H";
+        if (odsCode.equalsIgnoreCase("R1H")) {
+            return "Barts Hospital Trust";
+
+        } else {
+            return "<UNKNOWN ORGANISATION>";
+        }
     }
 }

@@ -17,7 +17,7 @@ public class VisionSftpBatchValidator extends SftpBatchValidator {
     private static final Logger LOG = LoggerFactory.getLogger(VisionSftpBatchValidator.class);
 
     @Override
-    public void validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
+    public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
 
         Validate.notNull(incompleteBatch, "incompleteBatch is null");
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
@@ -29,6 +29,8 @@ public class VisionSftpBatchValidator extends SftpBatchValidator {
         if (fileCount > 5) {
             throw new SftpValidationException("Incorrect number of files ("+Integer.toString(fileCount)+") in batch. Batch identifier = " + incompleteBatch.getBatchIdentifier());
         }
+
+        return true;
     }
 
 }

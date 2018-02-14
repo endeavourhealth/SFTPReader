@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 public class EmisSftpFilenameParser extends SftpFilenameParser {
-                                                                        // same as ISO pattern but switch : for . so can be used as filename
+                                                                        // same as ISO pattern but switch : for . so can be used as filename and sorted
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
     private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
 
@@ -21,12 +21,12 @@ public class EmisSftpFilenameParser extends SftpFilenameParser {
     private LocalDateTime extractDateTime;
     private UUID sharingAgreementUuid;
 
-    public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
+    /*public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
-    }
+    }*/
 
-    public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration) {
-        super(filename, dbConfiguration);
+    public EmisSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
+        super(filename, lastModified, dbConfiguration);
     }
 
     @Override
@@ -54,7 +54,12 @@ public class EmisSftpFilenameParser extends SftpFilenameParser {
     }
 
     @Override
-    protected void parseFilename(String filename, String pgpFileExtensionFilter) throws SftpFilenameParseException {
+    public boolean requiresDecryption() {
+        return true;
+    }
+
+    @Override
+    protected void parseFilename(String filename, LocalDateTime lastModified) throws SftpFilenameParseException {
         String[] parts = filename.split("_");
 
         if (parts.length != 5)
@@ -83,8 +88,8 @@ public class EmisSftpFilenameParser extends SftpFilenameParser {
 
         this.extractDateTime = LocalDateTime.parse(extractDateTimePart, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
-        if (!StringUtils.endsWith(sharingAgreementGuidWithFileExtensionPart, pgpFileExtensionFilter))
-            throw new SftpFilenameParseException("File does not end with " + pgpFileExtensionFilter);
+        /*if (!StringUtils.endsWith(sharingAgreementGuidWithFileExtensionPart, pgpFileExtensionFilter))
+            throw new SftpFilenameParseException("File does not end with " + pgpFileExtensionFilter);*/
 
         String[] sharingAgreementParts = sharingAgreementGuidWithFileExtensionPart.split("[.]");
         String sharingAgreementGuid = sharingAgreementParts[0];

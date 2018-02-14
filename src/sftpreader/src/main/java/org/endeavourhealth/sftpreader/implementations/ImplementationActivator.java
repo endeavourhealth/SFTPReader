@@ -6,20 +6,22 @@ import org.endeavourhealth.sftpreader.implementations.homerton.*;
 import org.endeavourhealth.sftpreader.implementations.vision.*;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 
+import java.time.LocalDateTime;
+
 public class ImplementationActivator {
     // do this properly - instatiate dynamically based on configuration against interface type
 
-    public static SftpFilenameParser createFilenameParser(String filename, DbConfiguration dbConfiguration, String interfaceTypeName) {
+    public static SftpFilenameParser createFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration, String interfaceTypeName) {
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpFilenameParser(filename, dbConfiguration);
+            return new EmisSftpFilenameParser(filename, lastModified, dbConfiguration);
         } else {
             if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpFilenameParser(filename, dbConfiguration);
+                return new VisionSftpFilenameParser(filename, lastModified, dbConfiguration);
             } else {
                 if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpFilenameParser(filename, dbConfiguration);
+                    return new BartsSftpFilenameParser(filename, lastModified, dbConfiguration);
                 } else {
-                    return new HomertonSftpFilenameParser(filename, dbConfiguration);
+                    return new HomertonSftpFilenameParser(filename, lastModified, dbConfiguration);
                 }
             }
         }

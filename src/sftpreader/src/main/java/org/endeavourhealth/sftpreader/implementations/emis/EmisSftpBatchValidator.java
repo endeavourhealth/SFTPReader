@@ -22,7 +22,7 @@ import java.util.*;
 public class EmisSftpBatchValidator extends SftpBatchValidator {
 
     @Override
-    public void validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
+    public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
 
         Validate.notNull(incompleteBatch, "incompleteBatch is null");
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
@@ -41,6 +41,8 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         //
         // check that remote bytes == downloaded bytes
         // check all file attributes are complete
+
+        return true;
     }
 
     /**
@@ -243,7 +245,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         boolean first = true;
 
         for (BatchFile incompleteBatchFile : incompleteBatches.getBatchFiles()) {
-            EmisSftpFilenameParser emisSftpFilenameParser = new EmisSftpFilenameParser(incompleteBatchFile.getFilename(), dbConfiguration);
+            EmisSftpFilenameParser emisSftpFilenameParser = new EmisSftpFilenameParser(incompleteBatchFile.getFilename(), null, dbConfiguration);
 
             if (first) {
                 processingIdStart = emisSftpFilenameParser.getProcessingIds().getProcessingIdStart();

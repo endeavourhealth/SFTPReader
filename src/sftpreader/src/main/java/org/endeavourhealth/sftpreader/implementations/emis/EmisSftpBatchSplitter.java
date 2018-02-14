@@ -593,7 +593,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
             //first try to use a file in our temporary storage
             String filePath = FilenameUtils.concat(sourceTempDir, fileName);
 
-            EmisSftpFilenameParser nameParser = new EmisSftpFilenameParser(fileName, dbConfiguration, ".csv");
+            EmisSftpFilenameParser nameParser = new EmisSftpFilenameParser(fileName, null, dbConfiguration);
             String fileType = nameParser.generateFileTypeIdentifier();
 
             //we work out what columns to split by, by looking at the CSV file headers
