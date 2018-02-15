@@ -66,7 +66,8 @@ begin
 		_file_already_processed 
 	from log.batch_file bf
 	where batch_id = _batch_id
-	and file_type_identifier = _file_type_identifier;
+	and file_type_identifier = _file_type_identifier
+	and filename = _filename;
 
 	if (_batch_file_id is not null)
 	then

@@ -167,7 +167,7 @@ public class SftpReaderTask implements Runnable {
 
             int countAlreadyProcessed = 0;
 
-            LOG.trace("Found {} files in {}", new Integer(remoteFiles.size()), remotePath);
+            LOG.trace("Found " + remoteFiles.size() + " files in " + remotePath);
 
             for (RemoteFile remoteFile : remoteFiles) {
                 SftpFile batchFile = instantiateSftpBatchFile(remoteFile);
@@ -198,7 +198,7 @@ public class SftpReaderTask implements Runnable {
             }
 
             if (countAlreadyProcessed > 0) {
-                LOG.trace("Skipped {} files as already downloaded them", new Integer(countAlreadyProcessed));
+                LOG.trace("Skipped " + countAlreadyProcessed + " files as already downloaded them");
             }
 
             LOG.info("Completed processing {} files", Integer.toString(remoteFiles.size()));
