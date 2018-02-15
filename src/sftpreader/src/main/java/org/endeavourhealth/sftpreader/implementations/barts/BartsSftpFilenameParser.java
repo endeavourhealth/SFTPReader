@@ -34,6 +34,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
     private String fileTypeIdentifier;
     private LocalDate extractDate;
+    private boolean isFileNeeded;
 
     /*public static final String FILE_TYPE_SUSOPA = "SUSOPA";
     public static final String FILE_TYPE_SUSAEA = "SUSAEA";
@@ -84,7 +85,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     public boolean isFileNeeded(){
-        return true;
+        return isFileNeeded;
     }
 
     @Override
@@ -106,13 +107,19 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     protected void parseFilename(String fileName, LocalDateTime lastModified) throws SftpFilenameParseException {
+
+        //by default we want ALL files
+        isFileNeeded = true;
+
+        //we have four custom extract files that Barts have uploaded and are in the same S3 bucket as our normal files
+        //for now, just ignore them with this
+        if (fileName.indexOf("EXTRACT_dump") > -1) {
+            isFileNeeded = false;
+            return;
+        }
+
         String baseName = FilenameUtils.getBaseName(fileName); //name without extension
         String[] toks = baseName.split("_");
-
-        /**
-         cc_BH_182102_susrnj.dat
-         hdb_BH_182102_susrnj.dat
-         */
 
         String tok1 = toks[0];
         if (tok1.equalsIgnoreCase("susopa")) {
