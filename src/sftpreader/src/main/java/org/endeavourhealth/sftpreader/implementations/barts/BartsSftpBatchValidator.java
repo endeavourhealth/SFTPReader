@@ -27,9 +27,10 @@ public class BartsSftpBatchValidator extends SftpBatchValidator {
         Validate.notNull(dbConfiguration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
         Validate.notEmpty(dbConfiguration.getInterfaceFileTypes(), "No interface file types configured");
 
+        LocalDate batchDate = BartsSftpFilenameParser.parseBatchIdentifier(incompleteBatch.getBatchIdentifier());
+
         //validate it's past 3pm if the batch is for today, because Barts drip files up over the morning. If before 3pm, just return false
         //so the batch silently fails validation and isn't processed any further
-        LocalDate batchDate = BartsSftpFilenameParser.parseBatchIdentifier(incompleteBatch.getBatchIdentifier());
         LocalDate today = LocalDate.now();
         if (!batchDate.isBefore(today)) {
             Calendar cal = GregorianCalendar.getInstance();
@@ -46,7 +47,11 @@ public class BartsSftpBatchValidator extends SftpBatchValidator {
         //we were told that SUSOPA or TAILOPA should be the last file received, but we can receive
         //multiple of these in a day, so it's not possible to guarantee that the presence of these files
         //means we have ALL the files for the day. But the absence of the file does mean the batch is incomplete
-        checkOutpatientFilesPresent(incompleteBatch);
+        //But we only started receiving these files on 04/12/2017, so only check for batches after this
+        LocalDate susOpaStartDate = BartsSftpFilenameParser.parseBatchIdentifier("2017-12-04");
+        if (!batchDate.isBefore(susOpaStartDate)) {
+            checkOutpatientFilesPresent(incompleteBatch);
+        }
 
         return true;
     }
