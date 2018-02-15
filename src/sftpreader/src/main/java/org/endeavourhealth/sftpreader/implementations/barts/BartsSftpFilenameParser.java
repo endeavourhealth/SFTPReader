@@ -113,7 +113,10 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
         //we have four custom extract files that Barts have uploaded and are in the same S3 bucket as our normal files
         //for now, just ignore them with this
-        if (fileName.indexOf("EXTRACT_dump") > -1) {
+        if (fileName.equals("PI_CDE_PERSON_PATIENT.csv")
+                || fileName.equals("PI_LKP_CDE_CODE_VALUE_REF.csv")
+                || fileName.equals("PI_LKP_CDE_LOCATION_REF.zip")
+                || fileName.equals("dump20180123.zip")) {
             isFileNeeded = false;
             return;
         }
