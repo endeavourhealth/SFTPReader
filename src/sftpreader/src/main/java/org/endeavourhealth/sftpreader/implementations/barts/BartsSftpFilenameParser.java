@@ -28,9 +28,10 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_1_BIRTH = "2.1_BIRTH";
     public static final String TYPE_2_1_PREG = "2.1_PREG";
     public static final String TYPE_2_1_PROB = "2.1_PROB";
-    public static final String TYPE_2_2_SPFIT = "2.2_SPFIT";
-    public static final String TYPE_2_2_CC = "2.2_CC";
-    public static final String TYPE_2_2_HDB = "2.2_HDB";
+    public static final String TYPE_2_2_SPFIT = "2.2_SPFIT"; //Surginet ???
+    public static final String TYPE_2_2_CC = "2.2_CC"; //Critial Care
+    public static final String TYPE_2_2_HDB = "2.2_HDB"; //Home Delivery and Birth
+
 
     private String fileTypeIdentifier;
     private LocalDate extractDate;

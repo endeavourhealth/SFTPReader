@@ -24,6 +24,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
     private static CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
                                             .withDelimiter('|')
+                                            .withEscape('^')
                                             .withQuoteMode(QuoteMode.MINIMAL);
 
     /**
@@ -35,7 +36,11 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
         Map<String, List<String>> hmFilesToCombine = findFilesToCombine(batch.getBatchFiles());
         for (String combinedName: hmFilesToCombine.keySet()) {
             List<String> filesToCombine = hmFilesToCombine.get(combinedName);
-            combineFiles(combinedName, filesToCombine, batch, instanceConfiguration, dbConfiguration);
+
+            //only combine if there's more than one file
+            if (filesToCombine.size() > 1) {
+                combineFiles(combinedName, filesToCombine, batch, instanceConfiguration, dbConfiguration);
+            }
         }
 
         //create a single batch split and return it
@@ -102,6 +107,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
     private void combineFiles(String combinedName, List<String> filesToCombine, Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
+        LOG.debug("Combining " + filesToCombine.size() + " -> " + combinedName);
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
         String configurationDir = dbConfiguration.getLocalRootPath();

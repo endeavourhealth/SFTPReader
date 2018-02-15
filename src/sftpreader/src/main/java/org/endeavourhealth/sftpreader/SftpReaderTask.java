@@ -287,6 +287,7 @@ public class SftpReaderTask implements Runnable {
             String storageDestinationPath = FilenameUtils.concat(sharedStoragePath, localRootDir);
             storageDestinationPath = FilenameUtils.concat(storageDestinationPath, fileName);
 
+            LOG.info("Writing to permanent storage: " + storageDestinationPath);
             FileHelper.writeFileToSharedStorage(storageDestinationPath, downloadDestination);
 
             //and delete from our temporary storage
