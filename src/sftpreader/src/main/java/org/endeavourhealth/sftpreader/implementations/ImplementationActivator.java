@@ -48,7 +48,6 @@ public class ImplementationActivator {
     }
 
     public static SftpBatchSplitter createSftpBatchSplitter(String interfaceTypeName) {
-LOG.debug("going to create splitter for interface " + interfaceTypeName);
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchSplitter();
         } else {
@@ -56,7 +55,6 @@ LOG.debug("going to create splitter for interface " + interfaceTypeName);
                 return new VisionSftpBatchSplitter();
             } else {
                 if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-LOG.debug("going to create BARTS splitter");
                     return new BartsSftpBatchSplitter();
                 } else {
                     return new HomertonSftpBatchSplitter();

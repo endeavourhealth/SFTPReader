@@ -47,8 +47,8 @@ public class BartsSftpBatchValidator extends SftpBatchValidator {
         //we were told that SUSOPA or TAILOPA should be the last file received, but we can receive
         //multiple of these in a day, so it's not possible to guarantee that the presence of these files
         //means we have ALL the files for the day. But the absence of the file does mean the batch is incomplete
-        //But we only started receiving these files on 04/12/2017, so only check for batches after this
-        LocalDate susOpaStartDate = BartsSftpFilenameParser.parseBatchIdentifier("2017-12-04");
+        //But we only started receiving these files on 05/12/2017, so only check for batches after this
+        LocalDate susOpaStartDate = BartsSftpFilenameParser.parseBatchIdentifier("2017-12-05");
         if (!batchDate.isBefore(susOpaStartDate)) {
             checkOutpatientFilesPresent(incompleteBatch);
         }
