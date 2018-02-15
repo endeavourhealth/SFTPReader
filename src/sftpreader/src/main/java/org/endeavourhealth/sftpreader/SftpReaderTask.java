@@ -436,19 +436,19 @@ public class SftpReaderTask implements Runnable {
     }
 
     private void splitBatch(Batch batch) throws Exception {
-        LOG.trace("Splitting batches");
 
         //delete any pre-existing splits for this batch
+LOG.debug("Splitting " + batch.getBatchId() + " " + batch.getBatchIdentifier());
         db.deleteBatchSplits(batch);
-
+LOG.debug("Deleted old splits");
         SftpBatchSplitter sftpBatchSplitter = ImplementationActivator.createSftpBatchSplitter(dbConfiguration.getInterfaceTypeName());
+LOG.debug("Created splitter " + sftpBatchSplitter.getClass().getName());
         List<BatchSplit> splitBatches = sftpBatchSplitter.splitBatch(batch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
-
+LOG.debug("Created splts " + splitBatches.size());
         for (BatchSplit splitBatch: splitBatches) {
             db.addBatchSplit(splitBatch, dbConfiguration.getConfigurationId());
         }
-
-        LOG.trace("Completed splitting");
+LOG.debug("Saved splts " + splitBatches.size());
     }
 
     private static int getNextSequenceNumber(Batch lastCompleteBatch) {
