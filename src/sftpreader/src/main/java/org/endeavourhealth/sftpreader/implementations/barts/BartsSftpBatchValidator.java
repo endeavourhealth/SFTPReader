@@ -48,11 +48,12 @@ public class BartsSftpBatchValidator extends SftpBatchValidator {
         //multiple of these in a day, so it's not possible to guarantee that the presence of these files
         //means we have ALL the files for the day. But the absence of the file does mean the batch is incomplete
         //But we only started receiving these files consistently from 15/12/2017, so only check for batches after this
-        LocalDate susOpaStartDate = BartsSftpFilenameParser.parseBatchIdentifier("2017-12-15");
+        //NO, we don't get these consistently, so taking this check out
+        /*LocalDate susOpaStartDate = BartsSftpFilenameParser.parseBatchIdentifier("2017-12-15");
         if (!batchDate.isBefore(susOpaStartDate)) {
             checkOutpatientFilesPresent(incompleteBatch);
         }
-
+*/
         return true;
     }
 
