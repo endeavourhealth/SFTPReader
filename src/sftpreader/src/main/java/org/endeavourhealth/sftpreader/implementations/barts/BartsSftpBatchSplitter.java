@@ -33,7 +33,10 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
     @Override
     public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
+        LOG.debug("Going to split batch " + batch.getBatchId() + " " + batch.getBatchIdentifier());
         Map<String, List<String>> hmFilesToCombine = findFilesToCombine(batch.getBatchFiles());
+        LOG.debug("Found " + hmFilesToCombine + " potential files to combine");
+
         for (String combinedName: hmFilesToCombine.keySet()) {
             List<String> filesToCombine = hmFilesToCombine.get(combinedName);
 
