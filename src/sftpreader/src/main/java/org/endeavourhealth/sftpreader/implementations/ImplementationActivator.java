@@ -5,10 +5,14 @@ import org.endeavourhealth.sftpreader.implementations.emis.*;
 import org.endeavourhealth.sftpreader.implementations.homerton.*;
 import org.endeavourhealth.sftpreader.implementations.vision.*;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 
 public class ImplementationActivator {
+    private static final Logger LOG = LoggerFactory.getLogger(ImplementationActivator.class);
+
     // do this properly - instatiate dynamically based on configuration against interface type
 
     public static SftpFilenameParser createFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration, String interfaceTypeName) {
@@ -44,6 +48,7 @@ public class ImplementationActivator {
     }
 
     public static SftpBatchSplitter createSftpBatchSplitter(String interfaceTypeName) {
+LOG.debug("going to create splitter for interface " + interfaceTypeName);
         if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
             return new EmisSftpBatchSplitter();
         } else {
@@ -51,6 +56,7 @@ public class ImplementationActivator {
                 return new VisionSftpBatchSplitter();
             } else {
                 if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
+LOG.debug("going to create BARTS splitter");
                     return new BartsSftpBatchSplitter();
                 } else {
                     return new HomertonSftpBatchSplitter();
