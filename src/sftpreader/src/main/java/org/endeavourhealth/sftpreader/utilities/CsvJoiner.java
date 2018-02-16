@@ -4,6 +4,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -15,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 public class CsvJoiner {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CsvJoiner.class);
 
     private List<File> srcFiles = null;
     private File dstFile = null;
@@ -66,6 +70,8 @@ public class CsvJoiner {
                         throw new Exception("Column headers for " + srcFile + " aren't the same as the first file");
                     }
                 }
+
+                LOG.trace("Joining source file: "+srcFile);
 
                 //simply print each record from the source into the destination
                 Iterator<CSVRecord> csvIterator = csvParser.iterator();
