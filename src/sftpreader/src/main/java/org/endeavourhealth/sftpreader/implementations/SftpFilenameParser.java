@@ -24,7 +24,7 @@ public abstract class SftpFilenameParser {
             //parseFilename(filename, this.fileExtension);
             parseFilename(filename, lastModified);
 
-            if (!dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier())) {
+            if (this.isFileNeeded() && !dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier())) {
                 throw new SftpFilenameParseException("File type " + generateFileTypeIdentifier() + " not recognised");
             }
 
