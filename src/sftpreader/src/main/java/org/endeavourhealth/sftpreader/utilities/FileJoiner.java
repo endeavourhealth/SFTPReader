@@ -63,6 +63,7 @@ public class FileJoiner {
 
             //make sure everything is closed
             if (bufferedWriter != null) {
+                bufferedWriter.flush();
                 bufferedWriter.close();
             }
             if (fileWriter != null) {
