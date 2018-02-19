@@ -25,7 +25,6 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
     private static CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
                                             .withDelimiter('|')
                                             .withEscape('^')
-                                            //.withQuote('\'')
                                             .withQuote((Character)null)
                                             .withQuoteMode(QuoteMode.NONE);
 
@@ -125,10 +124,12 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
 
         List<File> sourceFiles = new ArrayList<>();
+        List<File> permSourceFiles = new ArrayList<>();
         for (String fileToCombine: filesToCombine) {
 
             //the raw files will need to be copied from S3 to our temp directory
             String permanentSourceFile = FilenameUtils.concat(sourcePermDir, fileToCombine);
+            permSourceFiles.add(new File (permanentSourceFile));
             File tempSourceFile = new File(sourceTempDir, fileToCombine);
 
             InputStream inputStream = FileHelper.readFileFromSharedStorage(permanentSourceFile);
@@ -152,11 +153,15 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
             String storageFilePath = FilenameUtils.concat(sourcePermDir, combinedName);
             FileHelper.writeFileToSharedStorage(storageFilePath, destinationFile);
 
-            //delete from temp
+            //delete combined file from temp
             destinationFile.delete();
-
+            //delete source files from temp
             for (File sourceFile: sourceFiles) {
                 sourceFile.delete();
+            }
+            //delete source files from permanent store as we have successfully combined and saved so we no longer need the parts
+            for (File permSourceFile: permSourceFiles) {
+                permSourceFile.delete();
             }
         }
     }
