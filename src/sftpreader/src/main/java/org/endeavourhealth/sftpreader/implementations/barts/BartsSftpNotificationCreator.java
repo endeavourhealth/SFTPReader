@@ -39,7 +39,8 @@ public class BartsSftpNotificationCreator extends SftpNotificationCreator {
             for (int i=files.size()-1; i>=0; i--) {
                 String file = files.get(i);
                 String baseName = FilenameUtils.getBaseName(file); //file name without extension
-                if (baseName.startsWith(combinedFilePrefix)) {
+                if (baseName.startsWith(combinedFilePrefix)
+                        && !baseName.endsWith(BartsSftpBatchSplitter.COMBINED)) {
                     LOG.debug("Removing " + file + " as it was combined");
                     files.remove(i);
                 }
