@@ -123,13 +123,22 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
         String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
 
+        //check if the combined file has already been processed
+        File permDestCombinedFile = new File(sourcePermDir, combinedName);
+        boolean permDestCombinedFileExists = permDestCombinedFile.exists();
+        if (permDestCombinedFileExists) {
+            LOG.debug("Combined file " + combinedName + " already exists in permanent storage...skipping");
+            return;
+        }
+
         List<File> sourceFiles = new ArrayList<>();
         List<File> permSourceFiles = new ArrayList<>();
         for (String fileToCombine: filesToCombine) {
 
             //the raw files will need to be copied from S3 to our temp directory
             String permanentSourceFile = FilenameUtils.concat(sourcePermDir, fileToCombine);
-            permSourceFiles.add(new File (permanentSourceFile));
+            File permSourceFile = new File (permanentSourceFile);
+            permSourceFiles.add(permSourceFile);
             File tempSourceFile = new File(sourceTempDir, fileToCombine);
 
             InputStream inputStream = FileHelper.readFileFromSharedStorage(permanentSourceFile);
@@ -161,7 +170,9 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
             }
             //delete source files from permanent store as we have successfully combined and saved so we no longer need the parts
             for (File permSourceFile: permSourceFiles) {
-                permSourceFile.delete();
+                if (permSourceFile.exists()) {
+                    permSourceFile.delete();
+                }
             }
         }
     }
