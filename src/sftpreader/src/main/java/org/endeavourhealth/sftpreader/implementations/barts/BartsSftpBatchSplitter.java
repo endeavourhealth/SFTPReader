@@ -123,13 +123,14 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
         String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
 
-        /*//check if the combined file has already been processed
+        //check if the combined file has already been processed
+//NEED TO REMOVE FOR AWS LIVE
         File permDestCombinedFile = new File(sourcePermDir, combinedName);
         boolean permDestCombinedFileExists = permDestCombinedFile.exists();
         if (permDestCombinedFileExists) {
             LOG.debug("Combined file " + combinedName + " already exists in permanent storage...skipping");
             return;
-        }*/
+        }
 
         List<File> sourceFiles = new ArrayList<>();
         List<File> permSourceFiles = new ArrayList<>();
