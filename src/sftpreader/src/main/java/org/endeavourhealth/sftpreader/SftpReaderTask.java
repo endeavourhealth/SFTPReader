@@ -119,7 +119,11 @@ public class SftpReaderTask implements Runnable {
         tempDir = FilenameUtils.concat(tempDir, batchPath);
 
         File f = new File(tempDir);
-        FileUtils.forceDelete(f);
+
+        //if we've not actually had to do anything with a batch's files, there won't be a temp dir for it
+        if (f.exists()) {
+            FileUtils.forceDelete(f);
+        }
     }
 
     private void completeBatch(Batch batch) throws Exception {
