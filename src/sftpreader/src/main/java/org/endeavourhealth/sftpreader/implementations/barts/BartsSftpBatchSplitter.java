@@ -24,7 +24,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
     private static CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
                                             .withDelimiter('|')
-                                            .withEscape('^')
+                                            .withEscape((Character)null)
                                             .withQuote((Character)null)
                                             .withQuoteMode(QuoteMode.NONE);
 
