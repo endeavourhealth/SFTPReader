@@ -124,7 +124,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
 
         //check if the combined file has already been processed
-//NEED TO REMOVE FOR AWS LIVE
+//TODO - remove from AWS Live, as we want it to re-create any combined file
         File permDestCombinedFile = new File(sourcePermDir, combinedName);
         boolean permDestCombinedFileExists = permDestCombinedFile.exists();
         if (permDestCombinedFileExists) {
@@ -165,11 +165,13 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
             //delete combined file from temp
             destinationFile.delete();
+
             //delete source files from temp
             for (File sourceFile: sourceFiles) {
                 sourceFile.delete();
             }
             //delete source files from permanent store as we have successfully combined and saved so we no longer need the parts
+//TODO - remove this for AWS LIVE, as we want to keep file fragments
             for (File permSourceFile: permSourceFiles) {
                 if (permSourceFile.exists()) {
                     permSourceFile.delete();
