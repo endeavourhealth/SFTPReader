@@ -23,10 +23,12 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
     public static final String COMBINED = "COMBINED";
 
     private static CSVFormat CSV_FORMAT = CSVFormat.DEFAULT
-                                            .withDelimiter('|')
-                                            .withEscape((Character)null)
-                                            .withQuote((Character)null)
-                                            .withQuoteMode(QuoteMode.NONE);
+                                .withDelimiter('|')
+                                //we strictly DO NOT want any escaping, but the library requires a non-null value when using no-quotes mode so use a value that won't be in the file
+                                .withEscape(Character.MAX_VALUE)
+                                //.withEscape((Character)null)
+                                .withQuote((Character)null)
+                                .withQuoteMode(QuoteMode.NONE);
 
     /**
      * Confusingly enough, we actually COMBINE separate barts files
