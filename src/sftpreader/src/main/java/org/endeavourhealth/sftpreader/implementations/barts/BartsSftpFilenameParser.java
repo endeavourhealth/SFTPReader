@@ -118,7 +118,8 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_LKP_CDE_CODE_VALUE_REF.csv")
                 || fileName.equals("PI_LKP_CDE_LOCATION_REF.zip")
                 || fileName.equals("PI_LKP_CDE_LOCATION_REF_15FEB2018.zip")
-                || fileName.equals("dump20180123.zip")) {
+                || fileName.equals("dump20180123.zip")
+                || fileName.equals("PI_LKP_CDE_CODE_VALUE_REF.zip")) {
             isFileNeeded = false;
             return;
         }
