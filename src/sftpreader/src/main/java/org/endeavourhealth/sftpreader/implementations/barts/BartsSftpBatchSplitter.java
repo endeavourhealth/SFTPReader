@@ -37,7 +37,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
         LOG.debug("Going to split batch " + batch.getBatchId() + " " + batch.getBatchIdentifier());
         Map<String, List<String>> hmFilesToCombine = findFilesToCombine(batch.getBatchFiles());
-        LOG.debug("Found " + hmFilesToCombine + " potential files to combine");
+        LOG.debug("Found " + hmFilesToCombine.size() + " potential files to combine");
 
         for (String combinedName: hmFilesToCombine.keySet()) {
             List<String> filesToCombine = hmFilesToCombine.get(combinedName);
@@ -119,6 +119,10 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
         String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
         sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
+
+        if (!new File(sourceTempDir).exists()) {
+            new File(sourceTempDir).mkdirs();
+        }
 
         String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
