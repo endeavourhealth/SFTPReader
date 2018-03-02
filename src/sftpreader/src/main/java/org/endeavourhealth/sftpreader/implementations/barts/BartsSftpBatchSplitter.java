@@ -12,8 +12,7 @@ import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -110,7 +109,6 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
         return hmFilesToCombine;
     }
-
     private void combineFiles(String combinedName, List<String> filesToCombine, Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         LOG.debug("Combining " + filesToCombine.size() + " -> " + combinedName);
@@ -125,8 +123,96 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
         String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
 
+        List<File> sourceFiles = new ArrayList<>();
+        for (String fileToCombine: filesToCombine) {
+
+            //the raw files will need to be copied from S3 to our temp directory
+            String permanentSourceFile = FilenameUtils.concat(sourcePermDir, fileToCombine);
+            File tempSourceFile = new File(sourceTempDir, fileToCombine);
+
+            InputStream inputStream = FileHelper.readFileFromSharedStorage(permanentSourceFile);
+            try {
+                Files.copy(inputStream, tempSourceFile.toPath());
+            } finally {
+                inputStream.close();
+            }
+
+            sourceFiles.add(tempSourceFile);
+        }
+
+        File destinationFile = new File(sourceTempDir, combinedName);
+        PrintWriter fw = new PrintWriter(destinationFile);
+        BufferedWriter bw = new BufferedWriter(fw);
+        PrintWriter pw = new PrintWriter(bw);
+
+        boolean doneHeadings = false;
+
+        for (File sourceFile: sourceFiles) {
+            LOG.info("Reading " + sourceFile);
+
+            FileReader fr = new FileReader(sourceFile);
+            BufferedReader br = new BufferedReader(fr);
+            int lineIndex = -1;
+
+            while (true) {
+
+                String line = br.readLine();
+                lineIndex ++;
+                if (line == null) {
+                    break;
+                }
+
+                //we only want to carry over the first row (column headings) from the first file
+                if (lineIndex == 0) {
+                    if (!doneHeadings) {
+                        pw.print(line);
+                        doneHeadings = true;
+                    }
+                    continue;
+
+                }
+
+                pw.print(line);
+            }
+
+            br.close();
+        }
+
+        pw.close();
+
+        //copy joined file to S3 if using it
+        if (!FilenameUtils.equals(tempDir, sharedStorageDir)) {
+            LOG.trace("Copying " + combinedName + " to permanent storage");
+            String storageFilePath = FilenameUtils.concat(sourcePermDir, combinedName);
+            FileHelper.writeFileToSharedStorage(storageFilePath, destinationFile);
+
+            //delete combined file from temp
+            destinationFile.delete();
+
+            //delete source files from temp
+            for (File sourceFile: sourceFiles) {
+                sourceFile.delete();
+            }
+        }
+    }
+
+
+    /*private void combineFiles(String combinedName, List<String> filesToCombine, Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+
+        LOG.debug("Combining " + filesToCombine.size() + " -> " + combinedName);
+        String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
+        String tempDir = instanceConfiguration.getTempDirectory();
+        String configurationDir = dbConfiguration.getLocalRootPath();
+        String batchDir = batch.getLocalRelativePath();
+
+        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
+        sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
+
+        String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
+        sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
+
         //check if the combined file has already been processed
-//TODO - remove from AWS Live, as we want it to re-create any combined file
+        //TODO - remove from AWS Live, as we want it to re-create any combined file
         File permDestCombinedFile = new File(sourcePermDir, combinedName);
         boolean permDestCombinedFileExists = permDestCombinedFile.exists();
         if (permDestCombinedFileExists) {
@@ -180,6 +266,6 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
                 }
             }
         }
-    }
+    }*/
 
 }
