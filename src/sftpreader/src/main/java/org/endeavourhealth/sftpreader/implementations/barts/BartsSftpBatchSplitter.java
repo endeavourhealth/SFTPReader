@@ -169,7 +169,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
                 //we only want to carry over the first row (column headings) from the first file
                 if (lineIndex == 0) {
                     if (!doneHeadings) {
-                        pw.print(line);
+                        pw.println(line);
                         doneHeadings = true;
                     }
                     continue;
