@@ -172,7 +172,7 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
 
                 }
 
-                pw.print(line);
+                pw.println(line);
             }
 
             br.close();
