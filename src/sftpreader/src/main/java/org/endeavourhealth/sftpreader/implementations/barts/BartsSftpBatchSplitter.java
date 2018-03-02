@@ -133,6 +133,9 @@ public class BartsSftpBatchSplitter extends SftpBatchSplitter {
             //the raw files will need to be copied from S3 to our temp directory
             String permanentSourceFile = FilenameUtils.concat(sourcePermDir, fileToCombine);
             File tempSourceFile = new File(sourceTempDir, fileToCombine);
+            if (tempSourceFile.exists()) {
+                tempSourceFile.delete();
+            }
 
             InputStream inputStream = FileHelper.readFileFromSharedStorage(permanentSourceFile);
             try {
