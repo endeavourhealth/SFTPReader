@@ -119,7 +119,27 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_LKP_CDE_LOCATION_REF.zip")
                 || fileName.equals("PI_LKP_CDE_LOCATION_REF_15FEB2018.zip")
                 || fileName.equals("dump20180123.zip")
-                || fileName.equals("PI_LKP_CDE_CODE_VALUE_REF.zip")) {
+                || fileName.equals("PI_LKP_CDE_CODE_VALUE_REF.zip")
+                || fileName.equals("PI_CDE_AE_ATTENDANCE.zip")
+                || fileName.equals("PI_CDE_CLINICAL_EVENT.zip")
+                || fileName.equals("PI_CDE_CLINICAL_EVENT.zip.filepart")
+                || fileName.equals("PI_CDE_DIAGNOSIS.zip")
+                || fileName.equals("PI_CDE_DIAGNOSIS.zip.filepart")
+                || fileName.equals("PI_CDE_ENCOUNTER.zip")
+                || fileName.equals("PI_CDE_ENCOUNTER_INFO.zip")
+                || fileName.equals("PI_CDE_IP_EPISODE.zip")
+                || fileName.equals("PI_CDE_IP_WARDSTAY.zip")
+                || fileName.equals("PI_CDE_OP_ATTENDANCE.zip")
+                || fileName.equals("PI_CDE_OP_ATTENDANCE.zip.filepart")
+                || fileName.equals("PI_CDE_PERSON_PATIENT.zip")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_ADDRESS.zip")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_ALIAS.zip")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_INFO.zip")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_NAME.zip")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip.filepart")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_PHONE.zip")
+                || fileName.equals("PI_CDE_PROCEDURE.zip")) {
             isFileNeeded = false;
             return;
         }
