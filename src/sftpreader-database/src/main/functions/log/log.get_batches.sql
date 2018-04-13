@@ -36,12 +36,7 @@ begin
 			bf.file_type_identifier,
 			bf.filename,
 			bf.remote_size_bytes,
-			bf.is_downloaded,
-			bf.local_size_bytes,
-			bf.requires_decryption,
-			bf.is_decrypted,
-			bf.decrypted_filename,
-			bf.decrypted_size_bytes
+			bf.is_downloaded
 		from log.batch b
 		inner join log.batch_file bf on b.batch_id = bf.batch_id 
 		where b.batch_id in

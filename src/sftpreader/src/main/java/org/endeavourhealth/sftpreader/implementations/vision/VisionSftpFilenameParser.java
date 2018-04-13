@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,8 +26,8 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         super(filename, dbConfiguration, fileExtension);
     }*/
 
-    public VisionSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
-        super(filename, lastModified, dbConfiguration);
+    public VisionSftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(remoteFile, dbConfiguration);
     }
 
     @Override
@@ -53,13 +54,13 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         return false;
     }
 
-    @Override
+    /*@Override
     public boolean requiresDecryption() {
         return false;
-    }
+    }*/
 
     @Override
-    protected void parseFilename(String filename, LocalDateTime lastModified) throws SftpFilenameParseException {
+    protected void parseFilename() throws SftpFilenameParseException {
 
         //fileType_contentType_nacsCode-(serviceIdentifier)-formatVersion_2015-04-22-130917.zip
         //fileType = FULL / INCREMENTAL / ADDITIONAL
@@ -70,7 +71,8 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         //dateTime = YYYY-MM-DD-HHMMSS
 
         // get the three main parts of the filename
-        String[] parts = filename.split("-", 3);
+        String fileName = this.remoteFile.getFilename();
+        String[] parts = fileName.split("-", 3);
         if (parts.length != 3)
             throw new SftpFilenameParseException("Vision batch filename could not be parsed");
 
@@ -116,7 +118,7 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         this.extractDateTime = LocalDateTime.parse(extractDateTime, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
         //this will be a .zip for Vision extract files
-        if (!StringUtils.endsWith(filename, ".zip"))
+        if (!StringUtils.endsWith(fileName, ".zip"))
             throw new SftpFilenameParseException("File does not end with .zip");
 
         // Exclude FULL extracts as everything is supplied in INCREMENTAL extracts

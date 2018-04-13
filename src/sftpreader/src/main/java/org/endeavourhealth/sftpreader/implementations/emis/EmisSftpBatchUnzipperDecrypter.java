@@ -68,12 +68,10 @@ public class EmisSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
             try {
                 PgpUtil.decryptAndVerify(inputStream, decryptedTempFile, privateKey, privateKeyPassword, publicKey);
 
-                long decryptedFileSize = new File(decryptedTempFile).length();
-
+                /*long decryptedFileSize = new File(decryptedTempFile).length();
                 batchFile.setDecryptedFilename(decryptedFilename);
                 batchFile.setDecryptedSizeBytes(decryptedFileSize);
-
-                db.setFileAsDecrypted(batchFile);
+                db.setFileAsDecrypted(batchFile);*/
 
             } finally {
                 inputStream.close();

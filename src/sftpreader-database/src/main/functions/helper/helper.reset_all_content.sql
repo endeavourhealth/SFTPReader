@@ -10,5 +10,6 @@ as $$
 	delete from log.batch_file;
 	delete from log.batch;
 	delete from configuration.emis_organisation_map;
-	
+	delete from configuration.tpp_organisation_map;
+
 $$ language sql;

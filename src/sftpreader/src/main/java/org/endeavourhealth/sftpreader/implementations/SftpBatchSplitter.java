@@ -9,6 +9,8 @@ import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import java.util.List;
 
 public abstract class SftpBatchSplitter {
-    public abstract List<BatchSplit> splitBatch(Batch batch, DataLayer db,
-                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception;
+    public abstract List<BatchSplit> splitBatch(Batch batch,
+                                                DataLayer db,
+                                                DbInstanceEds instanceConfiguration,
+                                                DbConfiguration dbConfiguration) throws Exception;
 }

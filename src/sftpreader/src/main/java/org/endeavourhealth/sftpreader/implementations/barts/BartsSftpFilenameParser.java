@@ -4,6 +4,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -68,8 +69,8 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         super(filename, dbConfiguration, fileExtension);
     }*/
 
-    public BartsSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
-        super(filename, lastModified, dbConfiguration);
+    public BartsSftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(remoteFile, dbConfiguration);
     }
 
     @Override
@@ -96,10 +97,10 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         //return true;
     }
 
-    @Override
+    /*@Override
     public boolean requiresDecryption() {
         return false;
-    }
+    }*/
 
     public static LocalDate parseBatchIdentifier(String batchIdentifier) {
         return LocalDate.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
@@ -107,12 +108,15 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
 
     @Override
-    protected void parseFilename(String fileName, LocalDateTime lastModified) throws SftpFilenameParseException {
+    protected void parseFilename() throws SftpFilenameParseException {
 
         //by default we want ALL files
         isFileNeeded = true;
 
-        //we have four custom extract files that Barts have uploaded and are in the same S3 bucket as our normal files
+        String fileName = this.remoteFile.getFilename();
+        LocalDateTime lastModified = this.remoteFile.getLastModified();
+
+        //we have a load of custom extract files that Barts have uploaded and are in the same S3 bucket as our normal files
         //for now, just ignore them with this
         if (fileName.equals("PI_CDE_PERSON_PATIENT.csv")
                 || fileName.equals("PI_LKP_CDE_CODE_VALUE_REF.csv")

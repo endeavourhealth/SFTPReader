@@ -77,13 +77,9 @@ public class SftpFile {
         return FilenameUtils.concat(getLocalPath(), getFilename());
     }*/
 
-    public boolean doesFileNeedDecrypting() {
+    /*public boolean doesFileNeedDecrypting() {
         return sftpFilenameParser.requiresDecryption();
-        /*if (StringUtils.isEmpty(pgpFileExtensionFilter))
-            return false;
-
-        return (getFilename().endsWith(pgpFileExtensionFilter));*/
-    }
+    }*/
 
     /*public String getDecryptedLocalFilePath() {
         return FilenameUtils.concat(getLocalPath(), getDecryptedFilename());

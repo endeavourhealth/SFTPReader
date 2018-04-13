@@ -18,7 +18,7 @@ public class VisionSftpSlackNotifier extends SftpSlackNotifier {
         long totalSizeInBytes = completeBatch.
                 getBatchFiles()
                 .stream()
-                .mapToLong(t -> t.getLocalSizeBytes())
+                .mapToLong(t -> t.getRemoteSizeBytes())
                 .sum();
 
         String totalSizeReadable = FileUtils.byteCountToDisplaySize(totalSizeInBytes);

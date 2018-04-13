@@ -7,11 +7,11 @@ public class BatchFile {
     private String filename;
     private long remoteSizeBytes;
     private boolean isDownloaded;
-    private long localSizeBytes;
+    /*private long localSizeBytes;
     private boolean requiresDecryption;
     private boolean isDecrypted;
     private String decryptedFilename;
-    private long decryptedSizeBytes;
+    private long decryptedSizeBytes;*/
 
     public int getBatchId() {
         return batchId;
@@ -67,7 +67,7 @@ public class BatchFile {
         return this;
     }
 
-    public long getLocalSizeBytes() {
+    /*public long getLocalSizeBytes() {
         return localSizeBytes;
     }
 
@@ -110,5 +110,5 @@ public class BatchFile {
     public BatchFile setDecryptedSizeBytes(long decryptedSizeBytes) {
         this.decryptedSizeBytes = decryptedSizeBytes;
         return this;
-    }
+    }*/
 }

@@ -14,6 +14,7 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseExceptio
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,15 +67,8 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
         //if the folder does exist, delete all content within it, since if we're re-splitting a file
         //we want to make sure that all previous content is deleted
-        if (dstDir.exists()
-            || dstDir.listFiles() != null) { //listing the files is a workaround for the NFS inaccurately reporting if something exists
-            LOG.trace("Deleting pre-existing folder " + dstDir);
-            deleteRecursive(dstDir);
-        }
-
-        if (!dstDir.mkdirs()) {
-            throw new FileNotFoundException("Failed to create destination directory " + dstDir);
-        }
+        FileHelper.deleteRecursiveIfExists(dstDir);
+        FileHelper.createDirectoryIfNotExists(dstDir);
 
         //scan through the files in the folder and works out which are admin and which are clinical
         List<String> processingIdFiles = new ArrayList<>();
@@ -99,7 +93,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         Set<File> expectedOrgFolders = findExpectedOrgFolders(instanceConfiguration, dbConfiguration, batch, dstDir);
         for (File orgDir: orgIdDirs) {
             if (!expectedOrgFolders.contains(orgDir)) {
-                deleteRecursive(orgDir);
+                FileHelper.deleteRecursiveIfExists(orgDir);
             }
         }
         orgIdDirs = expectedOrgFolders;
@@ -179,7 +173,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
                         throw new Exception("Processing ID dir " + processingIdDir + " isn't empty");
                     }
                     LOG.trace("Going to delete " + processingIdDir);
-                    deleteRecursive(processingIdDir);
+                    FileHelper.deleteRecursiveIfExists(processingIdDir);
                 }
             }
 
@@ -188,7 +182,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
             //and it'll now be empty. So delete any empty org directory.
             if (orgDir.listFiles().length == 0) {
                 LOG.trace("Org dir is now empty, so will delete it");
-                deleteRecursive(orgDir);
+                FileHelper.deleteRecursiveIfExists(orgDir);
                 orgIdDirs.remove(orgDir);
             }
         }
@@ -196,7 +190,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         //the splitter only creates files when required, so we'll have incomplete file sets,
         //so create any missing files, so there's a full set of files in every folder
         for (BatchFile batchFile: batch.getBatchFiles()) {
-            String fileName = batchFile.getDecryptedFilename();
+            String fileName = EmisSftpFilenameParser.getDecryptedFileName(batchFile, dbConfiguration);
             String headers = headersCache.get(fileName);
 
             //iterate through any directories, creating any missing files in their sub-directories
@@ -352,7 +346,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
         //delete all the separate files
         for (File orgProcessingIdFile: separateFiles) {
-            deleteRecursive(orgProcessingIdFile);
+            FileHelper.deleteRecursiveIfExists(orgProcessingIdFile);
         }
 
         if (joined) {
@@ -432,7 +426,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
             if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(fileIdentifier)) {
-                fileName = batchFile.getDecryptedFilename();
+                fileName = EmisSftpFilenameParser.getDecryptedFileName(batchFile, dbConfiguration);
             }
         }
 
@@ -515,20 +509,6 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
-    /**
-     * file.delete() only works on empty directories, so we need to make sure they're empty first
-     */
-    private static void deleteRecursive(File f) throws Exception {
-        if (f.isDirectory()) {
-            for (File child: f.listFiles()) {
-                deleteRecursive(child);
-            }
-        }
-        if (!f.delete()) {
-            throw new IOException("Failed to delete " + f);
-        }
-    }
-
     private static void saveAllOdsCodes(DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         //go through our Admin_Organisation file, saving all new org details to our PostgreSQL DB
@@ -588,12 +568,13 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
 
-            String fileName = batchFile.getDecryptedFilename();
+            String fileName = EmisSftpFilenameParser.getDecryptedFileName(batchFile, dbConfiguration);
 
             //first try to use a file in our temporary storage
             String filePath = FilenameUtils.concat(sourceTempDir, fileName);
 
-            EmisSftpFilenameParser nameParser = new EmisSftpFilenameParser(fileName, null, dbConfiguration);
+            RemoteFile remoteFile = new RemoteFile(fileName, -1, null);
+            EmisSftpFilenameParser nameParser = new EmisSftpFilenameParser(remoteFile, dbConfiguration);
             String fileType = nameParser.generateFileTypeIdentifier();
 
             //we work out what columns to split by, by looking at the CSV file headers

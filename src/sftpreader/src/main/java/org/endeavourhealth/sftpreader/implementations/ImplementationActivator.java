@@ -5,145 +5,101 @@ import org.endeavourhealth.sftpreader.implementations.emis.*;
 import org.endeavourhealth.sftpreader.implementations.homerton.*;
 import org.endeavourhealth.sftpreader.implementations.vision.*;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class ImplementationActivator {
     private static final Logger LOG = LoggerFactory.getLogger(ImplementationActivator.class);
 
-    // do this properly - instatiate dynamically based on configuration against interface type
+    private static String getClassPackageAndPrefix(DbConfiguration dbConfiguration) throws Exception {
+        String contentType = dbConfiguration.getSoftwareContentType();
+        if (contentType.equalsIgnoreCase("EMISCSV")) {
+            return "org.endeavourhealth.sftpreader.implementations.emis.Emis";
 
-    public static SftpFilenameParser createFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration, String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpFilenameParser(filename, lastModified, dbConfiguration);
+        } else if (contentType.equalsIgnoreCase("VISIONCSV")) {
+            return "org.endeavourhealth.sftpreader.implementations.vision.Vision";
+
+        } else if (contentType.equalsIgnoreCase("BARTSCSV")) {
+            return "org.endeavourhealth.sftpreader.implementations.barts.Barts";
+
+        } else if (contentType.equalsIgnoreCase("HOMERTONCSV")) {
+            return "org.endeavourhealth.sftpreader.implementations.homerton.Homerton";
+
+        } else if (contentType.equalsIgnoreCase("TPPCSV")) {
+            return "org.endeavourhealth.sftpreader.implementations.tpp.Tpp";
+
         } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpFilenameParser(filename, lastModified, dbConfiguration);
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpFilenameParser(filename, lastModified, dbConfiguration);
-                } else {
-                    return new HomertonSftpFilenameParser(filename, lastModified, dbConfiguration);
-                }
-            }
+            throw new Exception("Unknown content type [" + contentType + "]");
         }
     }
 
-    public static SftpBatchValidator createSftpBatchValidator(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpBatchValidator();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpBatchValidator();
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpBatchValidator();
-                } else {
-                    return new HomertonSftpBatchValidator();
-                }
-            }
-        }
+    public static SftpFilenameParser createFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpFilenameParser";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpFilenameParser> constructor = cls.getConstructor(RemoteFile.class, DbConfiguration.class);
+        return constructor.newInstance(remoteFile, dbConfiguration);
     }
 
-    public static SftpBatchSplitter createSftpBatchSplitter(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpBatchSplitter();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpBatchSplitter();
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpBatchSplitter();
-                } else {
-                    return new HomertonSftpBatchSplitter();
-                }
-            }
-        }
+    public static SftpBatchValidator createSftpBatchValidator(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchValidator";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpBatchValidator> constructor = cls.getConstructor();
+        return constructor.newInstance();
     }
 
-    public static SftpBatchSequencer createSftpBatchSequencer(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpBatchSequencer();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpBatchSequencer();
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpBatchSequencer();
-                } else {
-                    return new HomertonSftpBatchSequencer();
-                }
-            }
-        }
+    public static SftpBatchSplitter createSftpBatchSplitter(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchSplitter";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpBatchSplitter> constructor = cls.getConstructor();
+        return constructor.newInstance();
     }
 
-    public static SftpNotificationCreator createSftpNotificationCreator(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpNotificationCreator();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpNotificationCreator();
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpNotificationCreator();
-                } else {
-                    return new HomertonSftpNotificationCreator();
-                }
-            }
-        }
+    public static SftpBatchSequencer createSftpBatchSequencer(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchSequencer";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpBatchSequencer> constructor = cls.getConstructor();
+        return constructor.newInstance();
     }
 
+    public static SftpNotificationCreator createSftpNotificationCreator(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpNotificationCreator";
 
-
-    public static SftpOrganisationHelper createSftpOrganisationHelper(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpOrganisationHelper();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpOrganisationHelper();
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpOrganisationHelper();
-                } else {
-                    return new HomertonSftpOrganisationHelper();
-                }
-            }
-        }
+        Class cls = Class.forName(clsName);
+        Constructor<SftpNotificationCreator> constructor = cls.getConstructor();
+        return constructor.newInstance();
     }
 
-    public static SftpSlackNotifier createSftpSlackNotifier(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpSlackNotifier();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpSlackNotifier();
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpSlackNotifier();
-                } else {
-                    return new HomertonSftpSlackNotifier();
-                }
-            }
-        }
+    public static SftpOrganisationHelper createSftpOrganisationHelper(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpOrganisationHelper";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpOrganisationHelper> constructor = cls.getConstructor();
+        return constructor.newInstance();
     }
 
-    public static SftpBatchUnzipperDecrypter createSftpUnzipperDecrypter(String interfaceTypeName) {
-        if (interfaceTypeName.toUpperCase().startsWith("EMIS")) {
-            return new EmisSftpBatchUnzipperDecrypter();
-        } else {
-            if (interfaceTypeName.toUpperCase().startsWith("VISION")) {
-                return new VisionSftpBatchUnzipperDecrypter();
-            } else {
-                if (interfaceTypeName.toUpperCase().startsWith("BARTS")) {
-                    return new BartsSftpBatchUnzipperDecrypter();
-                } else {
-                    return new HomertonSftpBatchUnzipperDecrypter();
-                }
-            }
-        }
+    public static SftpSlackNotifier createSftpSlackNotifier(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpSlackNotifier";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpSlackNotifier> constructor = cls.getConstructor();
+        return constructor.newInstance();
     }
 
+    public static SftpBatchUnzipperDecrypter createSftpUnzipperDecrypter(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchUnzipperDecrypter";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpBatchUnzipperDecrypter> constructor = cls.getConstructor();
+        return constructor.newInstance();
+    }
 
 }

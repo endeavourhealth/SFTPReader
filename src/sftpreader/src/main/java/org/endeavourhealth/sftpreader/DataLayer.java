@@ -16,6 +16,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -171,8 +172,8 @@ public class DataLayer implements IDBDigestLogger {
                 .addParameter("_filename", sftpFile.getFilename())
                 .addParameter("_local_relative_path", sftpFile.getLocalRelativePath())
                 .addParameter("_remote_size_bytes", sftpFile.getRemoteFileSizeInBytes())
-                .addParameter("_remote_created_date", sftpFile.getRemoteLastModifiedDate())
-                .addParameter("_requires_decryption", sftpFile.doesFileNeedDecrypting());
+                .addParameter("_remote_created_date", sftpFile.getRemoteLastModifiedDate());
+                //.addParameter("_requires_decryption", sftpFile.doesFileNeedDecrypting());
 
         return pgStoredProc.executeSingleRow((resultSet) ->
                 new AddFileResult()
@@ -183,13 +184,13 @@ public class DataLayer implements IDBDigestLogger {
     public void setFileAsDownloaded(SftpFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.set_file_as_downloaded")
-                .addParameter("_batch_file_id", batchFile.getBatchFileId())
-                .addParameter("_local_size_bytes", batchFile.getLocalFileSizeBytes());
+                .addParameter("_batch_file_id", batchFile.getBatchFileId());
+                //.addParameter("_local_size_bytes", batchFile.getLocalFileSizeBytes());
 
         pgStoredProc.execute();
     }
 
-    public void setFileAsDecrypted(BatchFile batchFile) throws PgStoredProcException {
+    /*public void setFileAsDecrypted(BatchFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.set_file_as_decrypted")
                 .addParameter("_batch_file_id", batchFile.getBatchFileId())
@@ -197,7 +198,7 @@ public class DataLayer implements IDBDigestLogger {
                 .addParameter("_decrypted_size_bytes", batchFile.getDecryptedSizeBytes());
 
         pgStoredProc.execute();
-    }
+    }*/
 
     public void addUnknownFile(String configurationId, SftpFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
@@ -289,11 +290,12 @@ public class DataLayer implements IDBDigestLogger {
                         .setFilename(resultSet.getString("filename"))
                         .setRemoteSizeBytes(resultSet.getLong("remote_size_bytes"))
                         .setDownloaded(resultSet.getBoolean("is_downloaded"))
-                        .setLocalSizeBytes(resultSet.getLong("local_size_bytes"))
+                        /*.setLocalSizeBytes(resultSet.getLong("local_size_bytes"))
                         .setRequiresDecryption(resultSet.getBoolean("requires_decryption"))
                         .setDecrypted(resultSet.getBoolean("is_decrypted"))
                         .setDecryptedFilename(resultSet.getString("decrypted_filename"))
-                        .setDecryptedSizeBytes(resultSet.getLong("decrypted_size_bytes")));
+                        .setDecryptedSizeBytes(resultSet.getLong("decrypted_size_bytes"))*/
+        );
 
         batchFiles.forEach(t ->
                 batches
@@ -409,4 +411,99 @@ public class DataLayer implements IDBDigestLogger {
         }
     }
 
+    public List<BatchSplit> getBatchSplitsForBatch(int queryBatchId) throws Exception {
+        Connection connection = null;
+
+        try {
+            connection = dataSource.getConnection();
+
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery("select * from log.batch_split where batch_id = " + queryBatchId + ";");
+
+            List<BatchSplit> ret = new ArrayList<>();
+
+            //we have multiple names for some orgs in production (e.g. F84636),
+            //so return the name with the longest length (for the sake of having some way to choose
+            //something more interesting that just "The Surgery")
+            while (rs.next()) {
+                int col = 1;
+                int batchSplitId = rs.getInt(col++);
+                int batchId = rs.getInt(col++);
+                String configurationId = rs.getString(col++);
+                String localRelativePath = rs.getString(col++);
+                String organisationId = rs.getString(col++);
+                boolean haveNotified = rs.getBoolean(col++);
+                Date notificationDate = rs.getDate(col++);
+
+                BatchSplit batchSplit = new BatchSplit();
+                batchSplit.setBatchSplitId(batchSplitId);
+                batchSplit.setBatchId(batchId);
+                batchSplit.setConfigurationId(configurationId);
+                batchSplit.setLocalRelativePath(localRelativePath);
+                batchSplit.setOrganisationId(organisationId);
+                batchSplit.setHaveNotified(haveNotified);
+                batchSplit.setNotificationDate(notificationDate);
+
+                ret.add(batchSplit);
+            }
+
+            return ret;
+
+        } finally {
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException se) {
+                    LOG.error("Error closing connection", se);
+                }
+            }
+        }
+    }
+
+    public void addTppOrganisationMap(TppOrganisationMap mapping) throws PgStoredProcException {
+
+        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+                .setName("configuration.add_tpp_organisation_map")
+                .addParameter("_ods_code", mapping.getOdsCode())
+                .addParameter("_name", mapping.getName());
+
+        pgStoredProc.execute();
+    }
+
+    public TppOrganisationMap findTppOrgNameFromOdsCode(String queryOdsCode) throws Exception {
+        Connection connection = null;
+
+        try {
+            connection = dataSource.getConnection();
+
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery("select * from configuration.tpp_organisation_map where ods_code = '" + queryOdsCode + "';");
+
+            if (rs.next()) {
+                int col = 1;
+                String odsCode = rs.getString(col++);
+                String name = rs.getString(col++);
+
+                TppOrganisationMap ret = new TppOrganisationMap();
+                ret.setOdsCode(odsCode);
+                ret.setName(name);
+
+                return ret;
+
+            } else {
+                return null;
+            }
+
+        } finally {
+
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException se) {
+                    LOG.error("Error closing connection", se);
+                }
+            }
+        }
+    }
 }

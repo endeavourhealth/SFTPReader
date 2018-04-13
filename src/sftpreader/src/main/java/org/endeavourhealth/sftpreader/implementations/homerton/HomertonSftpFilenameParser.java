@@ -3,6 +3,7 @@ package org.endeavourhealth.sftpreader.implementations.homerton;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,8 +25,8 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         super(filename, dbConfiguration, fileExtension);
     }*/
 
-    public HomertonSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
-        super(filename, lastModified, dbConfiguration);
+    public HomertonSftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(remoteFile, dbConfiguration);
     }
 
     @Override
@@ -48,10 +49,10 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         return false;
     }
 
-    @Override
+    /*@Override
     public boolean requiresDecryption() {
         return false;
-    }
+    }*/
 
     public static String parseBatchIdentifier(String batchIdentifier) {
         return batchIdentifier;
@@ -79,8 +80,11 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
                                 = Looks like it is not used outside this class
                                 = Must match value in configuration.configuration_kvp
      */
-    protected void parseFilename(String filename, LocalDateTime lastModified) throws SftpFilenameParseException {
-        String[] parts = filename.split("_");
+    protected void parseFilename() throws SftpFilenameParseException {
+
+        String fileName = this.remoteFile.getFilename();
+
+        String[] parts = fileName.split("_");
 
         if (parts.length != 3)
             throw new SftpFilenameParseException("Homerton batch filename could not be parsed");

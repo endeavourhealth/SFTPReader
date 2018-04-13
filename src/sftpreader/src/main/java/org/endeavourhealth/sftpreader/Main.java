@@ -12,9 +12,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.postgres.PgAppLock.PgAppLock;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.barts.BartsSftpFilenameParser;
 import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ public class Main {
 		try {
             configuration = Configuration.getInstance();
 
-            if (args.length > 0) {
+            /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("TestBarts")) {
 
                     File f = new File("C:\\Users\\drewl\\Desktop\\RAW_barts_ftp_files.txt");
@@ -75,16 +77,16 @@ public class Main {
                         }
 
 
-                        /*for (String okLine: ok) {
+                        *//*for (String okLine: ok) {
                             LOG.info(okLine);
-                        }*/
+                        }*//*
                     }
                 }
-            }
+            }*/
 
 
 
-            if (args.length > 0) {
+            /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("FixS3")) {
                     String bucket = args[1];
                     String path = args[2];
@@ -92,9 +94,9 @@ public class Main {
                     fixS3(bucket, path, test);
                     System.exit(0);
                 }
-            }
+            }*/
 
-            if (args.length > 0) {
+            /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("DeleteCsvs")) {
                     String bucket = args[1];
                     String path = args[2];
@@ -102,7 +104,7 @@ public class Main {
                     deleteCsvs(bucket, path, test);
                     System.exit(0);
                 }
-            }
+            }*/
 
             PgAppLock pgAppLock = new PgAppLock(configuration.getInstanceName(), configuration.getNonPooledDatabaseConnection());
             try {

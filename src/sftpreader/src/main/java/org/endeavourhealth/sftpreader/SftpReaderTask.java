@@ -138,7 +138,7 @@ public class SftpReaderTask implements Runnable {
 
     private void unzipDecryptBatch(Batch batch) throws Exception {
 
-        SftpBatchUnzipperDecrypter unzipper = ImplementationActivator.createSftpUnzipperDecrypter(dbConfiguration.getInterfaceTypeName());
+        SftpBatchUnzipperDecrypter unzipper = ImplementationActivator.createSftpUnzipperDecrypter(dbConfiguration);
         unzipper.unzipAndDecrypt(batch, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, db);
     }
 
@@ -216,13 +216,14 @@ public class SftpReaderTask implements Runnable {
     }
 
     private Connection openSftpConnection(DbConfigurationSftp configurationSftp) throws Exception, JSchException, IOException {
-        Connection connection = ConnectionActivator.createConnection(dbConfiguration.getInterfaceTypeName(), getSftpConnectionDetails(configurationSftp));
+        ConnectionDetails connectionDetails = getSftpConnectionDetails(configurationSftp);
 
-        String hostname = connection.getConnectionDetails().getHostname();
-        String port = Integer.toString(connection.getConnectionDetails().getPort());
-        String username = connection.getConnectionDetails().getUsername();
+        String hostname = connectionDetails.getHostname();
+        String port = Integer.toString(connectionDetails.getPort());
+        String username = connectionDetails.getUsername();
+        Connection connection = ConnectionActivator.createConnection(connectionDetails);
 
-        LOG.info(" Opening connection to " + hostname + " on port " + port + " with user " + username);
+        LOG.info("Opening " + connection.getClass().getName() + " to " + hostname + " on port " + port + " with user " + username);
 
         connection.open();
 
@@ -324,9 +325,9 @@ public class SftpReaderTask implements Runnable {
         db.setFileAsDownloaded(batchFile);
     }*/
 
-    private SftpFile instantiateSftpBatchFile(RemoteFile remoteFile) {
+    private SftpFile instantiateSftpBatchFile(RemoteFile remoteFile) throws Exception {
 
-        SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(remoteFile.getFilename(), remoteFile.getLastModified(), dbConfiguration, dbConfiguration.getInterfaceTypeName());
+        SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(remoteFile, dbConfiguration);
         String configurationStorageDir = dbConfiguration.getLocalRootPath();
 
         return new SftpFile(remoteFile,
@@ -398,14 +399,14 @@ public class SftpReaderTask implements Runnable {
 
         LOG.trace(" Validating batches " + incompleteBatch.getBatchIdentifier());
 
-        SftpBatchValidator sftpBatchValidator = ImplementationActivator.createSftpBatchValidator(dbConfiguration.getInterfaceTypeName());
+        SftpBatchValidator sftpBatchValidator = ImplementationActivator.createSftpBatchValidator(dbConfiguration);
         boolean valid = sftpBatchValidator.validateBatch(incompleteBatch, lastCompleteBatch, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, db);
 
         LOG.trace(" Completed batch validation");
         return valid;
     }
 
-    private List<Batch> sequenceBatches() throws SftpValidationException, SftpFilenameParseException, PgStoredProcException {
+    private List<Batch> sequenceBatches() throws Exception {
         LOG.trace(" Sequencing batches");
 
         List<Batch> incompleteBatches = getIncompleteBatches();
@@ -417,7 +418,7 @@ public class SftpReaderTask implements Runnable {
         Batch lastCompleteBatch = db.getLastCompleteBatch(dbConfiguration.getConfigurationId());
         int nextSequenceNumber = getNextSequenceNumber(lastCompleteBatch);
 
-        SftpBatchSequencer sftpBatchSequencer = ImplementationActivator.createSftpBatchSequencer(dbConfiguration.getInterfaceTypeName());
+        SftpBatchSequencer sftpBatchSequencer = ImplementationActivator.createSftpBatchSequencer(dbConfiguration);
         Map<Batch, Integer> batchSequence = sftpBatchSequencer.determineBatchSequenceNumbers(incompleteBatches, nextSequenceNumber, lastCompleteBatch);
 
         Map<Batch, Integer> sortedBatchSequence = StreamExtension.sortByValue(batchSequence);
@@ -445,7 +446,7 @@ public class SftpReaderTask implements Runnable {
         //delete any pre-existing splits for this batch
         db.deleteBatchSplits(batch);
 
-        SftpBatchSplitter sftpBatchSplitter = ImplementationActivator.createSftpBatchSplitter(dbConfiguration.getInterfaceTypeName());
+        SftpBatchSplitter sftpBatchSplitter = ImplementationActivator.createSftpBatchSplitter(dbConfiguration);
 
         List<BatchSplit> splitBatches = sftpBatchSplitter.splitBatch(batch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
 
@@ -543,7 +544,7 @@ public class SftpReaderTask implements Runnable {
     }
 
 
-    private void notify(BatchSplit unnotifiedBatchSplit) throws SftpReaderException, PgStoredProcException, IOException {
+    private void notify(BatchSplit unnotifiedBatchSplit) throws Exception {
 
         UUID messageId = UUID.randomUUID();
         int batchSplitId = unnotifiedBatchSplit.getBatchSplitId();
@@ -556,7 +557,7 @@ public class SftpReaderTask implements Runnable {
         String outboundMessage = null;
 
         try {
-            SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration.getInterfaceTypeName());
+            SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration);
             String messagePayload = sftpNotificationCreator.createNotificationMessage(organisationId, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, unnotifiedBatchSplit);
 
             EdsSenderResponse edsSenderResponse = null;
@@ -634,9 +635,9 @@ public class SftpReaderTask implements Runnable {
     }
 
 
-    private void sendSlackAlert(int batchSplitId, String organisationId, String errorMessage) {
+    private void sendSlackAlert(int batchSplitId, String organisationId, String errorMessage) throws Exception {
 
-        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration.getInterfaceTypeName());
+        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration);
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
         String message = "Exception notifying batch for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
 
@@ -672,9 +673,9 @@ public class SftpReaderTask implements Runnable {
         return notificationErrorrs.containsKey(new Integer(batchSplitId));
     }
 
-    private void sendSlackOk(int batchSplitId, String organisationId) {
+    private void sendSlackOk(int batchSplitId, String organisationId) throws Exception {
 
-        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration.getInterfaceTypeName());
+        SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration);
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
         String message = "Previous error notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + " is now cleared";
 

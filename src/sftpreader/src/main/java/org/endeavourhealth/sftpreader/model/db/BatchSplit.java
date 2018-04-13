@@ -1,11 +1,17 @@
 package org.endeavourhealth.sftpreader.model.db;
 
+import java.util.Date;
+
 public class BatchSplit {
 
     private int batchSplitId;
     private int batchId;
+    private String configurationId;
     private String localRelativePath;
     private String organisationId;
+    private boolean isHaveNotified;
+    private Date notificationDate;
+
     private Batch batch;
 
     public BatchSplit() {}
@@ -28,6 +34,14 @@ public class BatchSplit {
         return this;
     }
 
+    public String getConfigurationId() {
+        return configurationId;
+    }
+
+    public void setConfigurationId(String configurationId) {
+        this.configurationId = configurationId;
+    }
+
     public String getLocalRelativePath() {
         return localRelativePath;
     }
@@ -44,6 +58,22 @@ public class BatchSplit {
     public BatchSplit setOrganisationId(String organisationId) {
         this.organisationId = organisationId;
         return this;
+    }
+
+    public boolean isHaveNotified() {
+        return isHaveNotified;
+    }
+
+    public void setHaveNotified(boolean haveNotified) {
+        isHaveNotified = haveNotified;
+    }
+
+    public Date getNotificationDate() {
+        return notificationDate;
+    }
+
+    public void setNotificationDate(Date notificationDate) {
+        this.notificationDate = notificationDate;
     }
 
     public Batch getBatch() {

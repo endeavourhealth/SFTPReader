@@ -1,34 +1,33 @@
 
 create or replace function log.add_file
-(
-	_configuration_id varchar,
-	_batch_identifier varchar,
-	_file_type_identifier varchar,
-	_filename varchar,
-	_local_relative_path varchar,
-	_remote_size_bytes bigint,
-	_remote_created_date timestamp,
-	_requires_decryption boolean
-)
-returns table
-(
+	(
+		_configuration_id varchar,
+		_batch_identifier varchar,
+		_file_type_identifier varchar,
+		_filename varchar,
+		_local_relative_path varchar,
+		_remote_size_bytes bigint,
+		_remote_created_date timestamp
+	)
+	returns table
+	(
 	file_already_processed boolean,
 	batch_file_id integer
-)
+	)
 as $$
-	declare _batch_id integer;
-	declare _interface_type_id integer;
-	declare _batch_file_id integer;
-	declare _file_already_processed boolean;
+declare _batch_id integer;
+				declare _interface_type_id integer;
+				declare _batch_file_id integer;
+				declare _file_already_processed boolean;
 begin
 
-	select 
-		batch_id 
+	select
+		batch_id
 	into
 		_batch_id
 	from log.batch
 	where configuration_id = _configuration_id
-	and batch_identifier = _batch_identifier;
+				and batch_identifier = _batch_identifier;
 
 	select
 		interface_type_id
@@ -48,26 +47,26 @@ begin
 			local_relative_path
 		)
 		values
-		(
-			_configuration_id,
-			_batch_identifier,
-			_interface_type_id,
-			_local_relative_path
-		)
+			(
+				_configuration_id,
+				_batch_identifier,
+				_interface_type_id,
+				_local_relative_path
+			)
 		returning batch_id into _batch_id;
 
 	end if;
 
-	select 
+	select
 		bf.batch_file_id,
 		is_downloaded
 	into
 		_batch_file_id,
-		_file_already_processed 
+		_file_already_processed
 	from log.batch_file bf
 	where batch_id = _batch_id
-	and file_type_identifier = _file_type_identifier
-	and filename = _filename;
+				and file_type_identifier = _file_type_identifier
+				and filename = _filename;
 
 	if (_batch_file_id is not null)
 	then
@@ -89,21 +88,17 @@ begin
 			file_type_identifier,
 			filename,
 			remote_size_bytes,
-			remote_created_date,
-			requires_decryption,
-			is_decrypted
+			remote_created_date
 		)
 		values
-		(
-			_batch_id,
-			_interface_type_id,
-			_file_type_identifier,
-			_filename,
-			_remote_size_bytes,
-			_remote_created_date,
-			_requires_decryption,
-			case when _requires_decryption then false else null end
-		)
+			(
+				_batch_id,
+				_interface_type_id,
+				_file_type_identifier,
+				_filename,
+				_remote_size_bytes,
+				_remote_created_date
+			)
 		returning log.batch_file.batch_file_id into _batch_file_id;
 	end if;
 

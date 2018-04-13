@@ -2,9 +2,11 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
+import org.endeavourhealth.sftpreader.model.db.BatchFile;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbConfigurationKvp;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,8 +27,8 @@ public class EmisSftpFilenameParser extends SftpFilenameParser {
         super(filename, dbConfiguration, fileExtension);
     }*/
 
-    public EmisSftpFilenameParser(String filename, LocalDateTime lastModified, DbConfiguration dbConfiguration) {
-        super(filename, lastModified, dbConfiguration);
+    public EmisSftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(remoteFile, dbConfiguration);
     }
 
     @Override
@@ -53,14 +55,16 @@ public class EmisSftpFilenameParser extends SftpFilenameParser {
         return false;
     }
 
-    @Override
+    /*@Override
     public boolean requiresDecryption() {
         return true;
-    }
+    }*/
 
     @Override
-    protected void parseFilename(String filename, LocalDateTime lastModified) throws SftpFilenameParseException {
-        String[] parts = filename.split("_");
+    protected void parseFilename() throws SftpFilenameParseException {
+
+        String fileName = this.remoteFile.getFilename();
+        String[] parts = fileName.split("_");
 
         if (parts.length != 5)
             throw new SftpFilenameParseException("Emis batch filename could not be parsed");
@@ -121,5 +125,14 @@ public class EmisSftpFilenameParser extends SftpFilenameParser {
 
     public UUID getSharingAgreementUuid() {
         return sharingAgreementUuid;
+    }
+
+    public static String getDecryptedFileName(BatchFile batchFile, DbConfiguration dbConfiguration) {
+        return getDecryptedFileName(batchFile.getFilename(), dbConfiguration);
+    }
+
+    public static String getDecryptedFileName(String encryptedFilename, DbConfiguration dbConfiguration) {
+        String extension = dbConfiguration.getPgpFileExtensionFilter();
+        return StringUtils.removeEnd(encryptedFilename, extension);
     }
 }

@@ -13,6 +13,7 @@ import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -122,7 +123,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         String fileName = null;
         for (BatchFile batchFile: lastCompleteBatch.getBatchFiles()) {
             if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(EmisSftpBatchSplitter.EMIS_AGREEMENTS_FILE_ID)) {
-                fileName = batchFile.getDecryptedFilename();
+                fileName = EmisSftpFilenameParser.getDecryptedFileName(batchFile, dbConfiguration);
             }
         }
 
@@ -245,7 +246,9 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         boolean first = true;
 
         for (BatchFile incompleteBatchFile : incompleteBatches.getBatchFiles()) {
-            EmisSftpFilenameParser emisSftpFilenameParser = new EmisSftpFilenameParser(incompleteBatchFile.getFilename(), null, dbConfiguration);
+
+            RemoteFile remoteFile = new RemoteFile(incompleteBatchFile.getFilename(), -1, null);
+            EmisSftpFilenameParser emisSftpFilenameParser = new EmisSftpFilenameParser(remoteFile, dbConfiguration);
 
             if (first) {
                 processingIdStart = emisSftpFilenameParser.getProcessingIds().getProcessingIdStart();

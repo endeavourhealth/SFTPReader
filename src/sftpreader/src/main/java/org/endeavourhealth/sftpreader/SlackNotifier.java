@@ -45,14 +45,14 @@ public class SlackNotifier {
             notifyCompleteBatch(dbConfiguration, batch);
     }*/
 
-    public void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) {
+    public void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         String configurationId = dbConfiguration.getConfigurationId();
         String friendlyName = dbConfiguration.getConfigurationFriendlyName();
 
         String message = friendlyName + " extract (" + configurationId + ") received";
 
-        SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier(dbConfiguration.getInterfaceTypeName());
+        SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier(dbConfiguration);
         message += slackNotifier.getCompleteBatchMessageSuffix(batch);
 
         postMessage(message);
