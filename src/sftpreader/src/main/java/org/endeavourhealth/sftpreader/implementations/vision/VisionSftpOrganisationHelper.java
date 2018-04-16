@@ -1,5 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.vision;
 
+import org.endeavourhealth.common.ods.OdsOrganisation;
+import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.sftpreader.DataLayer;
 import org.endeavourhealth.sftpreader.implementations.SftpOrganisationHelper;
 
@@ -9,14 +11,15 @@ public class VisionSftpOrganisationHelper extends SftpOrganisationHelper {
     public String findOrganisationNameFromOdsCode(DataLayer db, String odsCode) {
 
         try {
-            //TODO: Stu implementing odsCode lookup
+            OdsOrganisation odsOrg = OdsWebService.lookupOrganisationViaRest(odsCode);
+            if (odsOrg != null) {
+                return odsOrg.getOrganisationName();
 
-            //OrganisationEntity org = OrganisationEntity.getOrganisationByodsCode(odsCode);
-            //return org.getName();
+            } else {
+                return null;
+            }
 
-            return odsCode;
-        }
-        catch (Exception Ex) {
+        } catch (Exception Ex) {
             return null;
         }
     }

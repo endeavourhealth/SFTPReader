@@ -10,6 +10,8 @@ import com.google.common.base.Strings;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManagerException;
+import org.endeavourhealth.common.ods.OdsOrganisation;
+import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.common.postgres.PgAppLock.PgAppLock;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
@@ -41,6 +43,7 @@ public class Main {
 	public static void main(String[] args) {
 		try {
             configuration = Configuration.getInstance();
+
 
             /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("TestBarts")) {
