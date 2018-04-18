@@ -378,6 +378,7 @@ public class TppSftpBatchSplitter extends SftpBatchSplitter {
             set.add("SRProblemSubstance");
             set.add("SRHospitalDischargeLetter");
             set.add("SROohCaseOutcome");
+            set.add("SRLetter");
 
             cachedFilesToSplit = set;
         }
