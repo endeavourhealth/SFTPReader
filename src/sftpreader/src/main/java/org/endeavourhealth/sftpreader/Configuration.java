@@ -2,12 +2,11 @@ package org.endeavourhealth.sftpreader;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.kstruct.gethostname4j.Hostname;
-import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 
-import org.endeavourhealth.sftpreader.model.MySqlDataLayer;
+import org.endeavourhealth.sftpreader.model.MySqlDataLayerTmp;
 import org.endeavourhealth.sftpreader.model.PostgresDataLayer;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstance;
@@ -16,8 +15,6 @@ import org.endeavourhealth.sftpreader.utilities.StringHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sql.DataSource;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -170,7 +167,7 @@ public final class Configuration {
             this.cachedDataLayer = new PostgresDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
 
         } else {
-            this.cachedDataLayer = new MySqlDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
+            this.cachedDataLayer = new MySqlDataLayerTmp(dbUrl, dbUsername, dbPassword, dbDriverClassName);
         }
 
 

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Date;
 
-public class MySqlDataLayer implements DataLayerI {
+public class MySqlDataLayerTmp implements DataLayerI {
 
     private String dbUrl;
     private String dbUsername;
@@ -21,7 +21,7 @@ public class MySqlDataLayer implements DataLayerI {
     private String dbDriverClassName;
     private DataSource dataSource;
 
-    public MySqlDataLayer(String dbUrl, String dbUsername, String dbPassword, String dbDriverClassName) throws Exception {
+    public MySqlDataLayerTmp(String dbUrl, String dbUsername, String dbPassword, String dbDriverClassName) throws Exception {
         this.dbUrl = dbUrl;
         this.dbUsername = dbUsername;
         this.dbPassword = dbPassword;
