@@ -2,28 +2,26 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
-import org.endeavourhealth.common.utility.StreamExtension;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class EmisSftpBatchValidator extends SftpBatchValidator {
 
     @Override
-    public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
+    public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
 
         Validate.notNull(incompleteBatch, "incompleteBatch is null");
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
@@ -50,7 +48,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
      * checks the newly received sharing agreements file to see if any orgs have become deleted or deactivated since last time
      */
     private void checkForDeactivatedOrDeletedOrganisations(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration,
-                                                           DbConfiguration dbConfiguration, DataLayer db) throws SftpValidationException {
+                                                           DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
 
         //if this is the first extract, then this will be null
         if (lastCompleteBatch == null) {
@@ -154,13 +152,13 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         }
     }
 
-    private static void sendSlackAlert(String emisOrgGuid, String msg, DataLayer db) throws SftpValidationException {
+    private static void sendSlackAlert(String emisOrgGuid, String msg, DataLayerI db) throws SftpValidationException {
 
         //need to find the org details for the GUID
         EmisOrganisationMap mapping = null;
         try {
             mapping = db.getEmisOrganisationMap(emisOrgGuid);
-        } catch (PgStoredProcException ex) {
+        } catch (Exception ex) {
             throw new SftpValidationException("Failed to access database", ex);
         }
 

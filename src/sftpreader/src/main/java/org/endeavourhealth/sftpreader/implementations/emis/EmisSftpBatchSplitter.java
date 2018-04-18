@@ -7,7 +7,8 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
@@ -19,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -43,7 +43,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
      * returns a list of directories containing split file sets
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
@@ -509,7 +509,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
-    private static void saveAllOdsCodes(DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
+    private static void saveAllOdsCodes(DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         //go through our Admin_Organisation file, saving all new org details to our PostgreSQL DB
         String adminFilePath = findOrganisationFile(instanceConfiguration, dbConfiguration, batch);
@@ -549,7 +549,7 @@ public class EmisSftpBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    private static String findOdsCode(String emisOrgGuid, DataLayer db) throws Exception {
+    private static String findOdsCode(String emisOrgGuid, DataLayerI db) throws Exception {
 
         //look in our mapping table to find the ODS code for our org GUID
         EmisOrganisationMap mapping = db.getEmisOrganisationMap(emisOrgGuid);

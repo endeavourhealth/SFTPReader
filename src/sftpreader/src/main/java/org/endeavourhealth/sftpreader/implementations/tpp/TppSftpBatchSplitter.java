@@ -6,9 +6,9 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
@@ -37,7 +37,7 @@ public class TppSftpBatchSplitter extends SftpBatchSplitter {
      * splits the TPP extract files org ID, storing the results in sub-directories using that org ID as the name
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
@@ -381,7 +381,7 @@ public class TppSftpBatchSplitter extends SftpBatchSplitter {
         return cachedFilesToSplit;
     }
 
-    private static void saveAllOdsCodes(String sourceTempDir, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
+    private static void saveAllOdsCodes(String sourceTempDir, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         String orgFilePath = FilenameUtils.concat(sourceTempDir, ORGANISATION_FILE);
         File f = new File(orgFilePath);

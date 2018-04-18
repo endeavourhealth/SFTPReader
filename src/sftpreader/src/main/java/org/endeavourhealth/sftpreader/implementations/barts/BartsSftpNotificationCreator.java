@@ -1,14 +1,12 @@
 package org.endeavourhealth.sftpreader.implementations.barts;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpNotificationCreator;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +15,7 @@ public class BartsSftpNotificationCreator extends SftpNotificationCreator {
     private static final Logger LOG = LoggerFactory.getLogger(BartsSftpNotificationCreator.class);
 
     @Override
-    public String createNotificationMessage(String organisationId, DataLayer db, DbInstanceEds instanceConfiguration,
+    public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
         //we have multiple file fragments and occasionally get the same file type sent twice

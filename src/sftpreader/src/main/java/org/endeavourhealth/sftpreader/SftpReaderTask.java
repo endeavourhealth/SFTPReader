@@ -14,8 +14,10 @@ import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.implementations.*;
+import org.endeavourhealth.sftpreader.model.ConfigurationLockI;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.model.db.*;
-import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.sources.Connection;
@@ -45,7 +47,7 @@ public class SftpReaderTask implements Runnable {
     private String configurationId = null;
     private DbInstance dbInstanceConfiguration = null;
     private DbConfiguration dbConfiguration = null;
-    private DataLayer db = null;
+    private DataLayerI db = null;
 
     public SftpReaderTask(Configuration configuration, String configurationId) {
         this.configuration = configuration;
@@ -54,9 +56,15 @@ public class SftpReaderTask implements Runnable {
 
     @Override
     public void run() {
+
+        ConfigurationLockI lock = null;
         try {
             LOG.trace(">>>Starting scheduled SftpReader run, initialising");
             initialise();
+
+            //create a DB-level advisory lock, so no other application can process this configuration at the same time
+            LOG.trace(">>>Getting exclusive lock for configuration " + this.configurationId);
+            lock = db.createConfigurationLock("SftpReader-" + configurationId);
 
             LOG.trace(">>>Downloading and decrypting files");
             downloadNewFiles();
@@ -99,6 +107,16 @@ public class SftpReaderTask implements Runnable {
 
         } catch (Exception e) {
             LOG.error(">>>Fatal exception in SftpTask run, terminating this run", e);
+
+        } finally {
+            //release the configuration lock
+            if (lock != null) {
+                try {
+                    lock.releaseLock();
+                } catch (Exception ex) {
+                    LOG.error("", ex);
+                }
+            }
         }
     }
 
@@ -145,7 +163,7 @@ public class SftpReaderTask implements Runnable {
     private void initialise() throws Exception {
         this.dbInstanceConfiguration = configuration.getInstanceConfiguration();
         this.dbConfiguration = configuration.getConfiguration(configurationId);
-        this.db = new DataLayer(configuration.getDatabaseConnection());
+        this.db = configuration.getDataLayer();
         //checkLocalRootPathPrefixExists();
     }
 
@@ -372,11 +390,11 @@ public class SftpReaderTask implements Runnable {
         return file.length();
     }*/
 
-    private List<UnknownFile> getUnknownFiles() throws PgStoredProcException {
+    private List<UnknownFile> getUnknownFiles() throws Exception {
         return db.getUnknownFiles(dbConfiguration.getConfigurationId());
     }
 
-    private List<Batch> getIncompleteBatches() throws PgStoredProcException {
+    private List<Batch> getIncompleteBatches() throws Exception {
         LOG.trace(" Getting batches ready for validation and sequencing");
 
         List<Batch> incompleteBatches = db.getIncompleteBatches(dbConfiguration.getConfigurationId());
@@ -451,7 +469,8 @@ public class SftpReaderTask implements Runnable {
         List<BatchSplit> splitBatches = sftpBatchSplitter.splitBatch(batch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
 
         for (BatchSplit splitBatch: splitBatches) {
-            db.addBatchSplit(splitBatch, dbConfiguration.getConfigurationId());
+            splitBatch.setConfigurationId(dbConfiguration.getConfigurationId());
+            db.addBatchSplit(splitBatch);
         }
     }
 
@@ -462,7 +481,7 @@ public class SftpReaderTask implements Runnable {
         return lastCompleteBatch.getSequenceNumber() + 1;
     }
 
-    private void notifyEds() throws PgStoredProcException, SftpReaderException {
+    private void notifyEds() throws Exception {
 
         List<BatchSplit> unnotifiedBatchSplits = db.getUnnotifiedBatchSplits(dbConfiguration.getConfigurationId());
         LOG.debug("There are {} complete split batches for notification", unnotifiedBatchSplits.size());

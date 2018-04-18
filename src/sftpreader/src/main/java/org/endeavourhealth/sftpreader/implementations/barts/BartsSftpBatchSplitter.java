@@ -1,26 +1,19 @@
 package org.endeavourhealth.sftpreader.implementations.barts;
 
-import com.google.common.collect.Lists;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.QuoteMode;
-import org.apache.commons.io.FilenameUtils;
-import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.*;
-import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.nio.file.Files;
 import java.util.*;
 
 public class BartsSftpBatchSplitter extends SftpBatchSplitter {
     private static final Logger LOG = LoggerFactory.getLogger(BartsSftpBatchSplitter.class);
 
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //create a single batch split and return it
         List<BatchSplit> ret = new ArrayList<>();

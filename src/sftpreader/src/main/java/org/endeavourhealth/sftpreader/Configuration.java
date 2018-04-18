@@ -1,13 +1,14 @@
 package org.endeavourhealth.sftpreader;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.kstruct.gethostname4j.Hostname;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
-import org.endeavourhealth.common.config.ConfigManagerException;
-import org.endeavourhealth.common.postgres.PgDataSource;
-import org.endeavourhealth.common.postgres.PgStoredProcException;
-import org.endeavourhealth.common.postgres.logdigest.LogDigestAppender;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
+import org.endeavourhealth.sftpreader.model.MySqlDataLayer;
+import org.endeavourhealth.sftpreader.model.PostgresDataLayer;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstance;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
@@ -22,49 +23,54 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public final class Configuration {
-
-    // class members //
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
-    private static final String PROGRAM_CONFIG_MANAGER_NAME = "sftpreader";
+
+
     private static final String INSTANCE_NAME_JAVA_PROPERTY = "INSTANCE_NAME";
 
-    private volatile static Configuration instance = null;
+    private static Configuration instance = null;
 
     public static Configuration getInstance() throws Exception {
         if (instance == null) {
             synchronized (Configuration.class) {
-                if (instance == null)
+                if (instance == null) {
                     instance = new Configuration();
+                }
             }
         }
 
         return instance;
     }
 
-    // instance members //
-    private String postgresUrl;
-    private String postgresUsername;
-    private String postgresPassword;
-    private DataSource dataSource;
-
+    private DataLayerI cachedDataLayer = null;
     private String machineName;
     private String instanceName;
     private DbInstance dbInstanceConfiguration;
     private List<DbConfiguration> dbConfiguration;
 
     private Configuration() throws Exception {
-        initialiseConfigManager();
-        initialiseDBConnectionPool();
+        initialiseDataLayer();
         initialiseMachineName();
         retrieveInstanceName();
-        addHL7LogAppender();
+        //addHL7LogAppender();
         loadDbConfiguration();
     }
 
-    public String getMachineName() { return machineName; }
-    public String getInstanceName() { return instanceName; }
-    public List<DbConfiguration> getConfigurations() { return this.dbConfiguration; }
-    public DbInstance getInstanceConfiguration() { return this.dbInstanceConfiguration; }
+    public String getMachineName() {
+        return machineName;
+    }
+
+    public String getInstanceName() {
+        return instanceName;
+    }
+
+    public List<DbConfiguration> getConfigurations() {
+        return this.dbConfiguration;
+    }
+
+    public DbInstance getInstanceConfiguration() {
+        return this.dbInstanceConfiguration;
+    }
 
     private void initialiseMachineName() throws SftpReaderException {
         try {
@@ -88,40 +94,34 @@ public final class Configuration {
         }
     }
 
-    private void initialiseConfigManager() throws ConfigManagerException {
-        ConfigManager.Initialize(PROGRAM_CONFIG_MANAGER_NAME);
-
-        postgresUrl = ConfigManager.getConfiguration("postgres-url");
-        postgresUsername = ConfigManager.getConfiguration("postgres-username");
-        postgresPassword = ConfigManager.getConfiguration("postgres-password");
-    }
-
-    private void addHL7LogAppender() throws SftpReaderException {
+    /*private void addHL7LogAppender() throws SftpReaderException {
         try {
-            LogDigestAppender.addLogAppender(new DataLayer(getDatabaseConnection()));
+            LogDigestAppender.addLogAppender(new PostgresDataLayer(getDatabaseConnection()));
         } catch (Exception e) {
             throw new SftpReaderException("Error adding SFTP Reader log appender", e);
         }
-    }
+    }*/
 
-    private void loadDbConfiguration() throws PgStoredProcException, SQLException, SftpReaderException {
-        DataLayer dataLayer = new DataLayer(getDatabaseConnection());
+    private void loadDbConfiguration() throws Exception {
 
-        this.dbInstanceConfiguration = dataLayer.getInstanceConfiguration(this.instanceName, getMachineName());
+        DataLayerI dataLayer = getDataLayer();
+        this.dbInstanceConfiguration = dataLayer.getInstanceConfiguration(this.instanceName, this.machineName);
 
         this.dbConfiguration = new ArrayList<>();
 
-        for (String configurationId : this.dbInstanceConfiguration.getConfigurationIds())
-            this.dbConfiguration.add(dataLayer.getConfiguration(configurationId));
+        for (String configurationId : this.dbInstanceConfiguration.getConfigurationIds()) {
+            DbConfiguration configuration = dataLayer.getConfiguration(configurationId);
+            this.dbConfiguration.add(configuration);
+        }
     }
 
-    public DataSource getDatabaseConnection() throws SQLException {
-        return this.dataSource;
+    public DataLayerI getDataLayer() throws Exception {
+        return cachedDataLayer;
     }
 
-    public DataSource getNonPooledDatabaseConnection() throws SQLException {
-        return PgDataSource.get(postgresUrl, postgresUsername, postgresPassword);
-    }
+    /*public DataSource getNonPooledDatabaseConnection() throws SQLException {
+        return PgDataSource.get(dbUrl, dbUsername, dbPassword);
+    }*/
 
     public DbConfiguration getConfiguration(String configurationId) throws SftpReaderException {
         List<DbConfiguration> dbConfigurations = this.dbConfiguration
@@ -143,24 +143,37 @@ public final class Configuration {
         return StringHelper.replaceLast(commaSeperatedString, ",", " and");
     }
 
-    private synchronized void initialiseDBConnectionPool() throws SftpReaderException {
-        try {
-            if (this.dataSource == null) {
+    private synchronized void initialiseDataLayer() throws Exception {
 
-                HikariDataSource hikariDataSource = new HikariDataSource();
-                hikariDataSource.setJdbcUrl(postgresUrl);
-                hikariDataSource.setUsername(postgresUsername);
-                hikariDataSource.setPassword(postgresPassword);
-                hikariDataSource.setDriverClassName("org.postgresql.Driver");
-                hikariDataSource.setMaximumPoolSize(5);
-                hikariDataSource.setMinimumIdle(1);
-                hikariDataSource.setIdleTimeout(60000);
-                hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
+        String dbUrl = null;
+        String dbUsername = null;
+        String dbPassword = null;
+        String dbDriverClassName = null;
 
-                this.dataSource = hikariDataSource;
-            }
-        } catch (Exception e) {
-            throw new SftpReaderException("Error creating Hikari connection pool", e);
+        //new settings are stored in a single JSON structure, but old settings are stored in three separate records
+        JsonNode json = ConfigManager.getConfigurationAsJson("database");
+        if (json == null) {
+            dbUrl = ConfigManager.getConfiguration("postgres-url");
+            dbUsername = ConfigManager.getConfiguration("postgres-username");
+            dbPassword = ConfigManager.getConfiguration("postgres-password");
+            dbDriverClassName = "org.postgresql.Driver";
+
+        } else {
+            dbUrl = json.get("url").asText();
+            dbUsername = json.get("username").asText();
+            dbPassword = json.get("password").asText();
+            dbDriverClassName = json.get("class").asText();
         }
+
+        //bit of a lazy way to check, but it works
+        if (dbDriverClassName.contains("postgresql")) {
+            this.cachedDataLayer = new PostgresDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
+
+        } else {
+            this.cachedDataLayer = new MySqlDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
+        }
+
+
+
     }
 }

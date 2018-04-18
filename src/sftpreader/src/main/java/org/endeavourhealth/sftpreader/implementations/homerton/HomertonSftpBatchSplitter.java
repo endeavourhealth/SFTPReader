@@ -1,7 +1,8 @@
 package org.endeavourhealth.sftpreader.implementations.homerton;
 
 import org.apache.commons.csv.CSVFormat;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
@@ -28,7 +29,7 @@ public class HomertonSftpBatchSplitter extends SftpBatchSplitter {
      * No further splitting into sub-batches for Homerton
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         List<BatchSplit> ret = new ArrayList<>();
 

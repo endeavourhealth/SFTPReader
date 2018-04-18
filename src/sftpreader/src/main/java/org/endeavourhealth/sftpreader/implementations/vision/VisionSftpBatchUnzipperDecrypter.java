@@ -2,7 +2,8 @@ package org.endeavourhealth.sftpreader.implementations.vision;
 
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchUnzipperDecrypter;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.ZipUtil;
@@ -19,7 +20,7 @@ public class VisionSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(VisionSftpBatchUnzipperDecrypter.class);
 
     @Override
-    public void unzipAndDecrypt(Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws Exception {
+    public void unzipAndDecrypt(Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws Exception {
 
         //Vision files are zips so need unzipping
 

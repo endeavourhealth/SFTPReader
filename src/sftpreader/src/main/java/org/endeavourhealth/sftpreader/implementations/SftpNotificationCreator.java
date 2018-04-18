@@ -4,20 +4,20 @@ import com.google.common.base.Strings;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class SftpNotificationCreator {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpNotificationCreator.class);
 
-    public abstract String createNotificationMessage(String organisationId, DataLayer db, DbInstanceEds instanceConfiguration,
+    public abstract String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                                      DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception;
 
 

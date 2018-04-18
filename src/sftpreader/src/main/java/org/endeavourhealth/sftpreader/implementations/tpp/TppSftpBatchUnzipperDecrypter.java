@@ -1,17 +1,15 @@
 package org.endeavourhealth.sftpreader.implementations.tpp;
 
 import net.lingala.zip4j.core.ZipFile;
-import net.lingala.zip4j.exception.ZipException;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchUnzipperDecrypter;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchFile;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
-import org.endeavourhealth.sftpreader.utilities.PgpUtil;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -24,7 +22,7 @@ public class TppSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(TppSftpBatchUnzipperDecrypter.class);
 
     @Override
-    public void unzipAndDecrypt(Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws Exception {
+    public void unzipAndDecrypt(Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws Exception {
 
         //the main TPP extract file is in a multipart zip file, so we need to copy the parts to local disk then unzip
         String tempRootDir = instanceConfiguration.getTempDirectory();

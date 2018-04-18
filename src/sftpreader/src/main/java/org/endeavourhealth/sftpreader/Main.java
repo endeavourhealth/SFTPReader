@@ -9,6 +9,7 @@ import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.ods.OdsOrganisation;
 import org.endeavourhealth.common.ods.OdsWebService;
@@ -42,6 +43,8 @@ public class Main {
 
 	public static void main(String[] args) {
 		try {
+            ConfigManager.Initialize("sftpreader");
+
             configuration = Configuration.getInstance();
 
 
@@ -109,30 +112,24 @@ public class Main {
                 }
             }*/
 
-            PgAppLock pgAppLock = new PgAppLock(configuration.getInstanceName(), configuration.getNonPooledDatabaseConnection());
-            try {
+            LOG.info("--------------------------------------------------");
+            LOG.info(PROGRAM_DISPLAY_NAME);
+            LOG.info("--------------------------------------------------");
 
-                LOG.info("--------------------------------------------------");
-                LOG.info(PROGRAM_DISPLAY_NAME);
-                LOG.info("--------------------------------------------------");
+            LOG.info("Instance " + configuration.getInstanceName() + " on host " + configuration.getMachineName());
+            LOG.info("Processing configuration(s): " + configuration.getConfigurationIdsForDisplay());
 
-                LOG.info("Instance " + configuration.getInstanceName() + " on host " + configuration.getMachineName());
-                LOG.info("Processing configuration(s): " + configuration.getConfigurationIdsForDisplay());
+            /*slackNotifier = new SlackNotifier(configuration);
+            slackNotifier.notifyStartup();*/
 
-                /*slackNotifier = new SlackNotifier(configuration);
-                slackNotifier.notifyStartup();*/
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown()));
 
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown()));
+            managementService = new ManagementService(configuration);
+            managementService.start();
 
-                managementService = new ManagementService(configuration);
-                managementService.start();
+            sftpReaderTaskScheduler = new SftpReaderTaskScheduler(configuration);
+            sftpReaderTaskScheduler.start();
 
-                sftpReaderTaskScheduler = new SftpReaderTaskScheduler(configuration);
-                sftpReaderTaskScheduler.start();
-
-            } finally {
-                pgAppLock.releaseLock();
-            }
         } catch (ConfigManagerException cme) {
             printToErrorConsole("Fatal exception occurred initializing ConfigManager", cme);
             LOG.error("Fatal exception occurred initializing ConfigManager", cme);

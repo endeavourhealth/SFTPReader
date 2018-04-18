@@ -3,7 +3,8 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchUnzipperDecrypter;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchFile;
@@ -19,7 +20,7 @@ public class EmisSftpBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmisSftpBatchUnzipperDecrypter.class);
 
     @Override
-    public void unzipAndDecrypt(Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayer db) throws Exception {
+    public void unzipAndDecrypt(Batch batch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws Exception {
 
         //Emis files are PGP encrypted, so we need to decrypt them
 

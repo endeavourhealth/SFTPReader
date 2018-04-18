@@ -1,26 +1,14 @@
 package org.endeavourhealth.sftpreader.implementations.emis;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
-import org.endeavourhealth.common.eds.EdsSenderResponse;
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpNotificationCreator;
 import org.endeavourhealth.sftpreader.model.db.*;
-
-import java.io.File;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 public class EmisSftpNotificationCreator extends SftpNotificationCreator {
 
     @Override
-    public String createNotificationMessage(String organisationId, DataLayer db, DbInstanceEds instanceConfiguration,
+    public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
         return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit, "csv");

@@ -28,6 +28,8 @@ public class ManagementRestEndpoint {
     }
 
     private ManagementDataLayer getDataLayer() throws Exception {
-        return new ManagementDataLayer(Configuration.getInstance().getDatabaseConnection());
+        //not carrying this over with the MySQL migration, since it's not finished as it stands
+        return null;
+        //return new ManagementDataLayer(Configuration.getInstance().getDatabaseDataSource());
     }
 }

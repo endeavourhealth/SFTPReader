@@ -1,6 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.vision;
 
-import org.endeavourhealth.sftpreader.DataLayer;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
+
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
@@ -20,7 +21,7 @@ public class VisionSftpBatchSplitter extends SftpBatchSplitter {
      * No further splitting into sub-batches for Vision as single practice batches
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayer db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         List<BatchSplit> ret = new ArrayList<>();
 

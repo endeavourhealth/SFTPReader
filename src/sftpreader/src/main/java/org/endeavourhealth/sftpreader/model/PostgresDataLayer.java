@@ -1,10 +1,15 @@
-package org.endeavourhealth.sftpreader;
+package org.endeavourhealth.sftpreader.model;
 
+import com.google.common.base.Strings;
+import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.pool.ProxyConnection;
+import org.endeavourhealth.common.postgres.PgDataSource;
 import org.endeavourhealth.common.postgres.PgResultSet;
 import org.endeavourhealth.common.postgres.PgStoredProc;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.IDBDigestLogger;
 import org.endeavourhealth.common.utility.StreamExtension;
+import org.endeavourhealth.sftpreader.SftpFile;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.slf4j.LoggerFactory;
 
@@ -13,21 +18,39 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-public class DataLayer implements IDBDigestLogger {
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(DataLayer.class);
+public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PostgresDataLayer.class);
 
+    private String dbUrl;
+    private String dbUsername;
+    private String dbPassword;
+    private String dbDriverClassName;
     private DataSource dataSource;
 
-    public DataLayer(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public PostgresDataLayer(String dbUrl, String dbUsername, String dbPassword, String dbDriverClassName) throws Exception {
+        this.dbUrl = dbUrl;
+        this.dbUsername = dbUsername;
+        this.dbPassword = dbPassword;
+        this.dbDriverClassName = dbDriverClassName;
+
+        Class.forName(dbDriverClassName);
+
+        HikariDataSource hikariDataSource = new HikariDataSource();
+        hikariDataSource.setJdbcUrl(dbUrl);
+        hikariDataSource.setUsername(dbUsername);
+        hikariDataSource.setPassword(dbPassword);
+        hikariDataSource.setDriverClassName(dbDriverClassName);
+        hikariDataSource.setMaximumPoolSize(5);
+        hikariDataSource.setMinimumIdle(1);
+        hikariDataSource.setIdleTimeout(60000);
+        hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
+
+        this.dataSource = hikariDataSource;
     }
 
     public DbInstance getInstanceConfiguration(String instanceName, String hostname) throws PgStoredProcException {
@@ -339,11 +362,11 @@ public class DataLayer implements IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void addBatchSplit(BatchSplit batchSplit, String configurationId) throws PgStoredProcException {
+    public void addBatchSplit(BatchSplit batchSplit) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.add_batch_split")
                 .addParameter("_batch_id", batchSplit.getBatchId())
-                .addParameter("_configuration_id", configurationId)
+                .addParameter("_configuration_id", batchSplit.getConfigurationId())
                 .addParameter("_local_relative_path", batchSplit.getLocalRelativePath())
                 .addParameter("_organisation_id", batchSplit.getOrganisationId());
 
@@ -372,7 +395,7 @@ public class DataLayer implements IDBDigestLogger {
     /*
     * quick and dirty function to get the name for an org ODS code
     **/
-    public String findEmisOrgNameFromOdsCode(String odsCode) {
+    public EmisOrganisationMap getEmisOrganisationMapForOdsCode(String odsCode) {
         Connection connection = null;
 
         try {
@@ -381,20 +404,28 @@ public class DataLayer implements IDBDigestLogger {
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("select name from configuration.emis_organisation_map where ods_code = '" + odsCode + "';");
 
-            String ret = null;
+            String name = null;
 
             //we have multiple names for some orgs in production (e.g. F84636),
             //so return the name with the longest length (for the sake of having some way to choose
             //something more interesting that just "The Surgery")
             while (rs.next()) {
                 String s = rs.getString(1);
-                if (ret == null
-                        || s.length() > ret.length()) {
-                    ret = s;
+                if (name == null
+                        || s.length() > name.length()) {
+                    name = s;
                 }
             }
 
-            return ret;
+            if (!Strings.isNullOrEmpty(name)) {
+                EmisOrganisationMap ret = new EmisOrganisationMap();
+                ret.setName(name);
+                ret.setOdsCode(odsCode);
+                return ret;
+
+            } else {
+                return null;
+            }
 
         } catch (Exception ex) {
             LOG.error("Error getting name for ODS code " + odsCode, ex);
@@ -422,9 +453,6 @@ public class DataLayer implements IDBDigestLogger {
 
             List<BatchSplit> ret = new ArrayList<>();
 
-            //we have multiple names for some orgs in production (e.g. F84636),
-            //so return the name with the longest length (for the sake of having some way to choose
-            //something more interesting that just "The Surgery")
             while (rs.next()) {
                 int col = 1;
                 int batchSplitId = rs.getInt(col++);
@@ -471,7 +499,8 @@ public class DataLayer implements IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public TppOrganisationMap findTppOrgNameFromOdsCode(String queryOdsCode) throws Exception {
+    @Override
+    public TppOrganisationMap getTppOrgNameFromOdsCode(String queryOdsCode) throws Exception {
         Connection connection = null;
 
         try {
@@ -505,5 +534,16 @@ public class DataLayer implements IDBDigestLogger {
                 }
             }
         }
+    }
+
+    @Override
+    public ConfigurationLockI createConfigurationLock(String lockName) throws Exception {
+
+        //the lock uses a single connection over a long period of time, so we want a connection
+        //that's not managed by the connection pool
+        DataSource nonPooledSource = PgDataSource.get(dbUrl, dbUsername, dbPassword);
+        Connection connection = nonPooledSource.getConnection();
+
+        return new PostgresConfigurationLock(lockName, connection);
     }
 }
