@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 
-import org.endeavourhealth.sftpreader.model.MySqlDataLayerTmp;
+import org.endeavourhealth.sftpreader.model.MySqlDataLayer;
 import org.endeavourhealth.sftpreader.model.PostgresDataLayer;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstance;
@@ -167,7 +167,7 @@ public final class Configuration {
             this.cachedDataLayer = new PostgresDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
 
         } else {
-            this.cachedDataLayer = new MySqlDataLayerTmp(dbUrl, dbUsername, dbPassword, dbDriverClassName);
+            this.cachedDataLayer = new MySqlDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
         }
 
 
