@@ -9,21 +9,19 @@ import org.apache.http.Header;
 import org.endeavourhealth.common.eds.EdsSender;
 import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
-import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.implementations.*;
 import org.endeavourhealth.sftpreader.model.ConfigurationLockI;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
-
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.sources.Connection;
 import org.endeavourhealth.sftpreader.sources.ConnectionActivator;
 import org.endeavourhealth.sftpreader.sources.ConnectionDetails;
-import org.endeavourhealth.sftpreader.utilities.*;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -193,6 +191,8 @@ public class SftpReaderTask implements Runnable {
 
             for (RemoteFile remoteFile : remoteFiles) {
                 SftpFile batchFile = instantiateSftpBatchFile(remoteFile);
+
+                LOG.debug("File: "+batchFile.getFilename()+" , Needed? -> "+batchFile.isFileNeeded());
 
                 if (!batchFile.isFileNeeded()) {
                     LOG.trace("   Filename not needed, skipping: " + batchFile.getFilename());

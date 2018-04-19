@@ -50,7 +50,7 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     public boolean isFileNeeded(){
-        return this.isFileNeeded;
+        return isFileNeeded;
     }
 
     @Override
@@ -96,10 +96,10 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         this.fileTypeIdentifier = fileType;
 
         // Exclude FULL extracts as everything is supplied in INCREMENTAL extracts
-        LOG.info("Filename: "+fileName+" has fileType = "+fileType);
         if (fileType.equals("FULL")) {
-            this.isFileNeeded = false;
-            LOG.info("So file is not needed");
+
+            LOG.debug("Parser -> File: "+fileName+", isFileNeeded set to false");
+            isFileNeeded = false;
         }
 
         if (StringUtils.isEmpty(fileContentType))
