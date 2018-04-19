@@ -5,6 +5,8 @@ import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,6 +23,8 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     private String serviceIdentifier;
     private String formatIdentifier;
     private boolean isFileNeeded = true;
+
+    private static final Logger LOG = LoggerFactory.getLogger(VisionSftpFilenameParser.class);
 
     /*public VisionSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
@@ -91,6 +95,13 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
 
         this.fileTypeIdentifier = fileType;
 
+        // Exclude FULL extracts as everything is supplied in INCREMENTAL extracts
+        LOG.info("Filename: "+fileName+" has fileType = "+fileType);
+        if (fileType.equals("FULL")) {
+            this.isFileNeeded = false;
+            LOG.info("So file is not needed");
+        }
+
         if (StringUtils.isEmpty(fileContentType))
             throw new SftpFilenameParseException("ContentType is empty");
 
@@ -120,8 +131,5 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         //this will be a .zip for Vision extract files
         if (!StringUtils.endsWith(fileName, ".zip"))
             throw new SftpFilenameParseException("File does not end with .zip");
-
-        // Exclude FULL extracts as everything is supplied in INCREMENTAL extracts
-        this.isFileNeeded = !this.fileTypeIdentifier.equalsIgnoreCase("FULL");
     }
 }
