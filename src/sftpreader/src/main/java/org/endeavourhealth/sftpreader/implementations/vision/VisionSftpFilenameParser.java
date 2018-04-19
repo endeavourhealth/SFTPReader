@@ -22,7 +22,7 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
     private String nacsCode;
     private String serviceIdentifier;
     private String formatIdentifier;
-    private boolean isFileNeeded = true;
+    private boolean isFileNeeded;
 
     private static final Logger LOG = LoggerFactory.getLogger(VisionSftpFilenameParser.class);
 
@@ -97,10 +97,12 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
 
         // Exclude FULL extracts as everything is supplied in INCREMENTAL extracts
         if (fileType.equals("FULL")) {
-
-            LOG.debug("Parser -> File: "+fileName+", isFileNeeded set to false");
-            isFileNeeded = false;
+            this.isFileNeeded = false;
+        } else {
+            this.isFileNeeded = true;
         }
+
+        LOG.debug("Filename: "+fileName+" needed? -> "+this.isFileNeeded());
 
         if (StringUtils.isEmpty(fileContentType))
             throw new SftpFilenameParseException("ContentType is empty");
