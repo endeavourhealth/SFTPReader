@@ -192,8 +192,6 @@ public class SftpReaderTask implements Runnable {
             for (RemoteFile remoteFile : remoteFiles) {
                 SftpFile batchFile = instantiateSftpBatchFile(remoteFile);
 
-                LOG.debug("File: "+batchFile.getFilename()+" , Needed? -> "+batchFile.isFileNeeded());
-
                 if (!batchFile.isFileNeeded()) {
                     LOG.trace("   Filename not needed, skipping: " + batchFile.getFilename());
                     continue;

@@ -102,8 +102,6 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
             this.isFileNeeded = true;
         }
 
-        LOG.debug("Filename: "+fileName+" needed? -> "+this.isFileNeeded());
-
         if (StringUtils.isEmpty(fileContentType))
             throw new SftpFilenameParseException("ContentType is empty");
 
