@@ -55,7 +55,7 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     public boolean ignoreUnknownFileTypes() {
-        return false;
+        return true;  //to ignore the .csv as part of test
     }
 
     /*@Override
@@ -76,6 +76,11 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
 
         // get the three main parts of the filename
         String fileName = this.remoteFile.getFilename();
+
+        //this will be a .zip for Vision extract files
+        if (!StringUtils.endsWith(fileName, ".zip"))
+            throw new SftpFilenameParseException("Filename does not end with .zip");
+
         String[] parts = fileName.split("-", 3);
         if (parts.length != 3)
             throw new SftpFilenameParseException("Vision batch filename could not be parsed");
@@ -128,8 +133,5 @@ public class VisionSftpFilenameParser extends SftpFilenameParser {
         extractDateTime = extractDateTime.replace("-","");
         this.extractDateTime = LocalDateTime.parse(extractDateTime, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
-        //this will be a .zip for Vision extract files
-        if (!StringUtils.endsWith(fileName, ".zip"))
-            throw new SftpFilenameParseException("File does not end with .zip");
     }
 }
