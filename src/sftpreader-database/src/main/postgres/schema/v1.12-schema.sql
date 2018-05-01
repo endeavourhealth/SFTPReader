@@ -10,7 +10,7 @@ ADD shared_storage_path varchar(255);
 -- move data from old storage place to new
 UPDATE configuration.eds
 SET shared_storage_path = local_root_path_prefix
-FROM configuration.configuration
+FROM configuration.configuration;
 
 -- drop old storage place column
 ALTER TABLE configuration.configuration
