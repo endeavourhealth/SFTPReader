@@ -23,10 +23,10 @@ public class HomertonSftpBatchValidator extends SftpBatchValidator {
         Validate.notNull(dbConfiguration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
         Validate.notEmpty(dbConfiguration.getInterfaceFileTypes(), "No interface file types configured");
 
-        // Assumption is one file per batch only
-        if (incompleteBatch.getBatchFiles().size() != 1) {
-            throw new SftpValidationException("Incorrect number of files in batch. Batch identifier = " + incompleteBatch.getBatchIdentifier());
-        }
+        // Number of files in batch not checked
+        //if (incompleteBatch.getBatchFiles().size() != 1) {
+          //  throw new SftpValidationException("Incorrect number of files in batch. Batch identifier = " + incompleteBatch.getBatchIdentifier());
+        //}
 
         return true;
     }
