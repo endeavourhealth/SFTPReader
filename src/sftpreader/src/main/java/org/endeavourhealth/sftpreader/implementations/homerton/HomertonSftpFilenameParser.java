@@ -14,10 +14,22 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     //private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
     //private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
+
+    public static final String FILE_TYPE_ALLERGY = "ALLERGY";
+    public static final String FILE_TYPE_CLINEVENT = "CLINEVENT";
     public static final String FILE_TYPE_PATIENT = "PATIENT";
     public static final String FILE_TYPE_PROCEDURE = "PROCEDURE";
     public static final String FILE_TYPE_DIAGNOSIS = "DIAGNOSIS";
+    public static final String FILE_TYPE_LOCATION = "LOCATION";
+    public static final String FILE_TYPE_LOCATION_GROUP = "LOCATIONGROUP";
+
+    public static final String FILE_TYPE_ENCOUNTER_ALIAS = "ENCALI";
+    public static final String FILE_TYPE_ENCOUNTER_PRSNL_RELTN = "ENCPRSNLRELTN";
+    public static final String FILE_TYPE_ENCOUNTER_SLICE = "ENCNTRSLICE";
+
+    public static final String FILE_TYPE_PERSON_ALIAS = "PERSONALIAS";
     public static final String FILE_TYPE_PROBLEM = "PROBLEM";
+
     public static final String FILE_TYPE_ENCOUNTER = "ENCOUNTER";
     public static final String FILE_TYPE_CODES = "CODES";
 
@@ -99,9 +111,17 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         String filenamePart2 = parts[1];
         extractDate = LocalDateTime.of(Integer.parseInt(filenamePart2.substring(0, 4)), Integer.parseInt(filenamePart2.substring(4, 6)), Integer.parseInt(filenamePart2.substring(6)), 0, 0);
 
-        if (filenamePart1.compareToIgnoreCase("PATIENT") == 0) {
+        if (filenamePart1.compareToIgnoreCase("ALLERGY") == 0) {
+            fileTypeIdentifier = FILE_TYPE_ALLERGY;
+            batchGroup = FILE_TYPE_ALLERGY;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("PATIENT") == 0) {
             fileTypeIdentifier = FILE_TYPE_PATIENT;
             batchGroup = FILE_TYPE_PATIENT;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("CLINEVENT") == 0) {
+            fileTypeIdentifier = FILE_TYPE_CLINEVENT;
+            batchGroup = FILE_TYPE_CLINEVENT;
             fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("CODES") == 0) {
             fileTypeIdentifier = FILE_TYPE_CODES;
@@ -114,6 +134,30 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         } else if (filenamePart1.compareToIgnoreCase("ENCOUNTER") == 0) {
             fileTypeIdentifier = FILE_TYPE_ENCOUNTER;
             batchGroup = FILE_TYPE_ENCOUNTER;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("ENCALI") == 0) {
+            fileTypeIdentifier = FILE_TYPE_ENCOUNTER_ALIAS;
+            batchGroup = FILE_TYPE_ENCOUNTER_ALIAS;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("ENCPRSNLRELTN") == 0) {
+            fileTypeIdentifier = FILE_TYPE_ENCOUNTER_PRSNL_RELTN;
+            batchGroup = FILE_TYPE_ENCOUNTER_PRSNL_RELTN;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("ENCNTRSLICE") == 0) {
+            fileTypeIdentifier = FILE_TYPE_ENCOUNTER_SLICE;
+            batchGroup = FILE_TYPE_ENCOUNTER_SLICE;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("LOCATION") == 0) {
+            fileTypeIdentifier = FILE_TYPE_LOCATION;
+            batchGroup = FILE_TYPE_LOCATION;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("LOCATIONGROUP") == 0) {
+            fileTypeIdentifier = FILE_TYPE_LOCATION_GROUP;
+            batchGroup = FILE_TYPE_LOCATION_GROUP;
+            fileUniqueId = filenamePart2;
+        } else if (filenamePart1.compareToIgnoreCase("PERSONALIAS") == 0) {
+            fileTypeIdentifier = FILE_TYPE_PERSON_ALIAS;
+            batchGroup = FILE_TYPE_PERSON_ALIAS;
             fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("PROBLEM") == 0) {
             fileTypeIdentifier = FILE_TYPE_PROBLEM;
