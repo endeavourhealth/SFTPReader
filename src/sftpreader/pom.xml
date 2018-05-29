@@ -20,7 +20,7 @@
         <endeavour-postgres.version>1.09-SNAPSHOT</endeavour-postgres.version>
         <endeavour-utility.version>1.23-SNAPSHOT</endeavour-utility.version>
         <endeavour-edsclient.version>1.0-SNAPSHOT</endeavour-edsclient.version>
-        <endeavour-fhir.version>1.51-SNAPSHOT</endeavour-fhir.version>
+        <endeavour-fhir.version>1.56-SNAPSHOT</endeavour-fhir.version>
         <eds-datasharing.version>0.0.2-SNAPSHOT</eds-datasharing.version>
 
         <bouncy-castle.version>1.56</bouncy-castle.version>

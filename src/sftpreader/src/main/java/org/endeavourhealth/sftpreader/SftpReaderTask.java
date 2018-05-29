@@ -654,9 +654,14 @@ public class SftpReaderTask implements Runnable {
 
     private void sendSlackAlert(int batchSplitId, String organisationId, String errorMessage) throws Exception {
 
+        String publisherSoftware = dbConfiguration.getSoftwareContentType(); //e.g. EMISCSV, VISIONCSV
         SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration);
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
-        String message = "Exception notifying batch for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
+
+        //LOG.info("Going to send Slack alert about batch " + batchSplitId + " and org ID [" + organisationId + "] and software [" + publisherSoftware + "]: " + errorMessage);
+        //LOG.info("Got org name " + organisationName + " from " + orgHelper.getClass().getName());
+
+        String message = "Exception notifying " + publisherSoftware + " batch for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
 
         SlackNotifier slackNotifier = new SlackNotifier(configuration);
         slackNotifier.postMessage(message);
