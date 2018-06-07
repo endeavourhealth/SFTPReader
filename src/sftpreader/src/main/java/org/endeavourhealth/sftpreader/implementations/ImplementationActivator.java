@@ -1,17 +1,11 @@
 package org.endeavourhealth.sftpreader.implementations;
 
-import org.endeavourhealth.sftpreader.implementations.barts.*;
-import org.endeavourhealth.sftpreader.implementations.emis.*;
-import org.endeavourhealth.sftpreader.implementations.homerton.*;
-import org.endeavourhealth.sftpreader.implementations.vision.*;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class ImplementationActivator {
     private static final Logger LOG = LoggerFactory.getLogger(ImplementationActivator.class);
@@ -32,6 +26,9 @@ public class ImplementationActivator {
 
         } else if (contentType.equalsIgnoreCase("TPPCSV")) {
             return "org.endeavourhealth.sftpreader.implementations.tpp.Tpp";
+
+        } else if (contentType.equalsIgnoreCase("ADASTRACSV")) {
+            return "org.endeavourhealth.sftpreader.implementations.adastra.Adastra";
 
         } else {
             throw new Exception("Unknown content type [" + contentType + "]");
