@@ -32,42 +32,11 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_2_SPFIT = "2.2_SPFIT"; //Surginet ???
     public static final String TYPE_2_2_CC = "2.2_CC"; //Critial Care
     public static final String TYPE_2_2_HDB = "2.2_HDB"; //Home Delivery and Birth
-
+    public static final String TYPE_2_2_FAMILY_HISTORY = "2.2_FAMILY_HISTORY";
 
     private String fileTypeIdentifier;
     private LocalDate extractDate;
     private boolean isFileNeeded;
-
-    /*public static final String FILE_TYPE_SUSOPA = "SUSOPA";
-    public static final String FILE_TYPE_SUSAEA = "SUSAEA";
-    public static final String FILE_TYPE_SUSIP = "SUSIP";
-    public static final String FILE_TYPE_TAILIP = "TAILIP";
-    public static final String FILE_TYPE_TAILOPA = "TAILOPA";
-    public static final String FILE_TYPE_TAILAEA = "TAILAEA";
-
-    public static final String FILE_TYPE_BULK_SUSOPA = "BULKSUSOPA";
-    public static final String FILE_TYPE_BULK_SUSAEA = "BULKSUSAEA";
-    public static final String FILE_TYPE_BULK_SUSIP = "BULKSUSIP";
-    public static final String FILE_TYPE_BULK_TAILIP = "BULKTAILIP";
-    public static final String FILE_TYPE_BULK_TAILOPA = "BULKTAILOPA";
-    public static final String FILE_TYPE_BULK_TAILAEA = "BULKTAILAEA";
-    public static final String FILE_TYPE_BULK_BIRTH = "BULKBIRTH";
-    public static final String FILE_TYPE_BULK_PREGNANCY = "BULKPREGNANCY";
-    public static final String FILE_TYPE_BULK_PROBLEMS= "BULKPROBLEM";
-    public static final String FILE_TYPE_BULK_DIAGNOSIS = "BULKDIAGNOSIS";
-    public static final String FILE_TYPE_BULK_PROCEDURE = "BULKPROCEDURE";
-
-    public static final String BATCH_GROUP_BULK_MATERNITY= "BULKMATERNITY";
-
-    private String fileTypeIdentifier;
-    private String fileUniqueId;
-    private String batchGroup;
-*/
-
-
-    /*public BartsSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
-        super(filename, dbConfiguration, fileExtension);
-    }*/
 
     public BartsSftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
         super(remoteFile, dbConfiguration);
@@ -77,7 +46,6 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     public String generateBatchIdentifier() {
         //batch the extract files by date
         return BATCH_IDENTIFIER_FORMAT.format(extractDate);
-        //return batchGroup + "#" + fileUniqueId;
     }
 
     @Override
@@ -96,11 +64,6 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         return false;
         //return true;
     }
-
-    /*@Override
-    public boolean requiresDecryption() {
-        return false;
-    }*/
 
     public static LocalDate parseBatchIdentifier(String batchIdentifier) {
         return LocalDate.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
@@ -143,7 +106,10 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip.filepart")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_PHONE.zip")
-                || fileName.equals("PI_CDE_PROCEDURE.zip")) {
+                || fileName.equals("PI_CDE_PROCEDURE.zip")
+                || fileName.equals("V500_Event_Set_Code.xlsx")
+                || fileName.equals("V500_event_code.xlsx")
+                || fileName.equals("V500_other_table_contents.xlsx")) {
             isFileNeeded = false;
             return;
         }
@@ -245,6 +211,21 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
             String tok4 = toks[3].substring(0, 10);
             extractDate = LocalDate.parse(tok4, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        } else if (tok1.equalsIgnoreCase("Fam")) {
+            if (toks.length != 4) {
+                throw new SftpFilenameParseException("Expecting four elements in filename starting Fam [" + fileName + "]");
+            }
+
+            String tok2 = toks[1];
+            if (!tok2.equalsIgnoreCase("Hist")) {
+                throw new SftpFilenameParseException("Expecting Hist elements in filename starting Fam [" + fileName + "]");
+            }
+
+            fileTypeIdentifier = TYPE_2_2_FAMILY_HISTORY;
+
+            String tok3 = toks[2];
+            extractDate = LocalDate.parse(tok3, DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         } else {
             this.fileTypeIdentifier = tok1;
