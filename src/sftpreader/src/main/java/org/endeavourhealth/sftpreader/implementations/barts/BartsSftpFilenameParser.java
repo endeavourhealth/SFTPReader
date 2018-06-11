@@ -89,24 +89,30 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_LKP_CDE_CODE_VALUE_REF.zip")
                 || fileName.equals("PI_CDE_AE_ATTENDANCE.zip")
                 || fileName.equals("PI_CDE_CLINICAL_EVENT.zip")
-                || fileName.equals("PI_CDE_CLINICAL_EVENT.zip.filepart")
+
                 || fileName.equals("PI_CDE_DIAGNOSIS.zip")
-                || fileName.equals("PI_CDE_DIAGNOSIS.zip.filepart")
                 || fileName.equals("PI_CDE_ENCOUNTER.zip")
                 || fileName.equals("PI_CDE_ENCOUNTER_INFO.zip")
                 || fileName.equals("PI_CDE_IP_EPISODE.zip")
                 || fileName.equals("PI_CDE_IP_WARDSTAY.zip")
                 || fileName.equals("PI_CDE_OP_ATTENDANCE.zip")
-                || fileName.equals("PI_CDE_OP_ATTENDANCE.zip.filepart")
                 || fileName.equals("PI_CDE_PERSON_PATIENT.zip")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_ADDRESS.zip")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_ALIAS.zip")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_INFO.zip")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_NAME.zip")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip")
+                || fileName.equals("PI_CDE_PERSON_PATIENT_PHONE.zip") // PPPHO bulk 2018-03-09 500MB - TODO extract into S3 and add to extract
+                || fileName.equals("PI_CDE_PROCEDURE.zip") //PROCE bulk file 2018-03-09 600MB - TODO extract into S3 and add to extract
+                || fileName.equals("PI_LKP_CDE_ORG_REF_Dump20180611.zip") //ORGREF bulk 2018/06/11 - TODO extract into S3 and schedule in extract
+
+                //these are artefacts of the copying and can be ignored
+                || fileName.equals("PI_CDE_CLINICAL_EVENT.zip.filepart")
+                || fileName.equals("PI_CDE_DIAGNOSIS.zip.filepart")
+                || fileName.equals("PI_CDE_OP_ATTENDANCE.zip.filepart")
                 || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip.filepart")
-                || fileName.equals("PI_CDE_PERSON_PATIENT_PHONE.zip")
-                || fileName.equals("PI_CDE_PROCEDURE.zip")
+
+                //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
                 || fileName.equals("V500_event_code.xlsx")
                 || fileName.equals("V500_other_table_contents.xlsx")) {
