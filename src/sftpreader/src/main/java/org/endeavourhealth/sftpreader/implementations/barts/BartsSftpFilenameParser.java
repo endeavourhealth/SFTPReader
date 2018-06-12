@@ -89,19 +89,19 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_CDE_DIAGNOSIS.zip") //DIAGN 2018/03/09 980MB - copied as DIAGN_80130_RNJ_09032018_999999_2.TXT
                 || fileName.equals("PI_CDE_PROCEDURE.zip") //PROCE bulk file 2018/03/09 600MB - copied as PROCE_80130_RNJ_09032018_999999_2.TXT
                 || fileName.equals("PI_CDE_CLINICAL_EVENT.zip") //CLEVE 2018/03/12 - file was corrupt, so cannot be processed
-                || fileName.equals("PI_CDE_ENCOUNTER.zip") //ENCNT 2018/03/09 3GB - copied as ENCNT_80130_RNJ_09032018_999999_5.TXT
-                || fileName.equals("PI_CDE_ENCOUNTER_INFO.zip") //ENCINF 2018/03/09 6GB - copied as ENCINF_80130_RNJ_09032018_999999_3.TXT
-                || fileName.equals("PI_CDE_OP_ATTENDANCE.zip") //OPATT 2018/03/09 2GB - copied as OPATT_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_AE_ATTENDANCE.zip") //AEATT 2018/03/09 700MB - copied to AEATT_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_IP_EPISODE.zip") //IPEPI 2018/03/09 200MB - copied to IPEPI_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_IP_WARDSTAY.zip") //IPWDS 2018/03/09 300MB - copied to IPWDS_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_PERSON_PATIENT_NAME.zip") //PPNAM 2018/03/09 400MB - copied to PPNAM_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_PERSON_PATIENT_PHONE.zip") //PPPHO 2018/03/09 500MB - copied to PPPHO_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_PERSON_PATIENT_ADDRESS.zip") //PPADD 2018/03/09 500MB - copied to PPADD_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_PERSON_PATIENT_ALIAS.zip") //PPALI 2018/09/09 700MB - copied to PPALI_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip") //PPREL 2018/03/09 500MB - copied to PPREL_80130_RNJ_09032018_999999_2.TXT
+                || fileName.equals("PI_CDE_ENCOUNTER.zip") //ENCNT 2018/03/09 3GB - copied as ENCNT_80130_RNJ_03122017_999999_1.TXT
+                || fileName.equals("PI_CDE_ENCOUNTER_INFO.zip") //ENCINF 2018/03/09 6GB - copied as ENCINF_80130_RNJ_03122017_999999_3.TXT
+                || fileName.equals("PI_CDE_OP_ATTENDANCE.zip") //OPATT 2018/03/09 2GB - copied as OPATT_80130_RNJ_03122017_999999_1.TXT
+                || fileName.equals("PI_CDE_AE_ATTENDANCE.zip") //AEATT 2018/03/09 700MB - copied to AEATT_80130_RNJ_03122017_999999_1.TXT
+                || fileName.equals("PI_CDE_IP_EPISODE.zip") //IPEPI 2018/03/09 200MB - copied to IPEPI_80130_RNJ_03122017_999999_1.TXT
+                || fileName.equals("PI_CDE_IP_WARDSTAY.zip") //IPWDS 2018/03/09 300MB - copied to IPWDS_80130_RNJ_03122017_999999_1.TXT
+                || fileName.equals("PI_CDE_PERSON_PATIENT_NAME.zip") //PPNAM 2018/03/09 400MB - copied to PPNAM_80130_RNJ_02122017_999999_1.TXT
+                || fileName.equals("PI_CDE_PERSON_PATIENT_PHONE.zip") //PPPHO 2018/03/09 500MB - copied to PPPHO_80130_RNJ_02122017_999999_1.TXT
+                || fileName.equals("PI_CDE_PERSON_PATIENT_ADDRESS.zip") //PPADD 2018/03/09 500MB - copied to PPADD_80130_RNJ_02122017_999999_1.TXT
+                || fileName.equals("PI_CDE_PERSON_PATIENT_ALIAS.zip") //PPALI 2018/09/09 700MB - copied to PPALI_80130_RNJ_02122017_999999_1.TXT
+                || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip") //PPREL 2018/03/09 500MB - copied to PPREL_80130_RNJ_02122017_999999_1.TXT
                 || fileName.equals("PI_CDE_PERSON_PATIENT.csv") //PPALI 2018/02/15 280MB - dump has commas and extra cols - ignored as below one replaces this
-                || fileName.equals("PI_CDE_PERSON_PATIENT.zip") //PPALI 2018/03/09 250MB - copied to PPATI_80130_RNJ_09032018_999999_2.TXT
+                || fileName.equals("PI_CDE_PERSON_PATIENT.zip") //PPALI 2018/03/09 250MB - copied to PPATI_80130_RNJ_02122017_999999_1.TXT
                 || fileName.equals("PI_CDE_PERSON_PATIENT_INFO.zip") //PPINF 2018/03/09 2GB - ignored, as we don't process this file
                 || fileName.equals("dump20180123.zip") //dump of some old reference files - ignored, as we have never versions of the ones we use
                 || fileName.equals("PI_LKP_CDE_ORG_REF_Dump20180611.zip") //ORGREF bulk 2018/06/11 - copied as ORGREF_80130_01122017_999999_1.TXT
