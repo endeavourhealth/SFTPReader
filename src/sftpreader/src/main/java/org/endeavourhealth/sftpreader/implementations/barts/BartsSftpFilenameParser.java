@@ -79,6 +79,13 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         String fileName = this.remoteFile.getFilename();
         LocalDateTime lastModified = this.remoteFile.getLastModified();
 
+        //we get partial files with extension filepart, which are artifacts of copying to our SFTP server, so ignore them
+        String ext = FilenameUtils.getExtension(fileName);
+        if (ext.equalsIgnoreCase("filepart")) {
+            isFileNeeded = false;
+            return;
+        }
+
         //we have a load of custom extract files that Barts have uploaded and are in the same S3 bucket as our normal files
         //for now, just ignore them with this
         if (
@@ -105,12 +112,6 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_CDE_PERSON_PATIENT_INFO.zip") //PPINF 2018/03/09 2GB - ignored, as we don't process this file
                 || fileName.equals("dump20180123.zip") //dump of some old reference files - ignored, as we have never versions of the ones we use
                 || fileName.equals("PI_LKP_CDE_ORG_REF_Dump20180611.zip") //ORGREF bulk 2018/06/11 - copied as ORGREF_80130_01122017_999999_1.TXT
-
-                //these are artifacts of the copying and can be ignored
-                || fileName.equals("PI_CDE_CLINICAL_EVENT.zip.filepart")
-                || fileName.equals("PI_CDE_DIAGNOSIS.zip.filepart")
-                || fileName.equals("PI_CDE_OP_ATTENDANCE.zip.filepart")
-                || fileName.equals("PI_CDE_PERSON_PATIENT_PERSON_RELTN.zip.filepart")
 
                 //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
