@@ -113,6 +113,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("dump20180123.zip") //dump of some old reference files - ignored, as we have never versions of the ones we use
                 || fileName.equals("PI_LKP_CDE_ORG_REF_Dump20180611.zip") //ORGREF bulk 2018/06/11 - copied as ORGREF_80130_01122017_999999_1.TXT
                 || fileName.equals("PI_CDE_CLINICAL_EVENT_20180613.zip") //CLEVE bulk 2018/06/13 - copied as CLEVE_80130_RNJ_13062018_999999_13.TXT
+                || fileName.equals("PI_LKP_CDE_NOMENCLATURE_REF_20180615.csv") //NOMREF bulk 2018/06/15 - coped as NOMREF_80130_01122017_999999_1.TXT
 
                 //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
