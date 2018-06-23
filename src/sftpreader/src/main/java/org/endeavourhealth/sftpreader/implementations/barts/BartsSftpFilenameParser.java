@@ -132,38 +132,26 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
         if (tok1.equalsIgnoreCase("susopa")) {
             fileTypeIdentifier = TYPE_2_1_SUSOPA;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
-            //TODO - remove for AWS Live?
-            isFileNeeded = false;
 
         } else if (tok1.equalsIgnoreCase("susaea")) {
             fileTypeIdentifier = TYPE_2_1_SUSAEA;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
-            //TODO - remove for AWS Live?
-            isFileNeeded = false;
 
         } else if (tok1.equalsIgnoreCase("ip")) {
             fileTypeIdentifier = TYPE_2_1_SUSIP;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
-            //TODO - remove for AWS Live?
-            isFileNeeded = false;
 
         } else if (tok1.equalsIgnoreCase("tailopa")) {
             fileTypeIdentifier = TYPE_2_1_TAILOPA;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
-            //TODO - remove for AWS Live?
-            isFileNeeded = false;
 
         } else if (tok1.equalsIgnoreCase("tailaea")) {
             fileTypeIdentifier = TYPE_2_1_TAILAEA;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
-            //TODO - remove for AWS Live?
-            isFileNeeded = false;
 
         } else if (tok1.equalsIgnoreCase("tailip")) {
             fileTypeIdentifier = TYPE_2_1_TAILIP;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
-            //TODO - remove for AWS Live?
-            isFileNeeded = false;
 
         } else if (tok1.equalsIgnoreCase("cc")) {
             fileTypeIdentifier = TYPE_2_2_CC;
