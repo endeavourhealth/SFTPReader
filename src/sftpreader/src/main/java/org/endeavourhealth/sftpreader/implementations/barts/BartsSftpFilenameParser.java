@@ -33,6 +33,8 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_2_CC = "2.2_CC"; //Critial Care
     public static final String TYPE_2_2_HDB = "2.2_HDB"; //Home Delivery and Birth
     public static final String TYPE_2_2_FAMILY_HISTORY = "2.2_FAMILY_HISTORY";
+    public static final String TYPE_EMERGENCY_CARE = "EMERGENCY_CARE";
+    public static final String TYPE_EMERGENCY_CARE_TAILS = "'EMERGENCY_CARE_TAILS'";
 
     private String fileTypeIdentifier;
     private LocalDate extractDate;
@@ -159,6 +161,14 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
         } else if (tok1.equalsIgnoreCase("hdb")) {
             fileTypeIdentifier = TYPE_2_2_HDB;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("susecd")) {
+            fileTypeIdentifier = TYPE_EMERGENCY_CARE;
+            extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
+
+        } else if (tok1.equalsIgnoreCase("tailecd")) {
+            fileTypeIdentifier = TYPE_EMERGENCY_CARE_TAILS;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
 
         } else if (tok1.equalsIgnoreCase("spfit")) {
