@@ -23,7 +23,7 @@ public final class Configuration {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
 
 
-    private static final String INSTANCE_NAME_JAVA_PROPERTY = "INSTANCE_NAME";
+    public static final String INSTANCE_NAME_JAVA_PROPERTY = "INSTANCE_NAME";
 
     private static Configuration instance = null;
 

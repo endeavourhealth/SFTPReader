@@ -43,7 +43,9 @@ public class Main {
 
 	public static void main(String[] args) {
 		try {
-            ConfigManager.Initialize("sftpreader");
+
+            String instanceName = System.getProperty(Configuration.INSTANCE_NAME_JAVA_PROPERTY);
+            ConfigManager.initialize("sftpreader", instanceName);
 
             configuration = Configuration.getInstance();
 
