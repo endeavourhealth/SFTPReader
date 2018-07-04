@@ -28,6 +28,14 @@ public abstract class SftpFilenameParser {
             parseFilename();
 
             if (this.isFileNeeded() && !dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier())) {
+
+                String typeId = generateFileTypeIdentifier();
+                LOG.error("file type ID [" + typeId + "]");
+                LOG.error("file types:");
+                for (String type: dbConfiguration.getInterfaceFileTypes()) {
+                    LOG.error("type [" + type + "] = " + (typeId.equals(type)) + ", no case = " + (typeId.equalsIgnoreCase(type)));
+                }
+
                 throw new SftpFilenameParseException("File type " + generateFileTypeIdentifier() + " not recognised");
             }
 
