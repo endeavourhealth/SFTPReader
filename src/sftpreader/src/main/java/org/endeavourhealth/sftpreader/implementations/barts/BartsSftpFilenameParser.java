@@ -34,7 +34,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_2_HDB = "2.2_HDB"; //Home Delivery and Birth
     public static final String TYPE_2_2_FAMILY_HISTORY = "2.2_FAMILY_HISTORY";
     public static final String TYPE_EMERGENCY_CARE = "EMERGENCY_CARE";
-    public static final String TYPE_EMERGENCY_CARE_TAILS = "'EMERGENCY_CARE_TAILS'";
+    public static final String TYPE_EMERGENCY_CARE_TAILS = "EMERGENCY_CARE_TAILS";
 
     private String fileTypeIdentifier;
     private LocalDate extractDate;
