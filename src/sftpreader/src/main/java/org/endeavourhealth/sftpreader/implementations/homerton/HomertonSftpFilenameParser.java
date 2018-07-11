@@ -1,19 +1,17 @@
 package org.endeavourhealth.sftpreader.implementations.homerton;
 
+import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
-    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    //private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
-    //private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
+    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     public static final String FILE_TYPE_ALLERGY = "ALLERGY";
     public static final String FILE_TYPE_CLINEVENT = "CLINEVENT";
@@ -35,13 +33,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
 
     private String fileTypeIdentifier;
-    private String fileUniqueId;
-    private String batchGroup;
     private LocalDateTime extractDate;
-
-    /*public HomertonSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
-        super(filename, dbConfiguration, fileExtension);
-    }*/
 
     public HomertonSftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
         super(remoteFile, dbConfiguration);
@@ -49,7 +41,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
     @Override
     public String generateBatchIdentifier() {
-        return BATCH_IDENTIFIER_FORMAT.format(extractDate);
+        return this.extractDate.format(BATCH_IDENTIFIER_FORMAT);
     }
 
     @Override
@@ -67,40 +59,21 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         return false;
     }
 
-    /*@Override
-    public boolean requiresDecryption() {
-        return false;
-    }*/
-
-    public static String parseBatchIdentifier(String batchIdentifier) {
-        return batchIdentifier;
+    public static LocalDateTime parseBatchIdentifier(String batchIdentifier) {
+        return LocalDateTime.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
     }
 
     @Override
-    /*
-    Parse and validate file name in order to identify:
-    processingIds =             Some sort of processing-id-set / batch identifier based on file name item 1
-                                Available through: getProcessingIds()
-                                = Seems to be used in Validator to ensure all files in batch have same value
-
-    file type identifier        Available through: generateFileTypeIdentifier()
-                                = Used to save the value into log.batch_file
-                                = Type must exist in configuration.interface_file_type
-
-    extractDateTime             Available through Getter
-                                Used by: generateBatchIdentifier()
-                                Based on file name item 4
-                                = Seems to be used in Validator to ensure all files in batch have same value
-
-    sharingAgreementUuid        GUID in file name must match configuration_kvp entry
-                                Available through Getter
-                                Based on file name item 5 (last bit before .)
-                                = Looks like it is not used outside this class
-                                = Must match value in configuration.configuration_kvp
-     */
     protected void parseFilename() throws SftpFilenameParseException {
 
+        //filename is of format:  FILETYPE_EXTRACTEFFECTIVEDATE_EXTRACTRUNDATE
+        //use the EXTRACTEFFECTIVEDATE for batch as there will be only one per day based on the stored procedure
+
         String fileName = this.remoteFile.getFilename();
+
+        //this will be a .csv extract file
+        if (!StringUtils.endsWith(fileName, ".csv"))
+            throw new SftpFilenameParseException("Filename does not end with .csv");
 
         String[] parts = fileName.split("_");
 
@@ -109,64 +82,37 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
-        extractDate = LocalDateTime.of(Integer.parseInt(filenamePart2.substring(0, 4)), Integer.parseInt(filenamePart2.substring(4, 6)), Integer.parseInt(filenamePart2.substring(6)), 0, 0);
+
+        extractDate = LocalDateTime.parse(filenamePart2, DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         if (filenamePart1.compareToIgnoreCase("ALLERGY") == 0) {
             fileTypeIdentifier = FILE_TYPE_ALLERGY;
-            batchGroup = FILE_TYPE_ALLERGY;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("PATIENT") == 0) {
             fileTypeIdentifier = FILE_TYPE_PATIENT;
-            batchGroup = FILE_TYPE_PATIENT;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("CLINEVENT") == 0) {
             fileTypeIdentifier = FILE_TYPE_CLINEVENT;
-            batchGroup = FILE_TYPE_CLINEVENT;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("CODES") == 0) {
             fileTypeIdentifier = FILE_TYPE_CODES;
-            batchGroup = FILE_TYPE_CODES;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("DIAGNOSIS") == 0) {
             fileTypeIdentifier = FILE_TYPE_DIAGNOSIS;
-            batchGroup = FILE_TYPE_DIAGNOSIS;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("ENCOUNTER") == 0) {
             fileTypeIdentifier = FILE_TYPE_ENCOUNTER;
-            batchGroup = FILE_TYPE_ENCOUNTER;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("ENCALI") == 0) {
             fileTypeIdentifier = FILE_TYPE_ENCOUNTER_ALIAS;
-            batchGroup = FILE_TYPE_ENCOUNTER_ALIAS;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("ENCPRSNLRELTN") == 0) {
             fileTypeIdentifier = FILE_TYPE_ENCOUNTER_PRSNL_RELTN;
-            batchGroup = FILE_TYPE_ENCOUNTER_PRSNL_RELTN;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("ENCNTRSLICE") == 0) {
             fileTypeIdentifier = FILE_TYPE_ENCOUNTER_SLICE;
-            batchGroup = FILE_TYPE_ENCOUNTER_SLICE;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("LOCATION") == 0) {
             fileTypeIdentifier = FILE_TYPE_LOCATION;
-            batchGroup = FILE_TYPE_LOCATION;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("LOCATIONGROUP") == 0) {
             fileTypeIdentifier = FILE_TYPE_LOCATION_GROUP;
-            batchGroup = FILE_TYPE_LOCATION_GROUP;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("PERSONALIAS") == 0) {
             fileTypeIdentifier = FILE_TYPE_PERSON_ALIAS;
-            batchGroup = FILE_TYPE_PERSON_ALIAS;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("PROBLEM") == 0) {
             fileTypeIdentifier = FILE_TYPE_PROBLEM;
-            batchGroup = FILE_TYPE_PROBLEM;
-            fileUniqueId = filenamePart2;
         } else if (filenamePart1.compareToIgnoreCase("PROCEDURE") == 0) {
             fileTypeIdentifier = FILE_TYPE_PROCEDURE;
-            batchGroup = FILE_TYPE_PROCEDURE;
-            fileUniqueId = filenamePart2;
         } else {
             throw new SftpFilenameParseException("Homerton batch filename could not be parsed");
         }
