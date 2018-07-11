@@ -67,7 +67,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
     protected void parseFilename() throws SftpFilenameParseException {
 
         //filename is of format:  FILETYPE_EXTRACTEFFECTIVEDATE_EXTRACTRUNDATE
-        //use the EXTRACTEFFECTIVEDATE for batch as there will be only one per day based on the stored procedure
+        //use the EXTRACTEFFECTIVEDATE for batch yyyyMMdd as there will be only one per day based on the stored procedure
 
         String fileName = this.remoteFile.getFilename();
 
@@ -83,7 +83,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
 
-        extractDate = LocalDate.parse(filenamePart2, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        extractDate = LocalDate.parse(filenamePart2, DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         if (filenamePart1.compareToIgnoreCase("ALLERGY") == 0) {
             fileTypeIdentifier = FILE_TYPE_ALLERGY;
