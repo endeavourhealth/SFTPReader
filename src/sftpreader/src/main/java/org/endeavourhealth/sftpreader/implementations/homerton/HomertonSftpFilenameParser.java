@@ -6,12 +6,12 @@ import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
-    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public static final String FILE_TYPE_ALLERGY = "ALLERGY";
     public static final String FILE_TYPE_CLINEVENT = "CLINEVENT";
@@ -33,7 +33,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
 
     private String fileTypeIdentifier;
-    private LocalDateTime extractDate;
+    private LocalDate extractDate;
 
     public HomertonSftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
         super(remoteFile, dbConfiguration);
@@ -59,8 +59,8 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         return false;
     }
 
-    public static LocalDateTime parseBatchIdentifier(String batchIdentifier) {
-        return LocalDateTime.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
+    public static LocalDate parseBatchIdentifier(String batchIdentifier) {
+        return LocalDate.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
         String filenamePart1 = parts[0];
         String filenamePart2 = parts[1];
 
-        extractDate = LocalDateTime.parse(filenamePart2, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        extractDate = LocalDate.parse(filenamePart2, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         if (filenamePart1.compareToIgnoreCase("ALLERGY") == 0) {
             fileTypeIdentifier = FILE_TYPE_ALLERGY;
