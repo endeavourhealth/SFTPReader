@@ -35,6 +35,8 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_2_FAMILY_HISTORY = "2.2_FAMILY_HISTORY";
     public static final String TYPE_EMERGENCY_CARE = "EMERGENCY_CARE";
     public static final String TYPE_EMERGENCY_CARE_TAILS = "EMERGENCY_CARE_TAILS";
+    public static final String TYPE_APPOINTMENT_SCHEDULING = "APPSL2";
+
 
     private String fileTypeIdentifier;
     private LocalDate extractDate;
@@ -203,23 +205,35 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
             extractDate = LocalDate.parse(tok4, DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         } else if (tok1.equalsIgnoreCase("GETL")) {
-            if (toks.length != 6) {
-                throw new SftpFilenameParseException("Expecting four elements in filename starting GETL [" + fileName + "]");
-            }
+            if (toks.length == 6) {
+                String tok3 = toks[2];
+                if (tok3.equalsIgnoreCase("PREG")) {
+                    fileTypeIdentifier = TYPE_2_1_PREG;
 
-            String tok3 = toks[2];
-            if (tok3.equalsIgnoreCase("PREG")) {
-                fileTypeIdentifier = TYPE_2_1_PREG;
+                } else if (tok3.equalsIgnoreCase("BIRTH")) {
+                    fileTypeIdentifier = TYPE_2_1_BIRTH;
 
-            } else if (tok3.equalsIgnoreCase("BIRTH")) {
-                fileTypeIdentifier = TYPE_2_1_BIRTH;
+                } else {
+                    throw new SftpFilenameParseException("Unexpected third element " + tok3 + " after GETL in filename [" + fileName + "]");
+                }
+
+                String tok4 = toks[3].substring(0, 10);
+                extractDate = LocalDate.parse(tok4, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            } else if (toks.length == 7) {
+                String tok2 = toks[1];
+                if (tok2.equals("APPSL2")) {
+                    fileTypeIdentifier = TYPE_APPOINTMENT_SCHEDULING;
+
+                    String tok5 = toks[4];
+                    extractDate = LocalDate.parse(tok5, DateTimeFormatter.ofPattern("ddMMyyyy"));
+                } else {
+                    throw new SftpFilenameParseException("Unexpected second element " + tok2 + " after GETL in filename [" + fileName + "]");
+                }
 
             } else {
-                throw new SftpFilenameParseException("Unexpected third element " + tok3 + " after GETL in filename [" + fileName + "]");
+                throw new SftpFilenameParseException("Unexpected number of elements after GETL in filename [" + fileName + "]");
             }
-
-            String tok4 = toks[3].substring(0, 10);
-            extractDate = LocalDate.parse(tok4, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         } else if (tok1.equalsIgnoreCase("Fam")) {
             if (toks.length != 4) {

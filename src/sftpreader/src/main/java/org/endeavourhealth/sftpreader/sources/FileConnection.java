@@ -41,7 +41,7 @@ public class FileConnection extends Connection {
             String path = fileInfo.getFilePath();
             Date lastModified = fileInfo.getLastModified();
             long size = fileInfo.getSize();
-            LOG.info("Found " + path);
+            //LOG.info("Found " + path);
 
             String fileName = FilenameUtils.getName(path);
             if (Strings.isNullOrEmpty(fileName)) {

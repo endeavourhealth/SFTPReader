@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.implementations.tpp;
 
+import com.google.common.base.Strings;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
@@ -12,11 +13,13 @@ import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
 public class TppSftpFilenameParser extends SftpFilenameParser {
                                                                         // same as ISO pattern but switch : for . so can be used as filename and sorted
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
+    private static final DateTimeFormatter SOURCE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
 
     private String fileTypeIdentifier;
     private LocalDateTime extractDateTime;
@@ -58,12 +61,35 @@ public class TppSftpFilenameParser extends SftpFilenameParser {
 
         this.fileTypeIdentifier = fileName.substring(2);
 
-        //batch identifier is the datetime, but we need to convert the format so it's consistent with Emis etc.
+        //batch identifier is the datetime, which is found in the directory structure the files are in
         String filePath = this.remoteFile.getFullPath();
-        filePath = FilenameUtils.getPath(filePath);
-        String dateDir = new File(filePath).getName();
+        File f = new File(filePath);
 
-        this.extractDateTime = LocalDateTime.parse(dateDir, DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"));
+        //depending when this parser is called (either pre-splitting or when creating the JSON exchange payload),
+        //the exchange date is at different points in the path and with different format, so we need to work up the path testing each level
+        while (true) {
+
+            f = f.getParentFile();
+            if (f == null) {
+                throw new RuntimeException("Failed to find parent directory with date time as name");
+            }
+
+            try {
+                String dateDir = f.getName();
+                this.extractDateTime = LocalDateTime.parse(dateDir, SOURCE_DATE_FORMAT);
+                break;
+            } catch (DateTimeParseException ex) {
+                //let the loop continue
+            }
+
+            try {
+                String dateDir = f.getName();
+                this.extractDateTime = LocalDateTime.parse(dateDir, BATCH_IDENTIFIER_FORMAT);
+                break;
+            } catch (DateTimeParseException ex) {
+                //let the loop continue
+            }
+        }
     }
 
     public static LocalDateTime parseBatchIdentifier(String batchIdentifier) {
