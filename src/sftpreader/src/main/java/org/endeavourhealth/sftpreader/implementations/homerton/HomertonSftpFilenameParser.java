@@ -13,6 +13,8 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    public static final String FILE_TYPE_PATIENT_FULL = "PATIENTSFULL";
+
     public static final String FILE_TYPE_ALLERGY = "ALLERGY";
     public static final String FILE_TYPE_CLINEVENT = "CLINEVENT";
     public static final String FILE_TYPE_PATIENT = "PATIENT";
@@ -89,6 +91,8 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
             fileTypeIdentifier = FILE_TYPE_ALLERGY;
         } else if (filenamePart1.compareToIgnoreCase("PATIENT") == 0) {
             fileTypeIdentifier = FILE_TYPE_PATIENT;
+        } else if (filenamePart1.compareToIgnoreCase("PATIENTSFULL") == 0) {
+            fileTypeIdentifier = FILE_TYPE_PATIENT_FULL;
         } else if (filenamePart1.compareToIgnoreCase("CLINEVENT") == 0) {
             fileTypeIdentifier = FILE_TYPE_CLINEVENT;
         } else if (filenamePart1.compareToIgnoreCase("CODES") == 0) {
