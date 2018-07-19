@@ -17,7 +17,7 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
 
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    //special constants for the 2.1 files, but we just use the first part of the file name for 2.2 files
+    //special constants for the non-standard files, but we just use the first part of the file name for 2.2 files
     public static final String TYPE_2_1_SUSOPA = "SusOutpatient";
     public static final String TYPE_2_1_SUSAEA = "SusEmergency";
     public static final String TYPE_2_1_SUSIP = "SusInpatient";
