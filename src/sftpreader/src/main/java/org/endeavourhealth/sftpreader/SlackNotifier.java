@@ -16,16 +16,16 @@ import java.util.List;
 public class SlackNotifier {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SlackNotifier.class);
 
-    private Configuration configuration;
+    //private Configuration configuration;
     //private DbInstanceSlack slackConfiguration;
 
-    public SlackNotifier(Configuration configuration) {
+    /*public SlackNotifier(Configuration configuration) {
         Validate.notNull(configuration, "configuration");
         //Validate.notNull(configuration.getInstanceConfiguration().getSlackConfiguration(), "configuration.getDbGlobalConfiguration().getSlackConfiguration()");
 
         this.configuration = configuration;
         //this.slackConfiguration = configuration.getInstanceConfiguration().getSlackConfiguration();
-    }
+    }*/
 
     /*public void notifyStartup() {
         String message = Main.PROGRAM_DISPLAY_NAME + " started "

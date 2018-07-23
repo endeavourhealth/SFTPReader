@@ -27,7 +27,7 @@ public interface DataLayerI {
 
     void setFileAsDownloaded(SftpFile batchFile) throws Exception;
 
-    void addUnknownFile(String configurationId, SftpFile batchFile) throws Exception;
+    boolean addUnknownFile(String configurationId, SftpFile batchFile) throws Exception;
 
     List<Batch> getIncompleteBatches(String configurationId) throws Exception;
 

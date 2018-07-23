@@ -6,7 +6,7 @@ create or replace function log.add_unknown_file
 	_remote_size_bytes bigint,
 	_remote_created_date timestamp
 )
-returns void
+returns boolean
 as $$
 begin
 
@@ -32,6 +32,10 @@ begin
 			_remote_created_date,
 			_remote_size_bytes
 		);
+
+		return 1;
+	else
+	  return 0;
 	end if;
 
 end

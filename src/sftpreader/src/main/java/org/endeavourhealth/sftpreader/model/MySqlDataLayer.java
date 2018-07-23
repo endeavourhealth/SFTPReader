@@ -472,7 +472,7 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     @Override
-    public void addUnknownFile(String configurationId, SftpFile batchFile) throws Exception {
+    public boolean addUnknownFile(String configurationId, SftpFile batchFile) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement psSelect = null;
         PreparedStatement psInsert = null;
@@ -497,6 +497,11 @@ public class MySqlDataLayer implements DataLayerI {
                 psInsert.setTimestamp(4, new java.sql.Timestamp(remoteDate.getTime()));
                 psInsert.setLong(5, batchFile.getRemoteFileSizeInBytes());
                 psInsert.executeUpdate();
+
+                return true;
+
+            } else {
+                return false;
             }
 
         } finally {

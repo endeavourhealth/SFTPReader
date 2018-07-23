@@ -148,7 +148,7 @@ public class SftpReaderTask implements Runnable {
         db.setBatchAsComplete(batch);
 
         //and tell Slack
-        SlackNotifier slackNotifier = new SlackNotifier(configuration);
+        SlackNotifier slackNotifier = new SlackNotifier();
         slackNotifier.notifyCompleteBatch(dbConfiguration, batch);
     }
 
@@ -200,7 +200,15 @@ public class SftpReaderTask implements Runnable {
                 if (!batchFile.isFilenameValid()) {
                     LOG.error("   Invalid filename, skipping: " + batchFile.getFilename());
                     if (!batchFile.ignoreUnknownFileTypes()) {
-                        db.addUnknownFile(dbConfiguration.getConfigurationId(), batchFile);
+
+                        boolean newUnknownFile = db.addUnknownFile(dbConfiguration.getConfigurationId(), batchFile);
+
+                        //if it's a new unknown file, send a Slack message about it
+                        if (newUnknownFile) {
+                            String message = "New unknown file for " + dbConfiguration.getSoftwareContentType() + ": " + batchFile.getFilename();
+                            SlackNotifier slackNotifier = new SlackNotifier();
+                            slackNotifier.postMessage(message);
+                        }
                     }
                     continue;
                 }
@@ -663,7 +671,7 @@ public class SftpReaderTask implements Runnable {
 
         String message = "Exception notifying " + publisherSoftware + " batch for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
 
-        SlackNotifier slackNotifier = new SlackNotifier(configuration);
+        SlackNotifier slackNotifier = new SlackNotifier();
         slackNotifier.postMessage(message);
 
         //add to the map so we don't send the same message again in a few minutes
@@ -701,7 +709,7 @@ public class SftpReaderTask implements Runnable {
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
         String message = "Previous error notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + " is now cleared";
 
-        SlackNotifier slackNotifier = new SlackNotifier(configuration);
+        SlackNotifier slackNotifier = new SlackNotifier();
         slackNotifier.postMessage(message);
 
         //remove from the map, so we know we're in a good state now

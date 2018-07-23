@@ -223,7 +223,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }*/
 
-    public void addUnknownFile(String configurationId, SftpFile batchFile) throws PgStoredProcException {
+    public boolean addUnknownFile(String configurationId, SftpFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.add_unknown_file")
                 .addParameter("_configuration_id", configurationId)
@@ -231,7 +231,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 .addParameter("_remote_size_bytes", batchFile.getRemoteFileSizeInBytes())
                 .addParameter("_remote_created_date", batchFile.getRemoteLastModifiedDate());
 
-        pgStoredProc.execute();
+        return pgStoredProc.executeMultiQuerySingleRow(resultSet -> resultSet.getBoolean(1));
+        //pgStoredProc.execute();
     }
 
     public List<Batch> getIncompleteBatches(String configurationId) throws PgStoredProcException {
