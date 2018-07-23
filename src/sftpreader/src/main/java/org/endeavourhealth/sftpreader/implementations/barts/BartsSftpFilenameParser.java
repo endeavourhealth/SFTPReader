@@ -118,8 +118,51 @@ public class BartsSftpFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_LKP_CDE_ORG_REF_Dump20180611.zip") //ORGREF bulk 2018/06/11 - copied as ORGREF_80130_01122017_999999_1.TXT
                 || fileName.equals("PI_CDE_CLINICAL_EVENT_20180613.zip") //CLEVE bulk 2018/06/13 - copied as CLEVE_80130_RNJ_13062018_999999_13.TXT
                 || fileName.equals("PI_LKP_CDE_NOMENCLATURE_REF_20180615.csv") //NOMREF bulk 2018/06/15 - coped as NOMREF_80130_01122017_999999_1.TXT
-                || fileName.equals("susecd_BH.19001") //no idea about this - asked Olu
-                || fileName.equals("tailecd_DIS.19001") //no idea about this - asked Olu
+                || fileName.equals("susecd_BH.19001") //original emergency care dataset, before it was properly set up
+                || fileName.equals("tailecd_DIS.19001") //original emergency care dataset, before it was properly set up
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201501_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_14.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201502_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_15.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201503_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_16.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201504_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_17.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201505_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_18.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201506_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_19.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201507_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_20.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201508_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_21.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201509_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_22.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201510_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_23.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201511_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_24.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201512_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_25.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201601_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_26.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201602_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_27.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201603_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_28.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201604_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_29.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201605_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_30.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201606_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_31.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201607_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_32.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201608_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_33.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201609_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_34.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201610_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_35.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201611_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_36.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201612_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_37.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201701_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_38.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201702_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_39.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201703_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_40.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201704_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_41.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201705_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_42.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201706_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_43.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201707_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_44.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201708_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_45.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201709_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_46.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201710_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_47.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201711_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_48.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201712_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_49.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201801_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_50.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201802_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_51.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201803_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_52.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201804_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_53.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201805_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_54.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201806_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_55.TXT
+                || fileName.equals("PI_CDE_CLINICAL_EVENT_201807_DiscExtract.zip") //CLEVE bulk - not processing as duplicating what we've already done
 
                 //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
