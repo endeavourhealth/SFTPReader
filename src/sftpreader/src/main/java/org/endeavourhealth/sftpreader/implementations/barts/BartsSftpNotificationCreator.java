@@ -28,6 +28,14 @@ public class BartsSftpNotificationCreator extends SftpNotificationCreator {
         //of the file names, we get a consistent ordering that works for both
         List<FileWrapper> fileWrappers = new ArrayList<>();
         for (ExchangePayloadFile file: files) {
+
+            //barts send us zero-length files when there's no content, rather than files with
+            //the headers present but no further records. This causes problems with CSV parsing, as
+            //the lack of headers is flagged as an error. To avoid this, don't send over any zero-length files
+            if (file.getSize().longValue() == 0) {
+                continue;
+            }
+
             fileWrappers.add(new FileWrapper(file));
         }
 
