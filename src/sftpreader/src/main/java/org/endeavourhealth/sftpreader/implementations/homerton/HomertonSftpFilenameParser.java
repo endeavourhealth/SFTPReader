@@ -32,6 +32,7 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
 
     public static final String FILE_TYPE_ENCOUNTER = "ENCOUNTER";
     public static final String FILE_TYPE_CODES = "CODES";
+    public static final String FILE_TYPE_CODES_NHS_ALIAS = "CODESNHSALIAS";
 
 
     private String fileTypeIdentifier;
@@ -97,6 +98,8 @@ public class HomertonSftpFilenameParser extends SftpFilenameParser {
             fileTypeIdentifier = FILE_TYPE_CLINEVENT;
         } else if (filenamePart1.compareToIgnoreCase("CODES") == 0) {
             fileTypeIdentifier = FILE_TYPE_CODES;
+        } else if (filenamePart1.compareToIgnoreCase("CODESNHSALIAS") == 0) {
+            fileTypeIdentifier = FILE_TYPE_CODES_NHS_ALIAS;
         } else if (filenamePart1.compareToIgnoreCase("DIAGNOSIS") == 0) {
             fileTypeIdentifier = FILE_TYPE_DIAGNOSIS;
         } else if (filenamePart1.compareToIgnoreCase("ENCOUNTER") == 0) {
