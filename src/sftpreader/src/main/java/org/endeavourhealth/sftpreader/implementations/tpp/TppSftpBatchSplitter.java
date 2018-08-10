@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -417,7 +418,7 @@ public class TppSftpBatchSplitter extends SftpBatchSplitter {
 
 
     private static Set<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
-        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat, splitColmumns);
+        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, Charset.forName("Cp1252"), csvFormat, splitColmumns);
         return csvSplitter.go();
     }
 }

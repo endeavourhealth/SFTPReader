@@ -24,6 +24,7 @@ public class CsvSplitter {
     private String[] columnHeaders = null;
     private Map<String, CSVPrinter> csvPrinterMap = new HashMap<>();
     private Set<File> filesCreated = null;
+    private Charset encoding = null;
 
 
     public CsvSplitter(String srcFilePath, File dstDir, CSVFormat csvFormat, String... splitColumns) {
@@ -34,12 +35,26 @@ public class CsvSplitter {
         this.splitColumns = splitColumns;
     }
 
+    public CsvSplitter(String srcFilePath, File dstDir, Charset encoding, CSVFormat csvFormat, String... splitColumns) {
+
+        this.srcFilePath = srcFilePath;
+        this.dstDir = dstDir;
+        this.csvFormat = csvFormat;
+        this.splitColumns = splitColumns;
+        this.encoding = encoding;
+    }
+
     public Set<File> go() throws Exception {
 
         //adding .withHeader() to the csvFormat forces it to treat the first row as the column headers,
         //and read them in, instead of ignoring them
-        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath);
-        CSVParser csvParser = new CSVParser(reader, csvFormat.withHeader());
+        CSVParser csvParser = null;
+        if (this.encoding != null) {
+            csvParser = CSVParser.parse(new File(srcFilePath), encoding, csvFormat.withHeader());
+        } else {
+            InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath);
+            csvParser = new CSVParser(reader, csvFormat.withHeader());
+        }
         filesCreated = new HashSet<>();
 
         try
@@ -180,8 +195,14 @@ public class CsvSplitter {
 
             //LOG.debug("Creating " + f);
             try {
-                FileWriter fileWriter = new FileWriter(f);
-                BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+
+                BufferedWriter bufferedWriter = null;
+                if (this.encoding != null) {
+                    bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), encoding));
+                } else {
+                    FileWriter fileWriter = new FileWriter(f);
+                    bufferedWriter = new BufferedWriter(fileWriter);
+                }
                 csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
 
                 csvPrinterMap.put(mapKey, csvPrinter);
