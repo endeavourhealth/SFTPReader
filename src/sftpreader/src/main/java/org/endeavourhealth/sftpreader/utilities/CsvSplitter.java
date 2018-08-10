@@ -48,13 +48,13 @@ public class CsvSplitter {
 
         //adding .withHeader() to the csvFormat forces it to treat the first row as the column headers,
         //and read them in, instead of ignoring them
-        CSVParser csvParser = null;
-        if (this.encoding != null) {
-            csvParser = CSVParser.parse(new File(srcFilePath), encoding, csvFormat.withHeader());
+        InputStreamReader reader = null;
+        if (encoding != null) {
+            reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath, encoding);
         } else {
-            InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath);
-            csvParser = new CSVParser(reader, csvFormat.withHeader());
+            reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath);
         }
+        CSVParser csvParser = new CSVParser(reader, csvFormat.withHeader());
         filesCreated = new HashSet<>();
 
         try
@@ -197,7 +197,7 @@ public class CsvSplitter {
             try {
 
                 BufferedWriter bufferedWriter = null;
-                if (this.encoding != null) {
+                if (encoding != null) {
                     bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), encoding));
                 } else {
                     FileWriter fileWriter = new FileWriter(f);
