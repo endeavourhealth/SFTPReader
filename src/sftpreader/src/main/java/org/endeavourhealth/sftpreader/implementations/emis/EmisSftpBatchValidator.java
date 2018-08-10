@@ -97,14 +97,14 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
 
             if (msgs.size() > 0) {
                 String msg = String.join("\r\n", msgs);
-                sendSlackAlert(orgGuid, msg, db);
+                sendSlackAlert(orgGuid, msg, db, dbConfiguration);
             }
         }
 
         //check for orgs that were in the file but aren't any more
         for (String orgGuid: hmActivatedOld.keySet()) {
             if (!hmActivatedNew.containsKey(orgGuid)) {
-                sendSlackAlert(orgGuid, "Has been removed from the sharing agreements file", db);
+                sendSlackAlert(orgGuid, "Has been removed from the sharing agreements file", db, dbConfiguration);
             }
         }
     }
@@ -152,7 +152,7 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         }
     }
 
-    private static void sendSlackAlert(String emisOrgGuid, String msg, DataLayerI db) throws SftpValidationException {
+    private static void sendSlackAlert(String emisOrgGuid, String msg, DataLayerI db, DbConfiguration dbConfiguration) throws SftpValidationException {
 
         //need to find the org details for the GUID
         EmisOrganisationMap mapping = null;
@@ -172,6 +172,9 @@ public class EmisSftpBatchValidator extends SftpBatchValidator {
         alert += mapping.getName();
         alert += " has changed:\r\n";
         alert += msg;
+
+        alert += "\r\n";
+        alert += dbConfiguration.getConfigurationFriendlyName(); //this contains the sharing agreement name
 
         SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, alert);
     }
