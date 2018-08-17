@@ -168,6 +168,8 @@ public class BartsFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_CDE_CLINICAL_EVENT_201807_DiscExtract.zip") //CLEVE bulk - not processing as duplicating what we've already done
                 || fileName.equals("msds2018-07-19_100753_msds_1242411911_20180719020215.xml") //file uploaded by mistake
                 || fileName.equals("msds2018-07-20_125022_msds_1243378452_20180720042318.ZIP") //file uploaded by mistake
+                || fileName.equals("msds2018-07-27_110454_msds_1248053721_20180727022323.xml") //file uploaded by mistake
+                || fileName.equals("msds2018-07-27_110454_msds_1248053721_20180727022323.zip") //file uploaded by mistake
 
 
                 //these just one-off reference files not for processing

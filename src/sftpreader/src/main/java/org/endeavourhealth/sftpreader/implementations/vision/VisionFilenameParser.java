@@ -86,7 +86,7 @@ public class VisionFilenameParser extends SftpFilenameParser {
         //e.g. ADDITIONAL_F86007_active_user_data_extract-2018-08-17-000500.csv
         //     INCREMENTAL_F86007_journal_data_extract-2018-08-17-000500.csv
         String baseName = FilenameUtils.getBaseName(fileName);
-        String[] toks = baseName.split("-_");
+        String[] toks = baseName.split("-|_"); //split by hyphen OR underscore
         List<String> typeToksList = new ArrayList<>();
         List<String> dateToksList = new ArrayList<>();
 
