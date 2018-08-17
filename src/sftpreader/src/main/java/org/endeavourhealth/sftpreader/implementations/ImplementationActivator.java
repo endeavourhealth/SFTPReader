@@ -41,12 +41,12 @@ public class ImplementationActivator {
         }
     }
 
-    public static SftpFilenameParser createFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) throws Exception {
+    public static SftpFilenameParser createFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) throws Exception {
         String clsName = getClassPackageAndPrefix(dbConfiguration) + "FilenameParser";
 
         Class cls = Class.forName(clsName);
-        Constructor<SftpFilenameParser> constructor = cls.getConstructor(RemoteFile.class, DbConfiguration.class);
-        return constructor.newInstance(remoteFile, dbConfiguration);
+        Constructor<SftpFilenameParser> constructor = cls.getConstructor(Boolean.TYPE, RemoteFile.class, DbConfiguration.class);
+        return constructor.newInstance(new Boolean(isRawFile), remoteFile, dbConfiguration);
     }
 
     public static SftpBatchValidator createSftpBatchValidator(DbConfiguration dbConfiguration) throws Exception {

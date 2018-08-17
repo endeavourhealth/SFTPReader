@@ -24,8 +24,8 @@ public class TppFilenameParser extends SftpFilenameParser {
     private String fileTypeIdentifier;
     private LocalDateTime extractDateTime;
 
-    public TppFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
-        super(remoteFile, dbConfiguration);
+    public TppFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(isRawFile, remoteFile, dbConfiguration);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class TppFilenameParser extends SftpFilenameParser {
     }
 
     @Override
-    protected void parseFilename() throws SftpFilenameParseException {
+    protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
 
         //file type is just the base file name (e.g. SRManifest) minus the "SR"
         String fileName = this.remoteFile.getFilename();
@@ -59,7 +59,7 @@ public class TppFilenameParser extends SftpFilenameParser {
             throw new SftpFilenameParseException("File " + fileName + " doesn't start with SR");
         }
 
-        this.fileTypeIdentifier = fileName.substring(2);
+        this.fileTypeIdentifier = fileName.substring(2); //get rid of "SR"
 
         //batch identifier is the datetime, which is found in the directory structure the files are in
         String filePath = this.remoteFile.getFullPath();
@@ -76,15 +76,12 @@ public class TppFilenameParser extends SftpFilenameParser {
 
             try {
                 String dateDir = f.getName();
-                this.extractDateTime = LocalDateTime.parse(dateDir, SOURCE_DATE_FORMAT);
-                break;
-            } catch (DateTimeParseException ex) {
-                //let the loop continue
-            }
+                if (isRawFile) {
+                    this.extractDateTime = LocalDateTime.parse(dateDir, SOURCE_DATE_FORMAT);
+                } else {
+                    this.extractDateTime = LocalDateTime.parse(dateDir, BATCH_IDENTIFIER_FORMAT);
+                }
 
-            try {
-                String dateDir = f.getName();
-                this.extractDateTime = LocalDateTime.parse(dateDir, BATCH_IDENTIFIER_FORMAT);
                 break;
             } catch (DateTimeParseException ex) {
                 //let the loop continue

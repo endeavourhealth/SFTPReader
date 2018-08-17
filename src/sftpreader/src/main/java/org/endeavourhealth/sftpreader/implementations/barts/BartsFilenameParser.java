@@ -42,8 +42,8 @@ public class BartsFilenameParser extends SftpFilenameParser {
     private LocalDate extractDate;
     private boolean isFileNeeded;
 
-    public BartsFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
-        super(remoteFile, dbConfiguration);
+    public BartsFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(isRawFile, remoteFile, dbConfiguration);
     }
 
     @Override
@@ -78,7 +78,7 @@ public class BartsFilenameParser extends SftpFilenameParser {
     }
 
     @Override
-    protected void parseFilename() throws SftpFilenameParseException {
+    protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
 
         //by default we want ALL files
         isFileNeeded = true;

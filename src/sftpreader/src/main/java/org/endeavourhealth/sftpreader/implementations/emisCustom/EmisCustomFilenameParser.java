@@ -15,15 +15,15 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
     private LocalDate extractDate;
     private String fileTypeIdentifier;
 
-    public EmisCustomFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
-        super(remoteFile, dbConfiguration);
+    public EmisCustomFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(isRawFile, remoteFile, dbConfiguration);
     }
 
     @Override
-    protected void parseFilename() throws SftpFilenameParseException {
+    protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
         String fileName = remoteFile.getFilename();
-        if (fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory V2.7z")
-                || fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory.txt")) {
+        if (fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory V2.7z") //raw file name
+                || fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory.txt")) { //unzipped file name
             fileTypeIdentifier = "RegistrationStatus";
             extractDate = remoteFile.getLastModified().toLocalDate();
         } else {

@@ -574,7 +574,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
             String filePath = FilenameUtils.concat(sourceTempDir, fileName);
 
             RemoteFile remoteFile = new RemoteFile(fileName, -1, null);
-            EmisFilenameParser nameParser = new EmisFilenameParser(remoteFile, dbConfiguration);
+            EmisFilenameParser nameParser = new EmisFilenameParser(false, remoteFile, dbConfiguration);
             String fileType = nameParser.generateFileTypeIdentifier();
 
             //we work out what columns to split by, by looking at the CSV file headers

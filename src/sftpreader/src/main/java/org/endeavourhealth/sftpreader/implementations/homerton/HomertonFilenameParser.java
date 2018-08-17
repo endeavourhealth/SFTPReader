@@ -38,8 +38,8 @@ public class HomertonFilenameParser extends SftpFilenameParser {
     private String fileTypeIdentifier;
     private LocalDate extractDate;
 
-    public HomertonFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
-        super(remoteFile, dbConfiguration);
+    public HomertonFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(isRawFile, remoteFile, dbConfiguration);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class HomertonFilenameParser extends SftpFilenameParser {
     }
 
     @Override
-    protected void parseFilename() throws SftpFilenameParseException {
+    protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
 
         //filename is of format:  FILETYPE_EXTRACTEFFECTIVEDATE_EXTRACTRUNDATE
         //use the EXTRACTEFFECTIVEDATE for batch yyyyMMdd as there will be only one per day based on the stored procedure

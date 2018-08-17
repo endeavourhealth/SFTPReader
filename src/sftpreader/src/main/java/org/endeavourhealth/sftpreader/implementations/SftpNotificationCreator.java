@@ -93,7 +93,7 @@ public abstract class SftpNotificationCreator {
             //use the file name parser to work out the file type again
             LocalDateTime ldt = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
             RemoteFile remoteFile = new RemoteFile(file, size, ldt);
-            SftpFilenameParser filenameParser = ImplementationActivator.createFilenameParser(remoteFile, dbConfiguration);
+            SftpFilenameParser filenameParser = ImplementationActivator.createFilenameParser(false, remoteFile, dbConfiguration);
             String fileType = filenameParser.generateFileTypeIdentifier();
 
             ret.add(new ExchangePayloadFile(file, new Long(size), fileType));

@@ -18,17 +18,15 @@ public class EmisFilenameParser extends SftpFilenameParser {
     private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
 
     private ProcessingIdSet processingIds;
-    private String schemaName;
-    private String tableName;
+    private String fileTypeIdentifier;
     private LocalDateTime extractDateTime;
-    private UUID sharingAgreementUuid;
 
     /*public EmisSftpFilenameParser(String filename, DbConfiguration dbConfiguration, String fileExtension) {
         super(filename, dbConfiguration, fileExtension);
     }*/
 
-    public EmisFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
-        super(remoteFile, dbConfiguration);
+    public EmisFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(isRawFile, remoteFile, dbConfiguration);
     }
 
     @Override
@@ -42,7 +40,7 @@ public class EmisFilenameParser extends SftpFilenameParser {
 
     @Override
     public String generateFileTypeIdentifier() {
-        return schemaName + "_" + tableName;
+        return fileTypeIdentifier;
     }
 
     @Override
@@ -61,13 +59,14 @@ public class EmisFilenameParser extends SftpFilenameParser {
     }*/
 
     @Override
-    protected void parseFilename() throws SftpFilenameParseException {
+    protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
 
         String fileName = this.remoteFile.getFilename();
         String[] parts = fileName.split("_");
 
-        if (parts.length != 5)
+        if (parts.length != 5) {
             throw new SftpFilenameParseException("Emis batch filename could not be parsed");
+        }
 
         String processingIdPart = parts[0];
         String schemaNamePart = parts[1];
@@ -77,18 +76,19 @@ public class EmisFilenameParser extends SftpFilenameParser {
 
         this.processingIds = ProcessingIdSet.parseBatchIdentifier(processingIdPart);
 
-        if (StringUtils.isEmpty(schemaNamePart))
+        if (StringUtils.isEmpty(schemaNamePart)) {
             throw new SftpFilenameParseException("Schema name is empty");
+        }
 
-        this.schemaName = schemaNamePart;
-
-        if (StringUtils.isEmpty(tableNamePart))
+        if (StringUtils.isEmpty(tableNamePart)) {
             throw new SftpFilenameParseException("Table name is empty");
+        }
 
-        this.tableName = tableNamePart;
-
-        if (StringUtils.isEmpty(extractDateTimePart))
+        if (StringUtils.isEmpty(extractDateTimePart)) {
             throw new SftpFilenameParseException("Extract date/time is empty");
+        }
+
+        this.fileTypeIdentifier = schemaNamePart + "_" + tableNamePart;
 
         this.extractDateTime = LocalDateTime.parse(extractDateTimePart, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
@@ -98,13 +98,14 @@ public class EmisFilenameParser extends SftpFilenameParser {
         String[] sharingAgreementParts = sharingAgreementGuidWithFileExtensionPart.split("[.]");
         String sharingAgreementGuid = sharingAgreementParts[0];
 
-        if (StringUtils.isEmpty(sharingAgreementGuid))
+        if (StringUtils.isEmpty(sharingAgreementGuid)) {
             throw new SftpFilenameParseException("Sharing agreement UUID is empty");
+        }
 
-        this.sharingAgreementUuid = UUID.fromString(sharingAgreementGuid);
-
-        if (!sharingAgreementUuid.equals(getSharingAgreementUuidFromConfiguration()))
+        UUID sharingAgreementUuid = UUID.fromString(sharingAgreementGuid);
+        if (!sharingAgreementUuid.equals(getSharingAgreementUuidFromConfiguration())) {
             throw new SftpFilenameParseException("Sharing agreement UUID does not match that in configuration key value pair");
+        }
     }
 
     private UUID getSharingAgreementUuidFromConfiguration() throws SftpFilenameParseException {
@@ -121,10 +122,6 @@ public class EmisFilenameParser extends SftpFilenameParser {
 
     public LocalDateTime getExtractDateTime() {
         return extractDateTime;
-    }
-
-    public UUID getSharingAgreementUuid() {
-        return sharingAgreementUuid;
     }
 
     public static String getDecryptedFileName(BatchFile batchFile, DbConfiguration dbConfiguration) {

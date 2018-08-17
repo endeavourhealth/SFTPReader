@@ -11,30 +11,27 @@ import java.time.LocalDateTime;
 public abstract class SftpFilenameParser {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpFilenameParser.class);
 
+    private boolean isRawFile;
     protected DbConfiguration dbConfiguration;
     protected RemoteFile remoteFile;
 
     private boolean isFilenameValid = false;
 
-    public SftpFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+    public SftpFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
 
         Validate.notNull(dbConfiguration, "dbConfiguration is null");
 
+        this.isRawFile = isRawFile;
         this.remoteFile = remoteFile;
         this.dbConfiguration = dbConfiguration;
 
         try {
             //parseFilename(filename, this.fileExtension);
-            parseFilename();
+            parseFilename(isRawFile);
 
-            if (this.isFileNeeded() && !dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier())) {
-
-                /*String typeId = generateFileTypeIdentifier();
-                LOG.error("file type ID [" + typeId + "]");
-                LOG.error("file types:");
-                for (String type: dbConfiguration.getInterfaceFileTypes()) {
-                    LOG.error("type [" + type + "] = " + (typeId.equals(type)) + ", no case = " + (typeId.equalsIgnoreCase(type)));
-                }*/
+            if (this.isRawFile
+                && this.isFileNeeded()
+                && !dbConfiguration.getInterfaceFileTypes().contains(generateFileTypeIdentifier())) {
 
                 throw new SftpFilenameParseException("File type " + generateFileTypeIdentifier() + " not recognised");
             }
@@ -46,7 +43,7 @@ public abstract class SftpFilenameParser {
         }
     }
 
-    protected abstract void parseFilename() throws SftpFilenameParseException;
+    protected abstract void parseFilename(boolean isRawFile) throws SftpFilenameParseException;
     public abstract String generateBatchIdentifier();
     public abstract String generateFileTypeIdentifier();
     public abstract boolean isFileNeeded();

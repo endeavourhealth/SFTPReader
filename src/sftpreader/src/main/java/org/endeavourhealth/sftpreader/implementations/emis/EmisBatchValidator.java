@@ -248,7 +248,7 @@ public class EmisBatchValidator extends SftpBatchValidator {
         for (BatchFile incompleteBatchFile : incompleteBatches.getBatchFiles()) {
 
             RemoteFile remoteFile = new RemoteFile(incompleteBatchFile.getFilename(), -1, null);
-            EmisFilenameParser emisSftpFilenameParser = new EmisFilenameParser(remoteFile, dbConfiguration);
+            EmisFilenameParser emisSftpFilenameParser = new EmisFilenameParser(false, remoteFile, dbConfiguration);
 
             if (first) {
                 processingIdStart = emisSftpFilenameParser.getProcessingIds().getProcessingIdStart();

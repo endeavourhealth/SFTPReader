@@ -367,7 +367,7 @@ public class SftpReaderTask implements Runnable {
 
     private SftpFile instantiateSftpBatchFile(RemoteFile remoteFile) throws Exception {
 
-        SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(remoteFile, dbConfiguration);
+        SftpFilenameParser sftpFilenameParser = ImplementationActivator.createFilenameParser(true, remoteFile, dbConfiguration);
         String configurationStorageDir = dbConfiguration.getLocalRootPath();
 
         return new SftpFile(remoteFile,

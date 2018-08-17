@@ -23,8 +23,8 @@ public class AdastraFilenameParser extends SftpFilenameParser {
     private static final Logger LOG = LoggerFactory.getLogger(AdastraFilenameParser.class);
 
 
-    public AdastraFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) {
-        super(remoteFile, dbConfiguration);
+    public AdastraFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
+        super(isRawFile, remoteFile, dbConfiguration);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class AdastraFilenameParser extends SftpFilenameParser {
     }
 
     @Override
-    protected void parseFilename() throws SftpFilenameParseException {
+    protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
 
         //File format:  Adastra_nacsCode_fileContentType_yyyyMMddHHmmss.csv
         //nacsCode = OOH organisation odsCode code
