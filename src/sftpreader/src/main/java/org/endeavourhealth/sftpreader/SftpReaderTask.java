@@ -107,6 +107,9 @@ public class SftpReaderTask implements Runnable {
             LOG.error(">>>Fatal exception in SftpTask run, terminating this run", e);
 
         } finally {
+            //delete any previous temp files that were left around
+            deleteTempDir();
+
             //release the configuration lock
             if (lock != null) {
                 try {
@@ -115,6 +118,19 @@ public class SftpReaderTask implements Runnable {
                     LOG.error("", ex);
                 }
             }
+        }
+    }
+
+    private void deleteTempDir() {
+        DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
+        String tempRootDir = edsConfiguration.getTempDirectory();
+        String configurationDir = dbConfiguration.getLocalRootPath();
+        String tempDir = FilenameUtils.concat(tempRootDir, configurationDir);
+
+        try {
+            FileHelper.deleteRecursiveIfExists(tempDir);
+        } catch (Exception ex) {
+            LOG.error("Error deleting " + tempDir, ex);
         }
     }
 
