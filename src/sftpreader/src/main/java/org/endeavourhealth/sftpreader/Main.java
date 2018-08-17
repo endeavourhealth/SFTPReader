@@ -1,35 +1,17 @@
 package org.endeavourhealth.sftpreader;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
-import org.endeavourhealth.common.ods.OdsOrganisation;
-import org.endeavourhealth.common.ods.OdsWebService;
-import org.endeavourhealth.common.postgres.PgAppLock.PgAppLock;
-import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
-import org.endeavourhealth.sftpreader.implementations.barts.BartsSftpFilenameParser;
 import org.endeavourhealth.sftpreader.management.ManagementService;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class Main {

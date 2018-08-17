@@ -13,7 +13,13 @@ public class ImplementationActivator {
     private static String getClassPackageAndPrefix(DbConfiguration dbConfiguration) throws Exception {
         String contentType = dbConfiguration.getSoftwareContentType();
         if (contentType.equalsIgnoreCase("EMISCSV")) {
-            return "org.endeavourhealth.sftpreader.implementations.emis.Emis";
+            //depending on the version, we're either doing a regular Emis extract or their custom ones
+            String version = dbConfiguration.getSoftwareVersion();
+            if (version.equalsIgnoreCase("CUSTOM")) {
+                return "org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustom";
+            } else {
+                return "org.endeavourhealth.sftpreader.implementations.emis.Emis";
+            }
 
         } else if (contentType.equalsIgnoreCase("VISIONCSV")) {
             return "org.endeavourhealth.sftpreader.implementations.vision.Vision";
@@ -36,7 +42,7 @@ public class ImplementationActivator {
     }
 
     public static SftpFilenameParser createFilenameParser(RemoteFile remoteFile, DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpFilenameParser";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "FilenameParser";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpFilenameParser> constructor = cls.getConstructor(RemoteFile.class, DbConfiguration.class);
@@ -44,7 +50,7 @@ public class ImplementationActivator {
     }
 
     public static SftpBatchValidator createSftpBatchValidator(DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchValidator";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "BatchValidator";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpBatchValidator> constructor = cls.getConstructor();
@@ -52,7 +58,7 @@ public class ImplementationActivator {
     }
 
     public static SftpBatchSplitter createSftpBatchSplitter(DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchSplitter";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "BatchSplitter";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpBatchSplitter> constructor = cls.getConstructor();
@@ -60,7 +66,7 @@ public class ImplementationActivator {
     }
 
     public static SftpBatchSequencer createSftpBatchSequencer(DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchSequencer";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "BatchSequencer";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpBatchSequencer> constructor = cls.getConstructor();
@@ -68,7 +74,7 @@ public class ImplementationActivator {
     }
 
     public static SftpNotificationCreator createSftpNotificationCreator(DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpNotificationCreator";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "NotificationCreator";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpNotificationCreator> constructor = cls.getConstructor();
@@ -76,7 +82,7 @@ public class ImplementationActivator {
     }
 
     public static SftpOrganisationHelper createSftpOrganisationHelper(DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpOrganisationHelper";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "OrganisationHelper";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpOrganisationHelper> constructor = cls.getConstructor();
@@ -84,7 +90,7 @@ public class ImplementationActivator {
     }
 
     public static SftpSlackNotifier createSftpSlackNotifier(DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpSlackNotifier";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SlackNotifier";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpSlackNotifier> constructor = cls.getConstructor();
@@ -92,7 +98,7 @@ public class ImplementationActivator {
     }
 
     public static SftpBatchUnzipperDecrypter createSftpUnzipperDecrypter(DbConfiguration dbConfiguration) throws Exception {
-        String clsName = getClassPackageAndPrefix(dbConfiguration) + "SftpBatchUnzipperDecrypter";
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "BatchUnzipperDecrypter";
 
         Class cls = Class.forName(clsName);
         Constructor<SftpBatchUnzipperDecrypter> constructor = cls.getConstructor();
