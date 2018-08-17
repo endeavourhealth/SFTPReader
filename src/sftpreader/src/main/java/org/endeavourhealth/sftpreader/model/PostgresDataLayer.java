@@ -231,7 +231,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 .addParameter("_remote_size_bytes", batchFile.getRemoteFileSizeInBytes())
                 .addParameter("_remote_created_date", batchFile.getRemoteLastModifiedDate());
 
-        return pgStoredProc.executeMultiQuerySingleRow(resultSet -> resultSet.getBoolean(1));
+        return pgStoredProc.executeSingleRow(resultSet -> resultSet.getBoolean(1));
+        //return pgStoredProc.executeMultiQuerySingleRow(resultSet -> resultSet.getBoolean(1));
         //pgStoredProc.execute();
     }
 
