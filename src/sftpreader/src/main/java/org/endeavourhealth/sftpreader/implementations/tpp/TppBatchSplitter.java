@@ -261,8 +261,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
     }
 
 
-    private static Set<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
-        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, Charset.forName("Cp1252"), csvFormat, splitColmumns);
+    private static List<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
+        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat, Charset.forName("Cp1252"), splitColmumns);
         return csvSplitter.go();
     }
 }

@@ -6,12 +6,20 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.sftpreader.management.ManagementService;
+import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
+import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import java.io.File;
+import java.util.List;
+import java.util.Set;
 
 
 public class Main {
@@ -31,6 +39,12 @@ public class Main {
 
             configuration = Configuration.getInstance();
 
+            if (args.length > 0) {
+                if (args[0].equalsIgnoreCase("TestSplittingAndJoining")) {
+                    testSplittingAndJoining();
+                    System.exit(0);
+                }
+            }
 
             /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("TestBarts")) {
@@ -125,7 +139,40 @@ public class Main {
         }
 	}
 
+    private static void testSplittingAndJoining() {
+        try {
+            LOG.info("Testing Splitting and Joining");
 
+            JFileChooser f = new JFileChooser();
+            f.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            f.setMultiSelectionEnabled(false);
+
+            int r = f.showOpenDialog(null);
+            if (r == JFileChooser.CANCEL_OPTION) {
+                return;
+            }
+
+            File src = f.getSelectedFile();
+            File dir = src.getParentFile();
+            File workingDir = new File(dir, "tmp");
+            if (!workingDir.exists()) {
+                workingDir.mkdirs();
+            }
+            CsvSplitter splitter = new CsvSplitter(src.getAbsolutePath(), workingDir, CSVFormat.DEFAULT, "OrganisationGuid");
+            List<File> files = splitter.go();
+            LOG.info("Done split");
+
+            File dst = new File(workingDir, src.getName());
+            CsvJoiner csvJoiner = new CsvJoiner(files, dst, CSVFormat.DEFAULT);
+            csvJoiner.go();
+
+            LOG.info("Done join");
+
+            LOG.info("Finished Testing Splitting and Joining");
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
 
     private static void shutdown() {

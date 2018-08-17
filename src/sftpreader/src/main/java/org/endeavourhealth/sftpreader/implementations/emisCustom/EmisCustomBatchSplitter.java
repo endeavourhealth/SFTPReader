@@ -72,7 +72,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
             //split the file by org GUID
             LOG.trace("Splitting " + srcFile);
             CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSVFormat.TDF, "OrganisationGuid");
-            Set<File> splitFiles = csvSplitter.go();
+            List<File> splitFiles = csvSplitter.go();
             for (File splitFile: splitFiles) {
                 orgIdDirs.add(splitFile.getParentFile());
             }

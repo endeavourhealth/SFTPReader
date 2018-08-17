@@ -17,25 +17,23 @@ public class CsvSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(CsvSplitter.class);
 
+    private static final int MAX_PRINTERS = 2000; //hard limit of printers to allow open, IO errors will prevent more than about 4000
+
     private String srcFilePath = null;
     private File dstDir = null;
     private CSVFormat csvFormat = null;
     private String[] splitColumns = null;
     private String[] columnHeaders = null;
-    private Map<String, CSVPrinter> csvPrinterMap = new HashMap<>();
-    private Set<File> filesCreated = null;
+    private Map<String, PrinterWrapper> csvPrinterMap = new HashMap<>();
+    private List<PrinterWrapper> openPrinters = new ArrayList<>();
+    private List<File> filesCreated = null;
     private Charset encoding = null;
 
-
     public CsvSplitter(String srcFilePath, File dstDir, CSVFormat csvFormat, String... splitColumns) {
-
-        this.srcFilePath = srcFilePath;
-        this.dstDir = dstDir;
-        this.csvFormat = csvFormat;
-        this.splitColumns = splitColumns;
+        this(srcFilePath, dstDir, csvFormat, Charset.defaultCharset(), splitColumns);
     }
 
-    public CsvSplitter(String srcFilePath, File dstDir, Charset encoding, CSVFormat csvFormat, String... splitColumns) {
+    public CsvSplitter(String srcFilePath, File dstDir, CSVFormat csvFormat, Charset encoding, String... splitColumns) {
 
         this.srcFilePath = srcFilePath;
         this.dstDir = dstDir;
@@ -44,18 +42,14 @@ public class CsvSplitter {
         this.encoding = encoding;
     }
 
-    public Set<File> go() throws Exception {
+    public List<File> go() throws Exception {
 
         //adding .withHeader() to the csvFormat forces it to treat the first row as the column headers,
         //and read them in, instead of ignoring them
-        InputStreamReader reader = null;
-        if (encoding != null) {
-            reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath, encoding);
-        } else {
-            reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath);
-        }
+        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath, encoding);
+
         CSVParser csvParser = new CSVParser(reader, csvFormat.withHeader());
-        filesCreated = new HashSet<>();
+        filesCreated = new ArrayList<>();
 
         try
         {
@@ -119,23 +113,8 @@ public class CsvSplitter {
             }
 
             //close all the csv printers created
-            Iterator<CSVPrinter> printerIterator = csvPrinterMap.values().iterator();
-            while (printerIterator.hasNext()) {
-                CSVPrinter csvPrinter = printerIterator.next();
-
-                //adding try/catch to get around AWS problem
-                try {
-                    csvPrinter.close();
-                } catch (Exception ex) {
-                    LOG.error("Failed to close printer " + ex.getMessage());
-                    try {
-                        csvPrinter.close();
-                        LOG.error("Worked on second attempt");
-                    } catch (Exception ex2) {
-                        LOG.error("Failed on second attempt");
-                        throw ex;
-                    }
-                }
+            for (PrinterWrapper printerWrapper: csvPrinterMap.values()) {
+                printerWrapper.close();
             }
         }
 
@@ -173,11 +152,11 @@ public class CsvSplitter {
 
         String mapKey = String.join("_", values);
 
-        CSVPrinter csvPrinter = csvPrinterMap.get(mapKey);
-        if (csvPrinter == null) {
+        PrinterWrapper printerWrapper = csvPrinterMap.get(mapKey);
+        if (printerWrapper == null) {
 
             File folder = new File(dstDir.getAbsolutePath());
-            for (String value: values) {
+            for (String value : values) {
 
                 //ensure it can be used as a valid folder name
                 value = value.replaceAll("[:\\\\/*\"?|<>']", " ");
@@ -193,34 +172,66 @@ public class CsvSplitter {
             File f = new File(folder, fileName);
             filesCreated.add(f);
 
-            //LOG.debug("Creating " + f);
+            printerWrapper = new PrinterWrapper(mapKey, f);
+            csvPrinterMap.put(mapKey, printerWrapper);
+        }
+
+        //ensure the printer wrapper we're using is open
+        if (!printerWrapper.isOpen()) {
+            printerWrapper.open();
+            openPrinters.add(printerWrapper);
+            LOG.debug("Opened printer for " + mapKey + ", now got " + openPrinters.size());
+        }
+
+        //on very large extracts (e.g. Emis Left & Dead) we end up with thousands of printers,
+        //which hits the OS file handle limit, so we need to cap our printers
+        while (openPrinters.size() >= MAX_PRINTERS) {
+            PrinterWrapper oldest = openPrinters.remove(0);
+            oldest.close();
+            LOG.debug("Closed printer, leaving " + openPrinters.size());
+        }
+
+        return printerWrapper.getCsvPrinter();
+    }
+
+    class PrinterWrapper {
+        private String cacheKey;
+        private File file;
+        private CSVPrinter csvPrinter;
+        private boolean haveWrittenHeaders;
+
+        public PrinterWrapper(String cacheKey, File file) {
+            this.cacheKey = cacheKey;
+            this.file = file;
+        }
+
+        public CSVPrinter getCsvPrinter() {
+            return csvPrinter;
+        }
+
+
+        public boolean isOpen() {
+            return csvPrinter != null;
+        }
+
+        private void open() throws Exception {
+            if (csvPrinter != null) {
+                throw new IllegalArgumentException("CSVPrinter is already open");
+            }
+
             try {
-
-                BufferedWriter bufferedWriter = null;
-                if (encoding != null) {
-                    bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), encoding));
-                } else {
-                    FileWriter fileWriter = new FileWriter(f);
-                    bufferedWriter = new BufferedWriter(fileWriter);
-                }
-                csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
-
-                csvPrinterMap.put(mapKey, csvPrinter);
+                openThrowExceptions();
 
             } catch (Exception ex) {
-                LOG.error("Error opening writer to " + f);
-                LOG.error("Currently got " + csvPrinterMap.size() + " files open");
+                //problems with S3FS mean this can fail but then work if we try again
+                File folder = file.getParentFile();
+                LOG.error("Error opening writer to " + file);
+                LOG.error("Currently got " + openPrinters.size() + " printers open");
                 LOG.error("Folder exists " + folder.exists());
-                LOG.error("File exists " + f.exists());
+                LOG.error("File exists " + file.exists());
 
                 try {
-                    FileWriter fileWriter = new FileWriter(f);
-                    LOG.error("Successfully opened on second attempt");
-                    BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-                    csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
-
-                    csvPrinterMap.put(mapKey, csvPrinter);
-                    return csvPrinter;
+                    openThrowExceptions();
 
                 } catch (Exception ex2) {
                     LOG.error("Failed to open on second attempt");
@@ -228,8 +239,57 @@ public class CsvSplitter {
                 }
             }
         }
-        return csvPrinter;
+
+        private void openThrowExceptions() throws Exception {
+
+            //if we've previously opened and written our headers / content then we need to make sure
+            //to open for appending and not write out the headers again
+            if (haveWrittenHeaders) {
+                FileOutputStream fos = new FileOutputStream(file, true);
+                OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
+                BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+                csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withSkipHeaderRecord());
+
+            } else {
+                FileOutputStream fos = new FileOutputStream(file);
+                OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
+                BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+                csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
+                csvPrinter.flush();
+
+                haveWrittenHeaders = true;
+            }
+        }
+
+        public void close() throws Exception {
+            if (csvPrinter == null) {
+                return;
+            }
+
+            csvPrinter.flush();
+
+            //try/catch to get around AWS S3FS problem
+            try {
+                closeThrowException();
+
+            } catch (Exception ex) {
+                LOG.error("Failed to close printer " + ex.getMessage());
+                try {
+                    closeThrowException();
+                    LOG.error("Worked on second attempt");
+                } catch (Exception ex2) {
+                    LOG.error("Failed on second attempt");
+                    throw ex;
+                }
+            }
+        }
+
+        private void closeThrowException() throws Exception {
+            csvPrinter.close();
+            csvPrinter = null;
+        }
+
     }
-
-
 }

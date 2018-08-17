@@ -4,12 +4,11 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -23,12 +22,18 @@ public class CsvJoiner {
     private List<File> srcFiles = null;
     private File dstFile = null;
     private CSVFormat csvFormat = null;
-    private boolean writtenContent;
+    private Charset encoding;
 
     public CsvJoiner(List<File> srcFiles, File dstFile, CSVFormat csvFormat) {
+        this(srcFiles, dstFile, csvFormat, Charset.defaultCharset());
+    }
+
+    public CsvJoiner(List<File> srcFiles, File dstFile, CSVFormat csvFormat, Charset encoding) {
         this.srcFiles = srcFiles;
         this.dstFile = dstFile;
         this.csvFormat = csvFormat;
+        this.encoding = encoding;
+
     }
 
     public boolean go() throws Exception {
@@ -36,13 +41,14 @@ public class CsvJoiner {
         CSVPrinter csvPrinter = null;
         CSVParser csvParser = null;
         List<String> firstColumnHeaders = null;
-        writtenContent = false;
+        boolean writtenContent = false;
 
         try {
 
             for (File srcFile : srcFiles) {
 
-                csvParser = CSVParser.parse(srcFile, Charset.defaultCharset(), csvFormat.withHeader());
+                InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFile.getAbsolutePath(), encoding);
+                csvParser = new CSVParser(reader, csvFormat.withHeader());
 
                 //read the headers
                 Map<String, Integer> headerMap = csvParser.getHeaderMap();
@@ -58,8 +64,9 @@ public class CsvJoiner {
 
                 //create the printer to the destination file if required
                 if (csvPrinter == null) {
-                    FileWriter fileWriter = new FileWriter(dstFile);
-                    BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+                    FileOutputStream fos = new FileOutputStream(dstFile);
+                    OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
+                    BufferedWriter bufferedWriter = new BufferedWriter(osw);
 
                     csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeadersArray));
                     firstColumnHeaders = columnHeadersList;

@@ -84,7 +84,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         //split the org ID-only files (i.e. sharing agreements file) so we have a directory per organisation ID
         for (String fileName: orgIdFiles) {
             LOG.trace("Splitting " + fileName + " into " +  dstDir);
-            Set<File> splitFiles = splitFile(fileName, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
+            List<File> splitFiles = splitFile(fileName, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
             appendOrgIdsToSet(splitFiles, orgIdDirs);
         }
 
@@ -102,7 +102,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         //split the clinical files by org and processing ID, which creates the org ID -> processing ID folder structure
         for (String sourceFilePath: orgAndProcessingIdFiles) {
             LOG.trace("Splitting " + sourceFilePath + " into " + dstDir);
-            Set<File> splitFiles = splitFile(sourceFilePath, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
+            List<File> splitFiles = splitFile(sourceFilePath, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
 
             String fileName = FilenameUtils.getName(sourceFilePath);
 
@@ -110,7 +110,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
             //organisation but ordered by processing ID
             for (File orgDir: orgIdDirs) {
                 File joinedFile = new File(orgDir, fileName);
-                Set<File> splitFilesForOrg = filterOrgAndProcessingFilesByParent(splitFiles, orgDir);
+                List<File> splitFilesForOrg = filterOrgAndProcessingFilesByParent(splitFiles, orgDir);
 
                 joinFiles(joinedFile, splitFilesForOrg);
             }
@@ -131,7 +131,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                 //if we've not split and re-ordered the file, do it now into this org dir
                 if (reorderedFile == null) {
                     LOG.trace("Splitting processing ID file " + sourceFilePath + " into " + orgDir);
-                    Set<File> splitFiles = splitFile(sourceFilePath, orgDir, CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
+                    List<File> splitFiles = splitFile(sourceFilePath, orgDir, CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
                     LOG.trace("Splitting into " + splitFiles.size() + " files");
 
                     //join them back together
@@ -250,7 +250,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
-    private void appendProcessingIdDirsToMap(Set<File> splitFiles, Map<File, Set<File>> processingIdDirsByOrgId) {
+    private void appendProcessingIdDirsToMap(List<File> splitFiles, Map<File, Set<File>> processingIdDirsByOrgId) {
         for (File splitFile: splitFiles) {
 
             File processingIdDir = splitFile.getParentFile();
@@ -265,8 +265,8 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    private Set<File> filterOrgAndProcessingFilesByParent(Set<File> splitFiles, File requiredOrgDir) {
-        Set<File> ret = new HashSet<>();
+    private List<File> filterOrgAndProcessingFilesByParent(List<File> splitFiles, File requiredOrgDir) {
+        List<File> ret = new ArrayList<>();
 
         for (File splitFile: splitFiles) {
             File processingIdDir = splitFile.getParentFile();
@@ -279,7 +279,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
-    private static void appendOrgIdsToSet(Set<File> splitFiles, Set<File> orgIdsFolders) {
+    private static void appendOrgIdsToSet(List<File> splitFiles, Set<File> orgIdsFolders) {
         for (File splitFile: splitFiles) {
 
             File orgIdFolder = splitFile.getParentFile();
@@ -337,7 +337,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         }*/
     }
 
-    private static File joinFiles(File joinedFile, Set<File> splitFiles) throws Exception {
+    private static File joinFiles(File joinedFile, List<File> splitFiles) throws Exception {
 
         List<File> separateFiles = orderFilesByProcessingId(splitFiles);
 
@@ -356,7 +356,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    private static List<File> orderFilesByProcessingId(Set<File> files) {
+    private static List<File> orderFilesByProcessingId(List<File> files) {
 
         //the org directory contains a sub-directory for each processing ID, which must be processed in order
         List<Integer> processingIds = new ArrayList<>();
@@ -665,7 +665,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         return headers;
     }
 
-    private static Set<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
+    private static List<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
         CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat, splitColmumns);
         return csvSplitter.go();
     }
