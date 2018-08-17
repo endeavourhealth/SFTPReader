@@ -39,12 +39,12 @@ public class Main {
 
             configuration = Configuration.getInstance();
 
-            if (args.length > 0) {
+            /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("TestSplittingAndJoining")) {
                     testSplittingAndJoining();
                     System.exit(0);
                 }
-            }
+            }*/
 
             /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("TestBarts")) {
@@ -139,7 +139,7 @@ public class Main {
         }
 	}
 
-    private static void testSplittingAndJoining() {
+    /*private static void testSplittingAndJoining() {
         try {
             LOG.info("Testing Splitting and Joining");
 
@@ -172,7 +172,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
 
     private static void shutdown() {
