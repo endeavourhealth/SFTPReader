@@ -180,7 +180,7 @@ public class CsvSplitter {
         if (!printerWrapper.isOpen()) {
             printerWrapper.open();
             openPrinters.add(printerWrapper);
-            LOG.debug("Opened printer for " + mapKey + ", now got " + openPrinters.size());
+            //LOG.debug("Opened printer for " + mapKey + ", now got " + openPrinters.size());
         }
 
         //on very large extracts (e.g. Emis Left & Dead) we end up with thousands of printers,
@@ -188,7 +188,7 @@ public class CsvSplitter {
         while (openPrinters.size() >= MAX_PRINTERS) {
             PrinterWrapper oldest = openPrinters.remove(0);
             oldest.close();
-            LOG.debug("Closed printer, leaving " + openPrinters.size());
+            //LOG.debug("Closed printer, leaving " + openPrinters.size());
         }
 
         return printerWrapper.getCsvPrinter();
