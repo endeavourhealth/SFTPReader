@@ -76,7 +76,7 @@ public class EmisCustomBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter
 
             //the file Emis provide doesn't contain column headings, but later things are easier if we have
             //them, so just insert them first
-            String headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistratationType\tProcessingOrder\r\n";
+            String headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
             bos.write(headers.getBytes());
             bos.flush();
 
