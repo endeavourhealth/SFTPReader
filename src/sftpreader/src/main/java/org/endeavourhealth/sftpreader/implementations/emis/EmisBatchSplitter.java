@@ -223,9 +223,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
             //we've received at least one set of data for a service we don't recognise
             if (odsCode == null) {
-                LOG.error("Failed to find ODS code for EMIS Org GUID " + orgGuid + " so skipping that content");
-                //throw new RuntimeException("Failed to find ODS code for EMIS Org GUID " + orgGuid);
-                continue;
+                throw new RuntimeException("Failed to find ODS code for EMIS Org GUID " + orgGuid);
             }
 
             BatchSplit batchSplit = new BatchSplit();

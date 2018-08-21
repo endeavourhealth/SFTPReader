@@ -91,6 +91,13 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
             //is in the same format as the regular extracts
             String odsCode = EmisBatchSplitter.findOdsCode("{" + orgGuid.toUpperCase() + "}", db);
 
+            //we've received at least one set of data for a service we don't recognise
+            if (odsCode == null) {
+                LOG.error("Failed to find ODS code for EMIS Org GUID " + orgGuid + " so skipping that content");
+                //throw new RuntimeException("Failed to find ODS code for EMIS Org GUID " + orgGuid);
+                continue;
+            }
+
             BatchSplit batchSplit = new BatchSplit();
             batchSplit.setBatchId(batch.getBatchId());
             batchSplit.setLocalRelativePath(localPath);
@@ -105,7 +112,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
                 storagePath = FilenameUtils.concat(storagePath, orgGuid);
 
                 File[] splitFiles = orgDir.listFiles();
-                LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
+                LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage for " + odsCode);
 
                 for (File splitFile: splitFiles) {
 
