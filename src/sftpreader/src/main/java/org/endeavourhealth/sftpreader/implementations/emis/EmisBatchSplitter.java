@@ -221,6 +221,13 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
             //in the Organisation CSV file, but for deltas, we use the key-value-pair table which is populated when we get the deltas
             String odsCode = findOdsCode(orgGuid, db);
 
+            //we've received at least one set of data for a service we don't recognise
+            if (odsCode == null) {
+                LOG.error("Failed to find ODS code for EMIS Org GUID " + orgGuid + " so skipping that content");
+                //throw new RuntimeException("Failed to find ODS code for EMIS Org GUID " + orgGuid);
+                continue;
+            }
+
             BatchSplit batchSplit = new BatchSplit();
             batchSplit.setBatchId(batch.getBatchId());
             batchSplit.setLocalRelativePath(localPath);
@@ -557,7 +564,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
             return mapping.getOdsCode();
         }
 
-        throw new RuntimeException("Failed to find ODS code for EMIS Org GUID " + emisOrgGuid);
+        return null;
     }
 
     /**
