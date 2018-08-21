@@ -242,7 +242,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                 storagePath = FilenameUtils.concat(storagePath, orgGuid);
 
                 File[] splitFiles = orgDir.listFiles();
-                LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
+                LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage for " + odsCode);
 
                 for (File splitFile: splitFiles) {
 
