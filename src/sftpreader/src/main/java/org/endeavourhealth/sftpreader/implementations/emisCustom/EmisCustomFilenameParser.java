@@ -14,6 +14,7 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
 
     private LocalDate extractDate;
     private String fileTypeIdentifier;
+    private boolean isFileNeeded;
 
     public EmisCustomFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
         super(isRawFile, remoteFile, dbConfiguration);
@@ -22,6 +23,14 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
     @Override
     protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
         String fileName = remoteFile.getFilename();
+
+        if (fileName.equalsIgnoreCase(".bash_history")
+                || fileName.equalsIgnoreCase("motd.legal-displayed")
+                || fileName.equalsIgnoreCase(".viminfo")) {
+            isFileNeeded = false;
+            return;
+        }
+
         if (fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory V2.7z") //raw file name
                 || fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory.txt")) { //unzipped file name
             fileTypeIdentifier = "RegistrationStatus";
@@ -43,7 +52,7 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
 
     @Override
     public boolean isFileNeeded() {
-        return true;
+        return isFileNeeded;
     }
 
     @Override
