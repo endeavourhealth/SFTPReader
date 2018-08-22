@@ -169,7 +169,9 @@ public class EmisBatchValidator extends SftpBatchValidator {
         alert += mapping.getOdsCode();
         alert += ", ";
         alert += mapping.getName();
-        alert += " has changed:\r\n";
+        alert += " (";
+        alert += dbConfiguration.getConfigurationFriendlyName();
+        alert += ") has changed:\r\n";
         alert += msg;
 
         alert += "\r\n";
