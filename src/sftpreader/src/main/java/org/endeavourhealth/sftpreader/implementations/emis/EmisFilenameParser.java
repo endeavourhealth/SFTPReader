@@ -15,7 +15,6 @@ import java.util.UUID;
 public class EmisFilenameParser extends SftpFilenameParser {
                                                                         // same as ISO pattern but switch : for . so can be used as filename and sorted
     private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
-    private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
 
     private ProcessingIdSet processingIds;
     private String fileTypeIdentifier;
@@ -91,30 +90,8 @@ public class EmisFilenameParser extends SftpFilenameParser {
         this.fileTypeIdentifier = schemaNamePart + "_" + tableNamePart;
 
         this.extractDateTime = LocalDateTime.parse(extractDateTimePart, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-
-        /*if (!StringUtils.endsWith(sharingAgreementGuidWithFileExtensionPart, pgpFileExtensionFilter))
-            throw new SftpFilenameParseException("File does not end with " + pgpFileExtensionFilter);*/
-
-        String[] sharingAgreementParts = sharingAgreementGuidWithFileExtensionPart.split("[.]");
-        String sharingAgreementGuid = sharingAgreementParts[0];
-
-        if (StringUtils.isEmpty(sharingAgreementGuid)) {
-            throw new SftpFilenameParseException("Sharing agreement UUID is empty");
-        }
-
-        UUID sharingAgreementUuid = UUID.fromString(sharingAgreementGuid);
-        if (!sharingAgreementUuid.equals(getSharingAgreementUuidFromConfiguration())) {
-            throw new SftpFilenameParseException("Sharing agreement UUID does not match that in configuration key value pair");
-        }
     }
 
-    private UUID getSharingAgreementUuidFromConfiguration() throws SftpFilenameParseException {
-        for (DbConfigurationKvp dbConfigurationKvp : dbConfiguration.getDbConfigurationKvp())
-            if (dbConfigurationKvp.getKey().equals(SHARING_AGREEMENT_UUID_KEY))
-                return UUID.fromString(dbConfigurationKvp.getValue());
-
-        throw new SftpFilenameParseException(SHARING_AGREEMENT_UUID_KEY + " has not been configured in configuration key value pair");
-    }
 
     public ProcessingIdSet getProcessingIds() {
         return this.processingIds;

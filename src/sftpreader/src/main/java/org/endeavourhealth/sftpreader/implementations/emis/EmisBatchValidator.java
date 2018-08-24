@@ -3,6 +3,7 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
@@ -10,6 +11,7 @@ import org.endeavourhealth.sftpreader.model.DataLayerI;
 
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
 import org.endeavourhealth.sftpreader.model.db.*;
+import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
@@ -18,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 public class EmisBatchValidator extends SftpBatchValidator {
+
+    private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
 
     @Override
     public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
@@ -31,17 +35,47 @@ public class EmisBatchValidator extends SftpBatchValidator {
 
         checkFilenamesAreConsistentAcrossBatch(incompleteBatch, dbConfiguration);
         checkAllFilesArePresentInBatch(incompleteBatch, dbConfiguration);
+        checkSharingAgreementIdIsCorrect(incompleteBatch, dbConfiguration);
 
         //check the newly received sharing agreements file to see if any orgs have become deleted or deactivated since last time
         checkForDeactivatedOrDeletedOrganisations(incompleteBatch, lastCompleteBatch, instanceConfiguration, dbConfiguration, db);
 
-        // further checks to complete
-        //
-        // check that remote bytes == downloaded bytes
-        // check all file attributes are complete
-
         return true;
     }
+
+    private void checkSharingAgreementIdIsCorrect(Batch incompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException {
+
+        //find the expected sharing agreement from the DB.
+        UUID expectedSharingAgreement = null;
+        for (DbConfigurationKvp dbConfigurationKvp : dbConfiguration.getDbConfigurationKvp()) {
+            if (dbConfigurationKvp.getKey().equals(SHARING_AGREEMENT_UUID_KEY)) {
+                expectedSharingAgreement = UUID.fromString(dbConfigurationKvp.getValue());
+                break;
+            }
+        }
+        if (expectedSharingAgreement == null) {
+            throw new SftpValidationException(SHARING_AGREEMENT_UUID_KEY + " has not been configured in configuration_kvp table");
+        }
+
+        //find the sharing agreement from the files, doing each file (just in case)
+        for (BatchFile file: incompleteBatch.getBatchFiles()) {
+            String fileName = file.getFilename();
+
+            //the file name is in the format
+            //291_Agreements_SharingOrganisation_20150211164536_45E7CD20-EE37-41AB-90D6-DC9D4B03D102.csv.gpg
+            //so we need to remove BOTH extensions
+            fileName = FilenameUtils.getBaseName(fileName);
+            fileName = FilenameUtils.getBaseName(fileName);
+
+            String[] toks = fileName.split("_");
+            String agreementStr = toks[4];
+            UUID foundSharingAgreement = UUID.fromString(agreementStr);
+            if (!foundSharingAgreement.equals(expectedSharingAgreement)) {
+                throw new SftpValidationException("Sharing agreement " + foundSharingAgreement + " does not match exepected UUID " + expectedSharingAgreement);
+            }
+        }
+    }
+
 
     /**
      * checks the newly received sharing agreements file to see if any orgs have become deleted or deactivated since last time
@@ -234,20 +268,20 @@ public class EmisBatchValidator extends SftpBatchValidator {
         }
     }
 
-    private void checkFilenamesAreConsistentAcrossBatch(Batch incompleteBatches, DbConfiguration dbConfiguration) throws SftpValidationException {
-        Validate.notNull(incompleteBatches, "incompleteBatches is null");
-        Validate.notNull(incompleteBatches.getBatchFiles(), "incompleteBatches.batchFiles is null");
+    private void checkFilenamesAreConsistentAcrossBatch(Batch incompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException {
+        Validate.notNull(incompleteBatch, "incompleteBatches is null");
+        Validate.notNull(incompleteBatch.getBatchFiles(), "incompleteBatches.batchFiles is null");
 
         Integer processingIdStart = null;
         Integer processingIdEnd = null;
         LocalDateTime extractDateTime = null;
 
-        if (incompleteBatches.getBatchFiles().size() == 0)
+        if (incompleteBatch.getBatchFiles().size() == 0)
             throw new SftpValidationException("No batch files in batch");
 
         boolean first = true;
 
-        for (BatchFile incompleteBatchFile : incompleteBatches.getBatchFiles()) {
+        for (BatchFile incompleteBatchFile : incompleteBatch.getBatchFiles()) {
 
             RemoteFile remoteFile = new RemoteFile(incompleteBatchFile.getFilename(), -1, null);
             EmisFilenameParser emisSftpFilenameParser = new EmisFilenameParser(false, remoteFile, dbConfiguration);
