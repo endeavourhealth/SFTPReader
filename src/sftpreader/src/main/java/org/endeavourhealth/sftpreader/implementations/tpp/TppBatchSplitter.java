@@ -29,6 +29,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
     private static final String SPLIT_COLUMN_ORG = "IDOrganisationVisibleTo";
     private static final String SPLIT_FOLDER = "Split";
     private static final String ORGANISATION_FILE = "SROrganisation.csv";
+    private static final String REQUIRED_CHARSET ="Cp1252";
 
     private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
@@ -236,7 +237,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         File f = new File(orgFilePath);
         FileInputStream fis = new FileInputStream(f);
         BufferedInputStream bis = new BufferedInputStream(fis);
-        InputStreamReader reader = new InputStreamReader(bis);
+        InputStreamReader reader = new InputStreamReader(bis,Charset.forName(REQUIRED_CHARSET));
         CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
 
         try {
@@ -262,7 +263,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
 
     private static List<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
-        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat, Charset.forName("Cp1252"), splitColmumns);
+        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat, Charset.forName(REQUIRED_CHARSET), splitColmumns);
         return csvSplitter.go();
     }
 }
