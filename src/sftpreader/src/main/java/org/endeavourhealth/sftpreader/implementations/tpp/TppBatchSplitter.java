@@ -7,15 +7,17 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
-import org.endeavourhealth.sftpreader.model.DataLayerI;
-
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -29,7 +31,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
     private static final String SPLIT_COLUMN_ORG = "IDOrganisationVisibleTo";
     private static final String SPLIT_FOLDER = "Split";
     private static final String ORGANISATION_FILE = "SROrganisation.csv";
-    private static final String REQUIRED_CHARSET ="Cp1252";
+    private static final String REQUIRED_CHARSET = "Cp1252";
 
     private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
@@ -71,12 +73,12 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         identifyFiles(sourceTempDir, filesToSplit, filesToNotSplit);
 
         //split the files we can
-        for (File f: filesToSplit) {
+        for (File f : filesToSplit) {
             splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
         }
 
         List<File> orgDirs = new ArrayList<>();
-        for (File orgDir: dstDir.listFiles()) {
+        for (File orgDir : dstDir.listFiles()) {
             orgDirs.add(orgDir);
         }
         //LOG.info("Got org dirs = " + dstDir.listFiles().length);
@@ -87,7 +89,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         Batch lastCompleteBatch = db.getLastCompleteBatch(dbConfiguration.getConfigurationId());
         if (lastCompleteBatch != null) {
             List<BatchSplit> lastCompleteBatchSplits = db.getBatchSplitsForBatch(lastCompleteBatch.getBatchId());
-            for (BatchSplit previousBatchSplit: lastCompleteBatchSplits) {
+            for (BatchSplit previousBatchSplit : lastCompleteBatchSplits) {
                 String localRelativePath = previousBatchSplit.getLocalRelativePath();
                 String orgId = new File(localRelativePath).getName();
 
@@ -102,8 +104,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         }
 
         //copy the non-splitting files into each of the org directories
-        for (File f: filesToNotSplit) {
-            for (File orgDir: orgDirs) {
+        for (File f : filesToNotSplit) {
+            for (File orgDir : orgDirs) {
                 File dst = new File(orgDir, f.getName());
                 Files.copy(f.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
@@ -140,7 +142,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 File[] splitFiles = orgDir.listFiles();
                 LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
 
-                for (File splitFile: splitFiles) {
+                for (File splitFile : splitFiles) {
 
                     String fileName = splitFile.getName();
                     String storageFilePath = FilenameUtils.concat(storagePath, fileName);
@@ -154,7 +156,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
     }
 
     private void identifyFiles(String sourceTempDir, List<File> filesToSplit, List<File> filesToNotSplit) throws Exception {
-        for (File tempFile: new File(sourceTempDir).listFiles()) {
+        for (File tempFile : new File(sourceTempDir).listFiles()) {
 
             //the "Split" sub-directory will be there, so ignore it
             if (tempFile.isDirectory()) {
@@ -237,7 +239,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         File f = new File(orgFilePath);
         FileInputStream fis = new FileInputStream(f);
         BufferedInputStream bis = new BufferedInputStream(fis);
-        InputStreamReader reader = new InputStreamReader(bis,Charset.forName(REQUIRED_CHARSET));
+        InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
         CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
 
         try {

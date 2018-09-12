@@ -39,6 +39,13 @@ public class Main {
 
             configuration = Configuration.getInstance();
 
+            if (args.length > 0) {
+                if (args[0].equals("TestS3")) {
+                    testS3(args);
+                    System.exit(0);
+                }
+            }
+
             /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("TestSplittingAndJoining")) {
                     testSplittingAndJoining();
@@ -138,6 +145,56 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void testS3(String[] args) {
+        LOG.debug("Testing S3");
+        try {
+            String src = args[1];
+            String dstBucket = args[2];
+            String dstKey = args[3];
+            String encryption = args[4];
+
+            File srcFile = new File(src);
+            if (!srcFile.exists()) {
+                throw new Exception("" + src + " doesn't exist");
+            }
+
+            AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
+                    .standard()
+                    .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+                    .withRegion(Regions.EU_WEST_2);
+
+            AmazonS3 s3Client = clientBuilder.build();
+
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            if (encryption.equalsIgnoreCase("AES")) {
+                objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+                LOG.debug("Writing with AWS encryption");
+
+            } else if (encryption.equalsIgnoreCase("NONE")) {
+                //nothing
+                LOG.debug("Writing with no encryption");
+
+            } else if (encryption.equals("KMS")) {
+
+                String s = SSEAlgorithm.KMS.getAlgorithm();
+                objectMetadata.setSSEAlgorithm(s);
+
+                LOG.debug("Writing with KMS encryption (" + s + ")");
+
+            } else {
+                throw new Exception("Unknown encryption mode");
+            }
+
+            PutObjectRequest putRequest = new PutObjectRequest(dstBucket, dstKey, srcFile);
+            putRequest.setMetadata(objectMetadata);
+
+            s3Client.putObject(putRequest);
+
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     /*private static void testSplittingAndJoining() {
         try {
