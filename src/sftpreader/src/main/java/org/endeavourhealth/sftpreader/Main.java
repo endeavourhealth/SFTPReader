@@ -2,6 +2,8 @@ package org.endeavourhealth.sftpreader;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.services.kms.AWSKMS;
+import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
@@ -39,12 +41,12 @@ public class Main {
 
             configuration = Configuration.getInstance();
 
-            if (args.length > 0) {
+            /*if (args.length > 0) {
                 if (args[0].equals("TestS3")) {
                     testS3(args);
                     System.exit(0);
                 }
-            }
+            }*/
 
             /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("TestSplittingAndJoining")) {
@@ -95,9 +97,7 @@ public class Main {
                 }
             }*/
 
-
-
-            /*if (args.length > 0) {
+            if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("FixS3")) {
                     String bucket = args[1];
                     String path = args[2];
@@ -105,7 +105,7 @@ public class Main {
                     fixS3(bucket, path, test);
                     System.exit(0);
                 }
-            }*/
+            }
 
             /*if (args.length > 0) {
                 if (args[0].equalsIgnoreCase("DeleteCsvs")) {
@@ -146,7 +146,7 @@ public class Main {
         }
 	}
 
-    private static void testS3(String[] args) {
+    /*private static void testS3(String[] args) {
         LOG.debug("Testing S3");
         try {
             String src = args[1];
@@ -169,7 +169,7 @@ public class Main {
             ObjectMetadata objectMetadata = new ObjectMetadata();
             if (encryption.equalsIgnoreCase("AES")) {
                 objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-                LOG.debug("Writing with AWS encryption");
+                LOG.debug("Writing with AES encryption");
 
             } else if (encryption.equalsIgnoreCase("NONE")) {
                 //nothing
@@ -194,7 +194,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
     /*private static void testSplittingAndJoining() {
         try {
@@ -263,7 +263,6 @@ public class Main {
                 .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
                 .withRegion(Regions.EU_WEST_2);
 
-
         AmazonS3 s3Client = clientBuilder.build();
 
         ListObjectsV2Request request = new ListObjectsV2Request();
@@ -292,7 +291,9 @@ public class Main {
                         s3Client.copyObject(copyRequest);
 
                         ObjectMetadata objectMetadata = new ObjectMetadata();
-                        objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+
+                        String s = SSEAlgorithm.KMS.getAlgorithm();
+                        objectMetadata.setSSEAlgorithm(s);
 
                         //copy back to original but WITH encryption
                         copyRequest = new CopyObjectRequest(bucket, key2, bucket, key);
@@ -325,7 +326,7 @@ public class Main {
      * utility fn to delete unnecessary CSV files left from the Emis SFTP decryption
      * We keep the raw GPG files and the split CSV files, so don't need the interim large decrypted CSV files
      */
-    private static void deleteCsvs(String bucket, String path, boolean test) {
+    /*private static void deleteCsvs(String bucket, String path, boolean test) {
         LOG.info("Deleting unnecessary CSV files from3 " + bucket + " for " + path);
 
         AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
@@ -383,6 +384,6 @@ public class Main {
         }
 
         LOG.info("Finished deleting unnecessary CSV files from3 " + bucket + " for " + path);
-    }
+    }*/
 }
 
