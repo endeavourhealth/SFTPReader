@@ -282,7 +282,7 @@ public class Main {
                     LOG.info("" + key + " has encryption " + encryption);
 
                     if (!test
-                        && Strings.isNullOrEmpty(encryption)) {
+                        && (Strings.isNullOrEmpty(encryption) || encryption.equalsIgnoreCase("AES256"))) {
 
                         String key2 = key + "_COPY";
 
