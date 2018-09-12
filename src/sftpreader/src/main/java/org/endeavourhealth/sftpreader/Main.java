@@ -256,7 +256,7 @@ public class Main {
     }
 
     private static void fixS3(String bucket, String path, boolean test) {
-        LOG.info("Fixing S3 " + bucket + " for " + path);
+        LOG.info("Fixing S3 " + bucket + " for " + path + " test mode = " + test);
 
         AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
                 .standard()
@@ -279,7 +279,7 @@ public class Main {
                     GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
                     ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
                     String encryption = metadata.getSSEAlgorithm();
-                    LOG.info("" + key + " has encryption " + encryption);
+                    LOG.info("" + key + " has encryption [" + encryption + "]");
 
                     if (!test
                         && (Strings.isNullOrEmpty(encryption) || encryption.equalsIgnoreCase("AES256"))) {
