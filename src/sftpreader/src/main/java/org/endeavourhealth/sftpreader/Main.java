@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -103,6 +104,15 @@ public class Main {
                     String path = args[2];
                     boolean test = Boolean.parseBoolean(args[3]);
                     fixS3(bucket, path, test);
+                    System.exit(0);
+                }
+
+                if (args[0].equalsIgnoreCase("TestLargeCopy")) {
+                    String bucket = args[1];
+                    String srcKey = args[2];
+                    String dstKey = args[3];
+                    long maxChunk = Long.parseLong(args[4]);
+                    testCopyLargeFile(bucket, srcKey, dstKey, maxChunk);
                     System.exit(0);
                 }
             }
@@ -286,19 +296,32 @@ public class Main {
 
                         String key2 = key + "_COPY";
 
-                        //copy to backup
-                        CopyObjectRequest copyRequest = new CopyObjectRequest(bucket, key, bucket, key2);
-                        s3Client.copyObject(copyRequest);
-
-                        ObjectMetadata objectMetadata = new ObjectMetadata();
-
+                        ObjectMetadata newObjectMetadata = new ObjectMetadata();
                         String s = SSEAlgorithm.KMS.getAlgorithm();
-                        objectMetadata.setSSEAlgorithm(s);
+                        newObjectMetadata.setSSEAlgorithm(s);
 
-                        //copy back to original but WITH encryption
-                        copyRequest = new CopyObjectRequest(bucket, key2, bucket, key);
-                        copyRequest.setNewObjectMetadata(objectMetadata);
-                        s3Client.copyObject(copyRequest);
+
+                        long len = metadata.getContentLength();
+                        long maxChunk = 1024L * 1024L * 1024L * 4L; //4GB
+                        if (len > maxChunk) {
+
+                            //copy to backup
+                            copyLargeFile(s3Client, bucket, key, key2, maxChunk, null);
+
+                            //copy back to original but WITH encryption
+                            copyLargeFile(s3Client, bucket, key2, key, maxChunk, newObjectMetadata);
+
+                        } else {
+
+                            //copy to backup
+                            CopyObjectRequest copyRequest = new CopyObjectRequest(bucket, key, bucket, key2);
+                            s3Client.copyObject(copyRequest);
+
+                            //copy back to original but WITH encryption
+                            copyRequest = new CopyObjectRequest(bucket, key2, bucket, key);
+                            copyRequest.setNewObjectMetadata(newObjectMetadata);
+                            s3Client.copyObject(copyRequest);
+                        }
 
                         //delete backup
                         DeleteObjectRequest deleteRequest = new DeleteObjectRequest(bucket, key2);
@@ -320,6 +343,83 @@ public class Main {
         }
 
         LOG.info("Finished Fixing S3 " + bucket + " for " + path);
+    }
+
+    private static void testCopyLargeFile(String bucket, String srcKey, String dstKey, long maxChunk) {
+        LOG.info("Testing copying S3 " + bucket + " from " + srcKey + " to " + dstKey);
+
+        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
+                .standard()
+                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+                .withRegion(Regions.EU_WEST_2);
+
+        AmazonS3 s3Client = clientBuilder.build();
+
+        copyLargeFile(s3Client, bucket, srcKey, dstKey, maxChunk, null);
+
+        LOG.info("Finishing Testing copying S3 " + bucket + " from " + srcKey + " to " + dstKey);
+    }
+
+    private static void copyLargeFile(AmazonS3 s3Client, String bucket, String srcKey, String dstKey, long maxChunk, ObjectMetadata newMetadata) {
+
+        LOG.debug("Copying " + srcKey + " -> " + dstKey + " in " + maxChunk + " chunks");
+
+        // Initiate the multipart upload.
+        InitiateMultipartUploadRequest initRequest = new InitiateMultipartUploadRequest(bucket, dstKey);
+        if (newMetadata != null) {
+            initRequest.setObjectMetadata(newMetadata);
+        }
+
+        InitiateMultipartUploadResult initResult = s3Client.initiateMultipartUpload(initRequest);
+
+        // Get the object size to track the end of the copy operation.
+        GetObjectMetadataRequest metadataRequest = new GetObjectMetadataRequest(bucket, srcKey);
+        ObjectMetadata metadataResult = s3Client.getObjectMetadata(metadataRequest);
+        long objectSize = metadataResult.getContentLength();
+
+        // Copy the object using 5 MB parts.
+        long bytePosition = 0;
+        int partNum = 1;
+        List<CopyPartResult> copyResponses = new ArrayList<CopyPartResult>();
+        while (bytePosition < objectSize) {
+            // The last part might be smaller than partSize, so check to make sure
+            // that lastByte isn't beyond the end of the object.
+            long lastByte = Math.min(bytePosition + maxChunk - 1, objectSize - 1);
+
+            // Copy this part.
+            CopyPartRequest copyRequest = new CopyPartRequest()
+                    .withSourceBucketName(bucket)
+                    .withSourceKey(srcKey)
+                    .withDestinationBucketName(bucket)
+                    .withDestinationKey(dstKey)
+                    .withUploadId(initResult.getUploadId())
+                    .withFirstByte(bytePosition)
+                    .withLastByte(lastByte)
+                    .withPartNumber(partNum++);
+
+            copyResponses.add(s3Client.copyPart(copyRequest));
+            bytePosition += maxChunk;
+
+            LOG.debug("Done " + bytePosition);
+        }
+
+        // Complete the upload request to concatenate all uploaded parts and make the copied object available.
+        CompleteMultipartUploadRequest completeRequest = new CompleteMultipartUploadRequest(
+                bucket,
+                dstKey,
+                initResult.getUploadId(),
+                getETags(copyResponses));
+        s3Client.completeMultipartUpload(completeRequest);
+
+        LOG.debug("Completed multipart copy");
+    }
+
+    private static List<PartETag> getETags(List<CopyPartResult> responses) {
+        List<PartETag> etags = new ArrayList<PartETag>();
+        for (CopyPartResult response : responses) {
+            etags.add(new PartETag(response.getPartNumber(), response.getETag()));
+        }
+        return etags;
     }
 
     /**
