@@ -538,16 +538,37 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                     combinedName += " (CDB " + orgCdb + ")";
                 }
 
-                if (StringUtils.isNotEmpty(orgOds)) {
-
-                    //create and save the mapping
-                    EmisOrganisationMap mapping = new EmisOrganisationMap()
-                            .setGuid(orgGuid)
-                            .setName(combinedName)
-                            .setOdsCode(orgOds);
-
-                    db.addEmisOrganisationMap(mapping);
+                if (!StringUtils.isNotEmpty(orgOds)) {
+                    continue;
                 }
+
+                //We had the ODS code for F86644 swap to F86644a and back again, resulting in data split over
+                //two services, so ignore it changing to the wrong version again
+                if (orgOds.equalsIgnoreCase("F86644a")) {
+                    continue;
+                }
+
+                //Validate that the ODS code isn't changing. We want to keep this table updated with name
+                //changes etc., but if the ODS code changes, then we need to understand what's happening and
+                //manually reconfigure the protocol to expect the new ODS code (and potentially move data)
+                EmisOrganisationMap existingMapping = db.getEmisOrganisationMap(orgGuid);
+                if (existingMapping != null) {
+                    String existingOdsCode = existingMapping.getOdsCode();
+                    if (!existingOdsCode.equalsIgnoreCase(orgOds)) {
+                        //if this happens, we need to work out if it's a permanent ODS code change
+                        //or a weird temporary one like happend for F86644 (which changed to F86644a for a day)
+                        throw new Exception("ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds + " and needs manually handling");
+                    }
+                }
+
+                //create and save the mapping
+                EmisOrganisationMap mapping = new EmisOrganisationMap()
+                        .setGuid(orgGuid)
+                        .setName(combinedName)
+                        .setOdsCode(orgOds);
+
+                db.addEmisOrganisationMap(mapping);
+
             }
         } finally {
             csvParser.close();
