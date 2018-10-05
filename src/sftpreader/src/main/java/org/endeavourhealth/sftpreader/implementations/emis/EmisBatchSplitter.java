@@ -7,6 +7,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
@@ -562,7 +563,9 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                         //or a weird temporary one like happend for F86644 (which changed to F86644a for a day)
                         // Only throw exception if org has a sharing agreement hence active
                         if (agreedOrgIds.contains(orgGuid)) {
-                            throw new Exception("ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds + " and needs manually handling");
+                            String alert = "ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds + " and needs manually handling";
+                            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, alert);
+                            throw new Exception(alert);
                         } else {
                             LOG.error("ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds);
                         }
