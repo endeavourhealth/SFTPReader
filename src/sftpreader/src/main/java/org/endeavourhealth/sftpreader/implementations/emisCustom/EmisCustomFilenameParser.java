@@ -36,7 +36,8 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
             fileTypeIdentifier = "RegistrationStatus";
             extractDate = remoteFile.getLastModified().toLocalDate();
         } else {
-            throw new SftpFilenameParseException("Expecting file name: EndeavourRegistrationStatusHistory V2.7z");
+            isFileNeeded = false;
+            //throw new SftpFilenameParseException("Expecting file name: EndeavourRegistrationStatusHistory V2.7z");
         }
     }
 
