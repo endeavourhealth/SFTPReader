@@ -37,6 +37,8 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
     public static final String SPLIT_FOLDER = "Split";
 
+    private static List<String> agreedOrgIds = new ArrayList<>();
+
     /**
      * splits the EMIS extract files we use by org GUID and processing ID, so
      * we have a directory structure of dstDir -> org GUID -> processing ID
@@ -505,6 +507,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
                     File orgDir = new File(splitTempDir, orgGuid);
                     ret.add(orgDir);
+                    agreedOrgIds.add(orgGuid);
                 }
             }
         } finally {
@@ -557,8 +560,13 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                     if (!existingOdsCode.equalsIgnoreCase(orgOds)) {
                         //if this happens, we need to work out if it's a permanent ODS code change
                         //or a weird temporary one like happend for F86644 (which changed to F86644a for a day)
-                        throw new Exception("ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds + " and needs manually handling");
-                    }
+                        // Only throw exception if org has a sharing agreement hence active
+                        if (agreedOrgIds.contains(orgGuid)) {
+                            throw new Exception("ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds + " and needs manually handling");
+                        } else {
+                            LOG.error("ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds);
+                        }
+                     }
                 }
 
                 //create and save the mapping
