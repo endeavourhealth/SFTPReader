@@ -3,7 +3,6 @@ package org.endeavourhealth.sftpreader.implementations.emisCustom;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchUnzipperDecrypter;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -11,7 +10,6 @@ import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchFile;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
-import org.endeavourhealth.sftpreader.utilities.PgpUtil;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
@@ -74,9 +72,19 @@ public class EmisCustomBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter
             FileOutputStream fos = new FileOutputStream(unzippedFile);
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
-            //the file Emis provide doesn't contain column headings, but later things are easier if we have
-            //them, so just insert them first
-            String headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
+            //the file Emis provide doesn't contain column headings, but later things are easier if we have them, so just insert them first
+            String headers = null;
+            if (batchFile.getFileTypeIdentifier().equals(EmisCustomFilenameParser.FILE_TYPE_REG_STATUS)) {
+                headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
+
+            } else if (batchFile.getFileTypeIdentifier().equals(EmisCustomFilenameParser.FILE_TYPE_ORIGINAL_TERMS)) {
+                headers = "OrganisationCdb\tOrganisationOds\tPatientGuid\tObservationGuid\tOriginalTerm\r\n";
+
+            } else {
+                throw new Exception("Unsupported file type " + batchFile.getFileTypeIdentifier());
+            }
+            //String headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
+
             bos.write(headers.getBytes());
             bos.flush();
 

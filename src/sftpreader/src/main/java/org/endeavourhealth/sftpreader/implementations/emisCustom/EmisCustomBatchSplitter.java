@@ -1,15 +1,13 @@
 package org.endeavourhealth.sftpreader.implementations.emisCustom;
 
+import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisBatchSplitter;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
-import org.endeavourhealth.sftpreader.model.db.Batch;
-import org.endeavourhealth.sftpreader.model.db.BatchSplit;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +51,13 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
         FileHelper.deleteRecursiveIfExists(dstDir);
         FileHelper.createDirectoryIfNotExists(dstDir);
 
-        Set<File> orgIdDirs = new HashSet<>();
+        //see if we have separate temp and storage dirs
+        String sourcePermDirToCopyTo = null;
+        if (!FilenameUtils.equals(tempDir, sharedStorageDir)) {
+            sourcePermDirToCopyTo = sourcePermDir;
+        }
+
+        List<BatchSplit> batchSplits = new ArrayList<>();
 
         for (File srcFileObj: new File(sourceTempDir).listFiles()) {
 
@@ -69,20 +73,65 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
                 continue;
             }
 
-            //split the file by org GUID
             LOG.trace("Splitting " + srcFile);
-            CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSVFormat.TDF, "OrganisationGuid");
-            List<File> splitFiles = csvSplitter.go();
-            for (File splitFile: splitFiles) {
-                orgIdDirs.add(splitFile.getParentFile());
+
+            if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_REG_STATUS)) {
+                splitRegStatusFile(batch, srcFile, dstDir, sourcePermDirToCopyTo, db, batchSplits);
+
+            } else if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_ORIGINAL_TERMS)) {
+                splitOriginalTermsFile(batch, srcFile, dstDir, sourcePermDirToCopyTo, batchSplits);
+
+            } else {
+                throw new Exception("Unsupported file " + srcFileObj.getName());
             }
         }
 
-        //build a list of the folders containing file sets, to return
-        List<BatchSplit> ret = new ArrayList<>();
+        return batchSplits;
+    }
 
-        for (File orgDir : orgIdDirs) {
+    private void splitOriginalTermsFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, List<BatchSplit> batchSplits) throws Exception {
+        //the original terms file doesn't have an org GUID, so split by the ODS code
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSVFormat.TDF, "OrganisationOds");
+        List<File> splitFiles = csvSplitter.go();
 
+        for (File splitFile: splitFiles) {
+
+            File odsDir = splitFile.getParentFile();
+            String odsCode = odsDir.getName();
+            String localPath = FilenameUtils.concat(batch.getLocalRelativePath(), SPLIT_FOLDER);
+            localPath = FilenameUtils.concat(localPath, odsCode);
+
+            BatchSplit batchSplit = new BatchSplit();
+            batchSplit.setBatchId(batch.getBatchId());
+            batchSplit.setLocalRelativePath(localPath);
+            batchSplit.setOrganisationId(odsCode);
+
+            batchSplits.add(batchSplit);
+
+            //if we're using separate temp storage to our permanent storage, then copy to it
+            if (!Strings.isNullOrEmpty(sourcePermDirToCopyTo)) {
+
+                String storagePath = FilenameUtils.concat(sourcePermDirToCopyTo, SPLIT_FOLDER);
+                storagePath = FilenameUtils.concat(storagePath, odsCode);
+
+                String fileName = splitFile.getName();
+                String storageFilePath = FilenameUtils.concat(storagePath, fileName);
+
+                FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
+            }
+        }
+    }
+
+
+    private void splitRegStatusFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, DataLayerI db, List<BatchSplit> batchSplits) throws Exception {
+
+        //split the file by org GUID
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSVFormat.TDF, "OrganisationGuid");
+        List<File> splitFiles = csvSplitter.go();
+
+        for (File splitFile: splitFiles) {
+
+            File orgDir = splitFile.getParentFile();
             String orgGuid = orgDir.getName();
             String localPath = FilenameUtils.concat(batch.getLocalRelativePath(), SPLIT_FOLDER);
             localPath = FilenameUtils.concat(localPath, orgGuid);
@@ -103,27 +152,19 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
             batchSplit.setLocalRelativePath(localPath);
             batchSplit.setOrganisationId(odsCode);
 
-            ret.add(batchSplit);
+            batchSplits.add(batchSplit);
 
-            //if we're using separate temp storage to our permanent storage, then copy everything to it
-            if (!FilenameUtils.equals(tempDir, sharedStorageDir)) {
+            //if we're using separate temp storage to our permanent storage, then copy to it
+            if (!Strings.isNullOrEmpty(sourcePermDirToCopyTo)) {
 
-                String storagePath = FilenameUtils.concat(sourcePermDir, SPLIT_FOLDER);
+                String storagePath = FilenameUtils.concat(sourcePermDirToCopyTo, SPLIT_FOLDER);
                 storagePath = FilenameUtils.concat(storagePath, orgGuid);
 
-                File[] splitFiles = orgDir.listFiles();
-                LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage for " + odsCode);
+                String fileName = splitFile.getName();
+                String storageFilePath = FilenameUtils.concat(storagePath, fileName);
 
-                for (File splitFile: splitFiles) {
-
-                    String fileName = splitFile.getName();
-                    String storageFilePath = FilenameUtils.concat(storagePath, fileName);
-
-                    FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
-                }
+                FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
             }
         }
-
-        return ret;
     }
 }
