@@ -685,7 +685,7 @@ public class SftpReaderTask implements Runnable {
         //LOG.info("Going to send Slack alert about batch " + batchSplitId + " and org ID [" + organisationId + "] and software [" + publisherSoftware + "]: " + errorMessage);
         //LOG.info("Got org name " + organisationName + " from " + orgHelper.getClass().getName());
 
-        String message = "Exception notifying " + publisherSoftware + " batch for Organisation " + organisationId + ", " + organisationName + " and Batch Spit " + batchSplitId + "\r\n" + errorMessage;
+        String message = "Exception notifying " + publisherSoftware + " batch for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + "\r\n" + errorMessage;
 
         SlackNotifier slackNotifier = new SlackNotifier();
         slackNotifier.postMessage(message);
