@@ -45,78 +45,67 @@ public class EmisCustomBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
 
-            //7z decompression can't use a stream, so we need to copy the file to our local disk
             String filename = batchFile.getFilename();
             String sourceFile = FilenameUtils.concat(storageDir, filename);
 
-            String tempFile = FilenameUtils.concat(tempDir, filename);
-
-            //delete if it already exists
-            FileHelper.deleteRecursiveIfExists(tempFile);
-
-            InputStream inputStream = FileHelper.readFileFromSharedStorage(sourceFile);
             try {
-                Files.copy(inputStream, new File(tempFile).toPath());
-            } finally {
-                inputStream.close();
-            }
+                //7z decompression can't use a stream, so we need to copy the file to our local disk
+                String tempFile = FilenameUtils.concat(tempDir, filename);
 
-            //now we can decompress it
-            SevenZFile sevenZFile = new SevenZFile(new File(tempFile), password.toCharArray());
-            SevenZArchiveEntry entry = sevenZFile.getNextEntry();
-            //long size = entry.getSize();
-            String entryName = entry.getName();
+                //delete if it already exists
+                FileHelper.deleteRecursiveIfExists(tempFile);
 
-            String unzippedFile = FilenameUtils.concat(tempDir, entryName);
-            FileHelper.deleteRecursiveIfExists(unzippedFile);
-            FileOutputStream fos = new FileOutputStream(unzippedFile);
-            BufferedOutputStream bos = new BufferedOutputStream(fos);
-
-            //the file Emis provide doesn't contain column headings, but later things are easier if we have them, so just insert them first
-            String headers = null;
-            if (batchFile.getFileTypeIdentifier().equals(EmisCustomFilenameParser.FILE_TYPE_REG_STATUS)) {
-                headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
-
-            } else if (batchFile.getFileTypeIdentifier().equals(EmisCustomFilenameParser.FILE_TYPE_ORIGINAL_TERMS)) {
-                headers = "OrganisationCdb\tOrganisationOds\tPatientGuid\tObservationGuid\tOriginalTerm\r\n";
-
-            } else {
-                throw new Exception("Unsupported file type " + batchFile.getFileTypeIdentifier());
-            }
-            //String headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
-
-            bos.write(headers.getBytes());
-            bos.flush();
-
-            /*LOG.debug("entryName = " + entryName);
-            LOG.debug("Size = " + size);
-            LOG.debug("password = " + password);*/
-
-            /*byte[] block = new byte[1024 * 1024 * 10]; //use 10MB buffer to decompress
-            int offset = 0;*/
-
-            while (true) {
-
-                //can't get reading in blocks to work, so just do it byte by byte
-                int b = sevenZFile.read();
-                if (b == -1) {
-                    break;
+                InputStream inputStream = FileHelper.readFileFromSharedStorage(sourceFile);
+                try {
+                    Files.copy(inputStream, new File(tempFile).toPath());
+                } finally {
+                    inputStream.close();
                 }
-                bos.write(b);
 
-                /*int read = sevenZFile.read(block, offset, (int)size - offset);
-                if (read == -1) {
-                    break;
+                //now we can decompress it
+                SevenZFile sevenZFile = new SevenZFile(new File(tempFile), password.toCharArray());
+                SevenZArchiveEntry entry = sevenZFile.getNextEntry();
+                //long size = entry.getSize();
+                String entryName = entry.getName();
+
+                String unzippedFile = FilenameUtils.concat(tempDir, entryName);
+                FileHelper.deleteRecursiveIfExists(unzippedFile);
+                FileOutputStream fos = new FileOutputStream(unzippedFile);
+                BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+                //the file Emis provide doesn't contain column headings, but later things are easier if we have them, so just insert them first
+                String headers = null;
+                if (batchFile.getFileTypeIdentifier().equals(EmisCustomFilenameParser.FILE_TYPE_REG_STATUS)) {
+                    headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
+
+                } else if (batchFile.getFileTypeIdentifier().equals(EmisCustomFilenameParser.FILE_TYPE_ORIGINAL_TERMS)) {
+                    headers = "OrganisationCdb\tOrganisationOds\tPatientGuid\tObservationGuid\tOriginalTerm\r\n";
+
+                } else {
+                    throw new Exception("Unsupported file type " + batchFile.getFileTypeIdentifier());
                 }
-                LOG.debug("Read " + read);
+                //String headers = "OrganisationGuid\tPatientGuid\tDate\tRegistrationStatus\tRegistrationType\tProcessingOrder\r\n";
 
-                bos.write(block, 0, read);
-                offset += read;*/
+                bos.write(headers.getBytes());
+                bos.flush();
+
+                while (true) {
+
+                    //can't get reading in blocks to work, so just do it byte by byte
+                    int b = sevenZFile.read();
+                    if (b == -1) {
+                        break;
+                    }
+                    bos.write(b);
+                }
+
+                //close everything
+                bos.close();
+                sevenZFile.close();
+
+            } catch (Exception ex) {
+                throw new Exception("Failed to decrypt " + sourceFile, ex);
             }
-
-            //close everything
-            bos.close();
-            sevenZFile.close();
         }
 
     }

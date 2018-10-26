@@ -106,6 +106,8 @@ public class SftpReaderTask implements Runnable {
         } catch (Exception e) {
             LOG.error(">>>Fatal exception in SftpTask run, terminating this run", e);
 
+            //send slack alert
+
         } finally {
             //delete any previous temp files that were left around
             deleteTempDir();

@@ -60,13 +60,13 @@ public class SftpConnection extends Connection {
             session.setPassword(pw);
         }
 
-        this.session.connect();
+        /*this.session.connect();
 
         this.channel = (ChannelSftp)session.openChannel("sftp");
-        this.channel.connect();
+        this.channel.connect();*/
 
         //adding this to try to get past an error with new Emis server
-        /*KnownHosts knownHosts = (KnownHosts)jSch.getHostKeyRepository();
+        KnownHosts knownHosts = (KnownHosts)jSch.getHostKeyRepository();
         for (HostKey key: knownHosts.getHostKey()) {
             LOG.info("Public key: " + key.getKey());
             LOG.info("Public fingerprint: " + key.getFingerPrint(jSch));
@@ -86,7 +86,7 @@ public class SftpConnection extends Connection {
             LOG.info("Server Public fingerprint: " + serverHostKey.getFingerPrint(jSch));
 
             throw ex;
-        }*/
+        }
     }
 
     public static class Logger implements com.jcraft.jsch.Logger {
@@ -181,7 +181,7 @@ public class SftpConnection extends Connection {
             session.disconnect();
     }
 
-    /*class TestUserInfo implements UserInfo {
+    class TestUserInfo implements UserInfo {
 
         @Override
         public String getPassphrase() {
@@ -217,5 +217,5 @@ public class SftpConnection extends Connection {
         public void showMessage(String message) {
             LOG.info("UserInfo showMessage: " + message);
         }
-    }*/
+    }
 }

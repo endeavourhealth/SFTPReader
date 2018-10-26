@@ -8,10 +8,14 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
+import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustomFilenameParser;
 import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
@@ -19,7 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -99,20 +105,27 @@ public class Main {
             }*/
 
             if (args.length > 0) {
-                if (args[0].equalsIgnoreCase("FixS3")) {
+                /*if (args[0].equalsIgnoreCase("FixS3")) {
                     String bucket = args[1];
                     String path = args[2];
                     boolean test = Boolean.parseBoolean(args[3]);
                     fixS3(bucket, path, test);
                     System.exit(0);
-                }
+                }*/
 
-                if (args[0].equalsIgnoreCase("TestLargeCopy")) {
+                /*if (args[0].equalsIgnoreCase("TestLargeCopy")) {
                     String bucket = args[1];
                     String srcKey = args[2];
                     String dstKey = args[3];
                     long maxChunk = Long.parseLong(args[4]);
                     testCopyLargeFile(bucket, srcKey, dstKey, maxChunk);
+                    System.exit(0);
+                }*/
+
+                if (args[0].equalsIgnoreCase("Test7z")) {
+                    String file = args[1];
+                    String password = args[2];
+                    test7zDecompress(file, password);
                     System.exit(0);
                 }
             }
@@ -265,7 +278,7 @@ public class Main {
         System.err.println(message + " [" + e.getClass().getName() + "] " + e.getMessage());
     }
 
-    private static void fixS3(String bucket, String path, boolean test) {
+    /*private static void fixS3(String bucket, String path, boolean test) {
         LOG.info("Fixing S3 " + bucket + " for " + path + " test mode = " + test);
 
         AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
@@ -343,9 +356,9 @@ public class Main {
         }
 
         LOG.info("Finished Fixing S3 " + bucket + " for " + path);
-    }
+    }*/
 
-    private static void testCopyLargeFile(String bucket, String srcKey, String dstKey, long maxChunk) {
+    /*private static void testCopyLargeFile(String bucket, String srcKey, String dstKey, long maxChunk) {
         LOG.info("Testing copying S3 " + bucket + " from " + srcKey + " to " + dstKey);
 
         AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
@@ -420,7 +433,7 @@ public class Main {
             etags.add(new PartETag(response.getPartNumber(), response.getETag()));
         }
         return etags;
-    }
+    }*/
 
     /**
      * utility fn to delete unnecessary CSV files left from the Emis SFTP decryption
@@ -485,5 +498,38 @@ public class Main {
 
         LOG.info("Finished deleting unnecessary CSV files from3 " + bucket + " for " + path);
     }*/
+
+    private static void test7zDecompress(String file, String password) {
+        try {
+            //now we can decompress it
+            File src = new File(file);
+            SevenZFile sevenZFile = new SevenZFile(src, password.toCharArray());
+            SevenZArchiveEntry entry = sevenZFile.getNextEntry();
+            //long size = entry.getSize();
+            String entryName = entry.getName();
+
+            String unzippedFile = FilenameUtils.concat(src.getParent(), entryName);
+            FileOutputStream fos = new FileOutputStream(unzippedFile);
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+
+            while (true) {
+
+                //can't get reading in blocks to work, so just do it byte by byte
+                int b = sevenZFile.read();
+                if (b == -1) {
+                    break;
+                }
+                bos.write(b);
+            }
+
+            //close everything
+            bos.close();
+            sevenZFile.close();
+
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 }
 
