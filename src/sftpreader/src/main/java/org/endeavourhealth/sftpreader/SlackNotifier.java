@@ -16,36 +16,7 @@ import java.util.List;
 public class SlackNotifier {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SlackNotifier.class);
 
-    //private Configuration configuration;
-    //private DbInstanceSlack slackConfiguration;
-
-    /*public SlackNotifier(Configuration configuration) {
-        Validate.notNull(configuration, "configuration");
-        //Validate.notNull(configuration.getInstanceConfiguration().getSlackConfiguration(), "configuration.getDbGlobalConfiguration().getSlackConfiguration()");
-
-        this.configuration = configuration;
-        //this.slackConfiguration = configuration.getInstanceConfiguration().getSlackConfiguration();
-    }*/
-
-    /*public void notifyStartup() {
-        String message = Main.PROGRAM_DISPLAY_NAME + " started "
-                + "(" + this.configuration.getInstanceName() + " instance, reading extracts "
-                + this.configuration.getConfigurationIdsForDisplay() + ")";
-
-        postMessage(message);
-    }
-
-    public void notifyShutdown() {
-        String message = Main.PROGRAM_DISPLAY_NAME + " stopped (" + this.configuration.getInstanceName() + " instance)";
-        postMessage(message);
-    }*/
-
-    /*public void notifyCompleteBatches(DbConfiguration dbConfiguration, List<Batch> batches) {
-        for (Batch batch : batches)
-            notifyCompleteBatch(dbConfiguration, batch);
-    }*/
-
-    public void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) throws Exception {
+    public static void notifyCompleteBatch(DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         String configurationId = dbConfiguration.getConfigurationId();
         String friendlyName = dbConfiguration.getConfigurationFriendlyName();
@@ -58,17 +29,20 @@ public class SlackNotifier {
         postMessage(message);
     }
 
-    public void postMessage(String slackMessage) {
+    public static void postMessage(String slackMessage) {
         try {
-            //changing over to use common slack library rather than different for each
             LOG.info("Posting message to slack: '" + slackMessage + "'");
             SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, slackMessage);
 
-            /*if (!slackConfiguration.isEnabled())
-                return;
+        } catch (Exception e) {
+            LOG.warn("Error posting message to slack", e);
+        }
+    }
 
-            SlackApi slackApi = new SlackApi(slackConfiguration.getSlackUrl());
-            slackApi.call(new SlackMessage(slackMessage));*/
+    public static void postMessage(String slackMessage, Exception ex) {
+        try {
+            LOG.info("Posting message to slack: '" + slackMessage + "'");
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, slackMessage, ex);
 
         } catch (Exception e) {
             LOG.warn("Error posting message to slack", e);

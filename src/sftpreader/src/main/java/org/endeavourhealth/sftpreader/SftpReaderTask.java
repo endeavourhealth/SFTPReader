@@ -106,7 +106,8 @@ public class SftpReaderTask implements Runnable {
         } catch (Exception e) {
             LOG.error(">>>Fatal exception in SftpTask run, terminating this run", e);
 
-            //send slack alert
+            //send slack alert, so we don't miss it
+            SlackNotifier.postMessage("Exception in SFTP Reader for " + this.configurationId, e);
 
         } finally {
             //delete any previous temp files that were left around
@@ -166,8 +167,7 @@ public class SftpReaderTask implements Runnable {
         db.setBatchAsComplete(batch);
 
         //and tell Slack
-        SlackNotifier slackNotifier = new SlackNotifier();
-        slackNotifier.notifyCompleteBatch(dbConfiguration, batch);
+        SlackNotifier.notifyCompleteBatch(dbConfiguration, batch);
     }
 
     private void unzipDecryptBatch(Batch batch) throws Exception {
@@ -224,8 +224,7 @@ public class SftpReaderTask implements Runnable {
                         //if it's a new unknown file, send a Slack message about it
                         if (newUnknownFile) {
                             String message = "New unknown file for " + dbConfiguration.getSoftwareContentType() + ": " + batchFile.getFilename();
-                            SlackNotifier slackNotifier = new SlackNotifier();
-                            slackNotifier.postMessage(message);
+                            SlackNotifier.postMessage(message);
                         }
                     }
                     continue;
@@ -689,8 +688,7 @@ public class SftpReaderTask implements Runnable {
 
         String message = "Exception notifying " + publisherSoftware + " batch for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + "\r\n" + errorMessage;
 
-        SlackNotifier slackNotifier = new SlackNotifier();
-        slackNotifier.postMessage(message);
+        SlackNotifier.postMessage(message);
 
         //add to the map so we don't send the same message again in a few minutes
         notificationErrorrs.put(batchSplitId, errorMessage);
@@ -727,8 +725,7 @@ public class SftpReaderTask implements Runnable {
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
         String message = "Previous error notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + " is now cleared";
 
-        SlackNotifier slackNotifier = new SlackNotifier();
-        slackNotifier.postMessage(message);
+        SlackNotifier.postMessage(message);
 
         //remove from the map, so we know we're in a good state now
         notificationErrorrs.remove(batchSplitId);
