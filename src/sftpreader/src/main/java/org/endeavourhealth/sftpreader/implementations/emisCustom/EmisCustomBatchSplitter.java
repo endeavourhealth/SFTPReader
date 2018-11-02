@@ -2,6 +2,7 @@ package org.endeavourhealth.sftpreader.implementations.emisCustom;
 
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
@@ -22,6 +23,11 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCustomBatchSplitter.class);
 
     public static final String SPLIT_FOLDER = "Split";
+
+    private static final CSVFormat csvFormat = CSVFormat.TDF
+                                                .withEscape((Character)null)
+                                                .withQuote((Character)null)
+                                                .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this;
 
     @Override
     public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
@@ -91,7 +97,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
 
     private void splitOriginalTermsFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, List<BatchSplit> batchSplits) throws Exception {
         //the original terms file doesn't have an org GUID, so split by the ODS code
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSVFormat.TDF, "OrganisationOds");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, csvFormat, "OrganisationOds");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {
@@ -126,7 +132,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private void splitRegStatusFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, DataLayerI db, List<BatchSplit> batchSplits) throws Exception {
 
         //split the file by org GUID
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSVFormat.TDF, "OrganisationGuid");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, csvFormat, "OrganisationGuid");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {
