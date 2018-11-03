@@ -28,6 +28,7 @@ public class CsvSplitter {
     private List<PrinterWrapper> openPrinters = new ArrayList<>();
     private List<File> filesCreated = null;
     private Charset encoding = null;
+    private List<CSVRecord> lastFewRecords = new ArrayList<>();
 
     public CsvSplitter(String srcFilePath, File dstDir, CSVFormat csvFormat, String... splitColumns) {
         this(srcFilePath, dstDir, csvFormat, Charset.defaultCharset(), splitColumns);
@@ -137,11 +138,27 @@ public class CsvSplitter {
         return true;
     }
 
+
+
     private void splitRecord(CSVRecord csvRecord, int[] columnIndexes) throws Exception {
 
         String[] values = new String[columnIndexes.length];
         for (int i=0; i<values.length; i++) {
-            values[i] = csvRecord.get(columnIndexes[i]);
+            try {
+                values[i] = csvRecord.get(columnIndexes[i]);
+            } catch (Exception ex) {
+                for (CSVRecord previous: lastFewRecords) {
+                    LOG.debug("" + previous.toString());
+                }
+                LOG.debug("" + csvRecord.toString());
+                throw new Exception("Exception getting value " + columnIndexes[i] + " from record " + csvRecord.getRecordNumber() + " at pos " + csvRecord.getCharacterPosition(), ex);
+            }
+        }
+
+        //just to track errors, used above if we get an exception
+        lastFewRecords.add(csvRecord);
+        if (lastFewRecords.size() > 10) {
+            lastFewRecords.remove(0);
         }
 
         CSVPrinter csvPrinter = findCsvPrinter(values);

@@ -11,6 +11,9 @@ import com.google.common.base.Strings;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
@@ -23,10 +26,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -122,10 +125,15 @@ public class Main {
                     System.exit(0);
                 }*/
 
-                if (args[0].equalsIgnoreCase("Test7z")) {
+                /*if (args[0].equalsIgnoreCase("Test7z")) {
                     String file = args[1];
                     String password = args[2];
                     test7zDecompress(file, password);
+                    System.exit(0);
+                }*/
+
+                if (args[0].equalsIgnoreCase("TestOriginalTerms")) {
+                    testOriginalTerms();
                     System.exit(0);
                 }
             }
@@ -168,6 +176,108 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void testOriginalTerms() {
+
+        try {
+            LOG.debug("Testing Original Terms");
+
+            CSVFormat csvFormat = CSVFormat.TDF.withHeader()
+                    .withEscape((Character)null)
+                    .withQuote((Character)null)
+                    .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this
+
+
+            JFileChooser f = new JFileChooser();
+            f.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            f.setMultiSelectionEnabled(false);
+            f.setCurrentDirectory(new File("C:\\SFTPData\\original_terms"));
+
+            int r = f.showOpenDialog(null);
+            if (r == JFileChooser.CANCEL_OPTION) {
+                return;
+            }
+
+            /*
+            File srcFile = f.getSelectedFile();
+            LOG.debug("Selected " + srcFile + " len " + srcFile.length());
+
+            //now we can decompress it
+            SevenZFile sevenZFile = new SevenZFile(srcFile, "Emis123".toCharArray());
+            SevenZArchiveEntry entry = sevenZFile.getNextEntry();
+            //long size = entry.getSize();
+            String entryName = entry.getName();
+
+            String tempDir = srcFile.getParent();
+
+            String unzippedFile = FilenameUtils.concat(tempDir, entryName);
+            FileHelper.deleteRecursiveIfExists(unzippedFile);
+            FileOutputStream fos = new FileOutputStream(unzippedFile);
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+            //the file Emis provide doesn't contain column headings, but later things are easier if we have them, so just insert them first
+            String headers = "OrganisationCdb\tOrganisationOds\tPatientGuid\tObservationGuid\tOriginalTerm\r\n";
+
+            bos.write(headers.getBytes());
+            bos.flush();
+
+            while (true) {
+
+                //can't get reading in blocks to work, so just do it byte by byte
+                int b = sevenZFile.read();
+                if (b == -1) {
+                    break;
+                }
+                bos.write(b);
+            }
+
+            //close everything
+            bos.close();
+            sevenZFile.close();
+
+            LOG.debug("Finished unzip");*/
+
+            File srcFile = f.getSelectedFile();
+            LOG.debug("Selected " + srcFile + " len " + srcFile.length());
+
+            File dstDir = new File(srcFile.getParentFile(), "Split");
+            String unzippedFile = srcFile.getAbsolutePath();
+
+            CsvSplitter csvSplitter = new CsvSplitter(unzippedFile, dstDir, csvFormat, "OrganisationOds");
+            List<File> splitFiles = csvSplitter.go();
+            LOG.debug("Finished split into " + splitFiles.size());
+            for (File splitFile: splitFiles) {
+                LOG.debug("    " + splitFile);
+            }
+
+            /*FileInputStream fis = new FileInputStream(file);
+            BufferedInputStream bis = new BufferedInputStream(fis); //always makes sense to use a buffered reader
+            InputStreamReader reader = new InputStreamReader(bis, Charset.defaultCharset());
+
+
+
+            int done = 0;
+            CSVParser csvParser = new CSVParser(reader, format);
+            Iterator<CSVRecord> csvIterator = csvParser.iterator();
+
+            while (csvIterator.hasNext()) {
+                CSVRecord csvRecord = csvIterator.next();
+                if (done == 0) {
+                    LOG.debug("" + csvRecord.get(0));
+                }
+                done ++;
+                if (done % 1000 == 0) {
+                    LOG.debug("Done " + done);
+                }
+            }
+            reader.close();
+
+            LOG.debug("Finished " + done);*/
+
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     /*private static void testS3(String[] args) {
         LOG.debug("Testing S3");
@@ -499,7 +609,7 @@ public class Main {
         LOG.info("Finished deleting unnecessary CSV files from3 " + bucket + " for " + path);
     }*/
 
-    private static void test7zDecompress(String file, String password) {
+    /*private static void test7zDecompress(String file, String password) {
         try {
             //now we can decompress it
             File src = new File(file);
@@ -530,6 +640,6 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 }
 
