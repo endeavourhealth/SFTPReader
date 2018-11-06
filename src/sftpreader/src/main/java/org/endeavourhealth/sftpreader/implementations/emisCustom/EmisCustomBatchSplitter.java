@@ -158,8 +158,8 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
         if (!src.delete()) {
             throw new Exception("Failed to delete " + srcFile);
         }
-        if (!src.renameTo(copy)) {
-            throw new Exception("Failed to rename " + src + " to " + copy);
+        if (!copy.renameTo(src)) {
+            throw new Exception("Failed to rename " + copy + " to " + src);
         }
 
         //the original terms file doesn't have an org GUID, so split by the ODS code
