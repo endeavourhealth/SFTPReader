@@ -10,10 +10,7 @@ import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.csv.QuoteMode;
+import org.apache.commons.csv.*;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
@@ -28,10 +25,7 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class Main {
@@ -198,8 +192,7 @@ public class Main {
                 return;
             }
 
-            /*
-            File srcFile = f.getSelectedFile();
+            /*File srcFile = f.getSelectedFile();
             LOG.debug("Selected " + srcFile + " len " + srcFile.length());
 
             //now we can decompress it
@@ -237,42 +230,91 @@ public class Main {
 
             LOG.debug("Finished unzip");*/
 
+
             File srcFile = f.getSelectedFile();
             LOG.debug("Selected " + srcFile + " len " + srcFile.length());
-
-            File dstDir = new File(srcFile.getParentFile(), "Split");
             String unzippedFile = srcFile.getAbsolutePath();
 
-            CsvSplitter csvSplitter = new CsvSplitter(unzippedFile, dstDir, csvFormat, "OrganisationOds");
+
+
+
+            //The original terms is a tab-separated file that doesn't include any quoting of text fields, however there are a number
+            //of records that contain new-line characters, meaning the CSV parser can't handle those records
+            //So we need to pre-process the file to quote those records so the CSV Parser can handle them
+            InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(unzippedFile);
+            CSVParser parser = new CSVParser(reader, csvFormat.withHeader());
+            Iterator<CSVRecord> iterator = parser.iterator();
+
+            String fixedSrcFile = srcFile + "FIXED";
+
+            FileOutputStream fos = new FileOutputStream(fixedSrcFile);
+            OutputStreamWriter osw = new OutputStreamWriter(fos);
+            BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+            Map<String, Integer> headerMap = parser.getHeaderMap();
+            String[] headers = new String[headerMap.size()];
+            for (String headerVal: headerMap.keySet()) {
+                Integer index = headerMap.get(headerVal);
+                headers[index.intValue()] = headerVal;
+            }
+
+            CSVPrinter printer = new CSVPrinter(bufferedWriter, csvFormat.withHeader(headers));
+            printer.flush();
+
+            int fixed = 0;
+            int total = 0;
+            int written = 0;
+
+            String[] pendingRecord = null;
+            while (iterator.hasNext()) {
+                CSVRecord next = iterator.next();
+                total ++;
+
+                if (next.size() == 5) {
+                    //if a valid line, write any pending record and swap this to be our pending record
+                    if (pendingRecord != null) {
+                        printer.printRecord((Object[])pendingRecord);
+                        written ++;
+                    }
+
+                    pendingRecord = new String[next.size()];
+                    for (int i=0; i<pendingRecord.length; i++) {
+                        pendingRecord[i] = next.get(i);
+                    }
+
+                } else if (next.size() == 1) {
+                    //if one of the invalid lines, then append to the pending record
+                    String extraText = next.get(0);
+                    String currentText = pendingRecord[pendingRecord.length-1];
+                    String combinedText = currentText + ", " + extraText;
+                    pendingRecord[pendingRecord.length-1] = combinedText;
+                    fixed ++;
+
+                } else {
+                    //no idea what this would be, but it's wrong
+                    throw new Exception("Failed to handle record " + next + " with " + next.size() + " columns");
+                }
+            }
+
+            //pring the final record
+            if (pendingRecord != null) {
+                printer.printRecord((Object[])pendingRecord);
+                written ++;
+            }
+
+            parser.close();
+            printer.close();
+
+            LOG.debug("Total " + total + " fixed " + fixed + " written " + written);
+
+            File dstDir = new File(srcFile.getParentFile(), "Split");
+            CsvSplitter csvSplitter = new CsvSplitter(fixedSrcFile, dstDir, csvFormat, "OrganisationOds");
+            //CsvSplitter csvSplitter = new CsvSplitter(unzippedFile, dstDir, csvFormat, "OrganisationOds");
             List<File> splitFiles = csvSplitter.go();
             LOG.debug("Finished split into " + splitFiles.size());
             for (File splitFile: splitFiles) {
                 LOG.debug("    " + splitFile);
             }
-
-            /*FileInputStream fis = new FileInputStream(file);
-            BufferedInputStream bis = new BufferedInputStream(fis); //always makes sense to use a buffered reader
-            InputStreamReader reader = new InputStreamReader(bis, Charset.defaultCharset());
-
-
-
-            int done = 0;
-            CSVParser csvParser = new CSVParser(reader, format);
-            Iterator<CSVRecord> csvIterator = csvParser.iterator();
-
-            while (csvIterator.hasNext()) {
-                CSVRecord csvRecord = csvIterator.next();
-                if (done == 0) {
-                    LOG.debug("" + csvRecord.get(0));
-                }
-                done ++;
-                if (done % 1000 == 0) {
-                    LOG.debug("Done " + done);
-                }
-            }
-            reader.close();
-
-            LOG.debug("Finished " + done);*/
 
         } catch (Throwable t) {
             LOG.error("", t);

@@ -1,8 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.emisCustom;
 
 import com.google.common.base.Strings;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.QuoteMode;
+import org.apache.commons.csv.*;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
@@ -13,18 +12,15 @@ import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 
 public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private static final Logger LOG = LoggerFactory.getLogger(EmisCustomBatchSplitter.class);
 
     public static final String SPLIT_FOLDER = "Split";
 
-    private static final CSVFormat csvFormat = CSVFormat.TDF
+    private static final CSVFormat CSV_FORMAT = CSVFormat.TDF
                                                 .withEscape((Character)null)
                                                 .withQuote((Character)null)
                                                 .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mdde NONE, but validation in the library means we need to use this;
@@ -96,8 +92,79 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     }
 
     private void splitOriginalTermsFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, List<BatchSplit> batchSplits) throws Exception {
+
+        //The original terms is a tab-separated file that doesn't include any quoting of text fields, however there are a number
+        //of records that contain new-line characters, meaning the CSV parser can't handle those records
+        //So we need to pre-process the file to quote those records so the CSV Parser can handle them
+        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFile);
+        CSVParser parser = new CSVParser(reader, CSV_FORMAT.withHeader());
+        Iterator<CSVRecord> iterator = parser.iterator();
+
+        String fixedSrcFile = srcFile + "FIXED";
+
+        FileOutputStream fos = new FileOutputStream(fixedSrcFile);
+        OutputStreamWriter osw = new OutputStreamWriter(fos);
+        BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+        Map<String, Integer> headerMap = parser.getHeaderMap();
+        String[] headers = new String[headerMap.size()];
+        for (String headerVal: headerMap.keySet()) {
+            Integer index = headerMap.get(headerVal);
+            headers[index.intValue()] = headerVal;
+        }
+
+        CSVPrinter printer = new CSVPrinter(bufferedWriter, CSV_FORMAT.withHeader(headers));
+        printer.flush();
+
+        String[] pendingRecord = null;
+        while (iterator.hasNext()) {
+            CSVRecord next = iterator.next();
+
+            if (next.size() == 5) {
+                //if a valid line, write any pending record and swap this to be our pending record
+                if (pendingRecord != null) {
+                    printer.printRecord((Object[])pendingRecord);
+                }
+
+                pendingRecord = new String[next.size()];
+                for (int i=0; i<pendingRecord.length; i++) {
+                    pendingRecord[i] = next.get(i);
+                }
+
+            } else if (next.size() == 1) {
+                //if one of the invalid lines, then append to the pending record
+                String extraText = next.get(0);
+                String currentText = pendingRecord[pendingRecord.length-1];
+                String combinedText = currentText + ", " + extraText;
+                pendingRecord[pendingRecord.length-1] = combinedText;
+
+            } else {
+                //no idea what this would be, but it's wrong
+                throw new Exception("Failed to handle record " + next + " with " + next.size() + " columns");
+            }
+        }
+
+        //pring the final record
+        if (pendingRecord != null) {
+            printer.printRecord((Object[])pendingRecord);
+        }
+
+        parser.close();
+        printer.close();
+
+        //delete the original
+        File src = new File(srcFile);
+        File copy = new File(fixedSrcFile);
+        if (!src.delete()) {
+            throw new Exception("Failed to delete " + srcFile);
+        }
+        if (!src.renameTo(copy)) {
+            throw new Exception("Failed to rename " + src + " to " + copy);
+        }
+
         //the original terms file doesn't have an org GUID, so split by the ODS code
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, csvFormat, "OrganisationOds");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSV_FORMAT, "OrganisationOds");
+        //CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSV_FORMAT, "OrganisationOds");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {
@@ -132,7 +199,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private void splitRegStatusFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, DataLayerI db, List<BatchSplit> batchSplits) throws Exception {
 
         //split the file by org GUID
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, csvFormat, "OrganisationGuid");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSV_FORMAT, "OrganisationGuid");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {

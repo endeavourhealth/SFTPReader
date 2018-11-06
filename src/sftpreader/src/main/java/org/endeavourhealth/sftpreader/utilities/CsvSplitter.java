@@ -142,6 +142,12 @@ public class CsvSplitter {
 
     private void splitRecord(CSVRecord csvRecord, int[] columnIndexes) throws Exception {
 
+        //just to track errors, used above if we get an exception
+        lastFewRecords.add(csvRecord);
+        if (lastFewRecords.size() > 10) {
+            lastFewRecords.remove(0);
+        }
+
         String[] values = new String[columnIndexes.length];
         for (int i=0; i<values.length; i++) {
             try {
@@ -150,16 +156,12 @@ public class CsvSplitter {
                 for (CSVRecord previous: lastFewRecords) {
                     LOG.debug("" + previous.toString());
                 }
-                LOG.debug("" + csvRecord.toString());
                 throw new Exception("Exception getting value " + columnIndexes[i] + " from record " + csvRecord.getRecordNumber() + " at pos " + csvRecord.getCharacterPosition(), ex);
+                //LOG.error("Exception getting value " + columnIndexes[i] + " from record " + csvRecord.getRecordNumber() + " at pos " + csvRecord.getCharacterPosition());
+                //return;
             }
         }
 
-        //just to track errors, used above if we get an exception
-        lastFewRecords.add(csvRecord);
-        if (lastFewRecords.size() > 10) {
-            lastFewRecords.remove(0);
-        }
 
         CSVPrinter csvPrinter = findCsvPrinter(values);
         csvPrinter.printRecord(csvRecord);
