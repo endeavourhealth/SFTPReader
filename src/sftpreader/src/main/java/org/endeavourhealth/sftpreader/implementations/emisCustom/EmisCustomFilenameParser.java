@@ -15,6 +15,7 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
 
     //unzipped file names
     public static final String FILE_NAME_REG_STATUS = "EndeavourRegistrationStatusHistory.txt";
+    public static final String FILE_NAME_REG_STATUS_2 = "EndeavourRegistrationStatus.txt";
     public static final String FILE_NAME_ORIGINAL_TERMS = "EndeavourOriginalTerm.txt";
 
 
@@ -40,7 +41,8 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
         }
 
         if (fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory V2.7z") //raw file name
-                || fileName.equalsIgnoreCase(FILE_NAME_REG_STATUS)) {
+                || fileName.equalsIgnoreCase(FILE_NAME_REG_STATUS)
+                || fileName.equalsIgnoreCase(FILE_NAME_REG_STATUS_2)) {
             fileTypeIdentifier = FILE_TYPE_REG_STATUS;
             extractDate = remoteFile.getLastModified().toLocalDate();
             isFileNeeded = true;
