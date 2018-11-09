@@ -23,7 +23,6 @@ public abstract class Connection {
     // Return a single remote file
     public abstract InputStream getFile(String remotePath) throws Exception;
 
-
     public abstract void deleteFile(String remotePath) throws Exception;
 
     // Change remote default directory
