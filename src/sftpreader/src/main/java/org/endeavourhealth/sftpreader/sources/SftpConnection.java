@@ -160,21 +160,21 @@ public class SftpConnection extends Connection {
         return channel.get(name);
     }
 
-    /*public void deleteFile(String remotePath) throws SftpException {
+    public void deleteFile(String remotePath) throws SftpException {
         channel.rm(remotePath);
-    }*/
+    }
 
-    /*public void cd(String remotePath) throws SftpException {
+    public void cd(String remotePath) throws SftpException {
         channel.cd(remotePath);
-    }*/
+    }
 
-    /*public void put(String localPath, String destinationPath) throws SftpException {
+    public void put(String localPath, String destinationPath) throws SftpException {
         channel.put(localPath, destinationPath);
-    }*/
+    }
 
-    /*public void mkDir(String path) throws SftpException {
+    public void mkDir(String path) throws SftpException {
         channel.mkdir(path);
-    }*/
+    }
 
     public void close() {
         if (channel != null && channel.isConnected())
