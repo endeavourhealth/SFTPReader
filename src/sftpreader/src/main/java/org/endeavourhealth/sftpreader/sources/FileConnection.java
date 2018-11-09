@@ -111,17 +111,17 @@ public class FileConnection extends Connection {
         //return new FileInputStream(new File(remotePath));
     }
 
-    /*public void deleteFile(String remotePath) throws Exception {
+    public void deleteFile(String remotePath) throws Exception {
         LOG.info("Delete single file: " + remotePath);
         Path p = new File(remotePath).toPath();
         Files.delete(p);
-    }*/
+    }
 
-    /*public void cd(String remotePath) throws SftpException {
+    public void cd(String remotePath) throws Exception {
         // no concept of 'current location'
-    }*/
+    }
 
-    /*public void put(String localPath, String destinationPath) throws Exception {
+    public void put(String localPath, String destinationPath) throws Exception {
         LOG.info("Save file: " + localPath + "==>" + destinationPath);
         Path from = new File(localPath).toPath();
         Path to = new File(destinationPath).toPath();
@@ -131,7 +131,7 @@ public class FileConnection extends Connection {
     public void mkDir(String path) throws Exception {
         Path p = new File(path).toPath();
         Files.createDirectory(p);
-    }*/
+    }
 
     public void close() {
         // no concept of 'close connection'
