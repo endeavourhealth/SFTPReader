@@ -160,6 +160,8 @@ public class SftpConnection extends Connection {
         return channel.get(name);
     }
 
+    /* deleteFile, cd, put and mkdir methods now uncommented */
+
     public void deleteFile(String remotePath) throws SftpException {
         channel.rm(remotePath);
     }

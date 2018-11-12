@@ -111,6 +111,8 @@ public class FileConnection extends Connection {
         //return new FileInputStream(new File(remotePath));
     }
 
+    /* deleteFile, cd, put and mkdir methods now uncommented */
+
     public void deleteFile(String remotePath) throws Exception {
         LOG.info("Delete single file: " + remotePath);
         Path p = new File(remotePath).toPath();
