@@ -23,18 +23,20 @@ public abstract class Connection {
     // Return a single remote file
     public abstract InputStream getFile(String remotePath) throws Exception;
 
-    /* deleteFile, cd, put and mkdir methods now uncommented */
+    /* deleteFile, cd, mkdir methods now re-commented out
+     * put method remains uncommented for use in DataGenerator
+     */
 
-    public abstract void deleteFile(String remotePath) throws Exception;
+    /* public abstract void deleteFile(String remotePath) throws Exception; */
 
     // Change remote default directory
-    public abstract void cd(String remotePath) throws Exception;
+    /* public abstract void cd(String remotePath) throws Exception; */
 
     // Upload/save local file to remote
     public abstract void put(String localPath, String destinationPath) throws Exception;
 
     // Create new remote directory
-    public abstract void mkDir(String path) throws Exception;
+    /* public abstract void mkDir(String path) throws Exception; */
 
     public ConnectionDetails getConnectionDetails() {
         return this.connectionDetails;
