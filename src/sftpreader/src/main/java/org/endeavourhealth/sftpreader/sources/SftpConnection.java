@@ -160,7 +160,7 @@ public class SftpConnection extends Connection {
         return channel.get(name);
     }
 
-    /* deleteFile, cd, mkdir methods now re-commented out
+    /* deleteFile, cd, mkdir methods now re-commented out,
      * put method remains uncommented for use in DataGenerator
      */
 

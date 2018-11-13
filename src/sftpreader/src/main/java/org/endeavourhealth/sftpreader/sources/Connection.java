@@ -23,7 +23,7 @@ public abstract class Connection {
     // Return a single remote file
     public abstract InputStream getFile(String remotePath) throws Exception;
 
-    /* deleteFile, cd, mkdir methods now re-commented out
+    /* deleteFile, cd, mkdir methods now re-commented out,
      * put method remains uncommented for use in DataGenerator
      */
 
