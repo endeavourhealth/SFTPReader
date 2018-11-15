@@ -127,9 +127,12 @@ public class FileConnection extends Connection {
 
     public void put(String localPath, String destinationPath) throws Exception {
         LOG.info("Save file: " + localPath + "==>" + destinationPath);
-        Path from = new File(localPath).toPath();
-        Path to = new File(destinationPath).toPath();
-        Files.copy(from, to);
+        // Code commented out below cannot be used with AWS
+        // Path from = new File(localPath).toPath();
+        // Path to = new File(destinationPath).toPath();
+        // Files.copy(from, to);
+        File toFile = new File(destinationPath);
+        FileHelper.writeFileToSharedStorage(localPath, toFile);
     }
 
     /* public void mkDir(String path) throws Exception {
