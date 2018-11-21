@@ -177,6 +177,8 @@ public class BartsFilenameParser extends SftpFilenameParser {
                 || fileName.equals("msds2018-07-27_110454_msds_1248053721_20180727022323.zip") //file uploaded by mistake
                 || fileName.equals("msds2018-09-27_103357_msds_1291429657_20180927030230.xml") //file uploaded by mistake
                 || fileName.equals("msds2018-09-28_083024_msds_1292065019_20180928120226.xml") //file uploaded by mistake
+                || fileName.equals("msds2018-11-14_124341_msds_1327632317_20181114032908.xml") //file uploaded by mistake
+                || fileName.equals("msds2018-11-15_142651_msds_1328758451_20181115064427.xml") //file uploaded by mistake
 
                 //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
