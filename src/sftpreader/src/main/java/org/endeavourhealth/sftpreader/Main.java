@@ -121,6 +121,13 @@ public class Main {
                     System.exit(0);
                 }*/
 
+                if (args[0].equalsIgnoreCase("CheckS3")) {
+                    String bucket = args[1];
+                    String path = args[2];
+                    checkS3(bucket, path);
+                    System.exit(0);
+                }
+
                 /*if (args[0].equalsIgnoreCase("TestLargeCopy")) {
                     String bucket = args[1];
                     String srcKey = args[2];
@@ -440,6 +447,47 @@ public class Main {
 
     private static void printToErrorConsole(String message, Exception e) {
         System.err.println(message + " [" + e.getClass().getName() + "] " + e.getMessage());
+    }
+
+    private static void checkS3(String bucket, String path) {
+        LOG.info("Checking S3 " + bucket + " for " + path);
+
+        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
+                .standard()
+                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+                .withRegion(Regions.EU_WEST_2);
+
+        AmazonS3 s3Client = clientBuilder.build();
+
+        ListObjectsV2Request request = new ListObjectsV2Request();
+        request.setBucketName(bucket);
+        request.setPrefix(path);
+
+        while (true) {
+
+            ListObjectsV2Result result = s3Client.listObjectsV2(request);
+            if (result.getObjectSummaries() != null) {
+                for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
+                    String key = objectSummary.getKey();
+
+                    GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
+                    ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
+                    String encryption = metadata.getSSEAlgorithm();
+                    LOG.info("" + key + " has encryption [" + encryption + "]");
+                }
+            }
+
+            if (result.isTruncated()) {
+                String nextToken = result.getNextContinuationToken();
+                request.setContinuationToken(nextToken);
+                continue;
+
+            } else {
+                break;
+            }
+        }
+
+        LOG.info("Finished Checking S3 " + bucket + " for " + path);
     }
 
     /*private static void fixS3(String bucket, String path, boolean test) {
