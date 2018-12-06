@@ -183,7 +183,8 @@ public class BartsFilenameParser extends SftpFilenameParser {
                 //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
                 || fileName.equals("V500_event_code.xlsx")
-                || fileName.equals("V500_other_table_contents.xlsx")) {
+                || fileName.equals("V500_other_table_contents.xlsx")
+                || fileName.equals("LIVE SIU Messages.txt")) { //sample SIU messages uploaded 2018/12/04
             isFileNeeded = false;
             return;
         }
