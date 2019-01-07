@@ -26,7 +26,7 @@ public class BartsFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_1_TAILIP = "SusInpatientTail";
     public static final String TYPE_2_1_PROC = "Procedure";
     public static final String TYPE_2_1_DIAG = "Diagnosis";
-    public static final String TYPE_2_1_BIRTH = "Birth";
+    public static final String TYPE_2_1_BIRTH = "MaternityBirth";
     public static final String TYPE_2_1_PREG = "Pregnancy";
     public static final String TYPE_2_1_PROB = "Problem";
     public static final String TYPE_2_2_SPFIT = "SPFIT"; //Surginet ???
