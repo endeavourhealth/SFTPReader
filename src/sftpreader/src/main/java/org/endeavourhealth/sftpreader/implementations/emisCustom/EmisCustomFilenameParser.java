@@ -35,7 +35,8 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
         if (fileName.equalsIgnoreCase(".bash_history")
                 || fileName.equalsIgnoreCase("motd.legal-displayed")
                 || fileName.equalsIgnoreCase(".viminfo")
-                || fileName.startsWith("201")) { //ignore any files I've renamed to "2018..." to archive them
+                || fileName.startsWith("201") //ignore any files I've renamed to "2018..." to archive them
+                || fileName.equals("Endeavour.7z")) { //ignore failed attempt at uploading
             isFileNeeded = false;
             return;
         }
