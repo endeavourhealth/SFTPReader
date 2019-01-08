@@ -29,7 +29,7 @@ public class BartsFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_1_BIRTH = "MaternityBirth";
     public static final String TYPE_2_1_PREG = "Pregnancy";
     public static final String TYPE_2_1_PROB = "Problem";
-    public static final String TYPE_2_2_SPFIT = "SPFIT"; //Surginet ???
+    public static final String TYPE_2_2_SURGINET = "SurginetCaseInfo";
     public static final String TYPE_2_2_CC = "CriticalCare"; //Critial Care
     public static final String TYPE_2_2_HDB = "HomeDeliveryAndBirth"; //Home Delivery and Birth
     public static final String TYPE_2_2_FAMILY_HISTORY = "FamilyHistory";
@@ -267,7 +267,7 @@ public class BartsFilenameParser extends SftpFilenameParser {
             extractDate = LocalDate.parse(tok3, DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         } else if (tok1.equalsIgnoreCase("spfit")) {
-            fileTypeIdentifier = TYPE_2_2_SPFIT;
+            fileTypeIdentifier = TYPE_2_2_SURGINET;
             if (toks.length != 6) {
                 throw new SftpFilenameParseException("Expecting six elements in filename [" + fileName + "]");
             }
