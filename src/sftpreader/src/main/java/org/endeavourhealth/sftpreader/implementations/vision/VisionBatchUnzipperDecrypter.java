@@ -49,22 +49,17 @@ public class VisionBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
             File zipFile = null;
 
             String storageFilePath = FilenameUtils.concat(storageDir, fileName);
-            if (!FilenameUtils.equals(sharedStoragePath, tempDir)) {
-                //if we have a different temp to shared storage path, then we need to copy the file
-                //from our storage to temp for the unzipping (since the unzipping library can't work with S3)
-                String tempFilePath = FilenameUtils.concat(tempDir, fileName);
-                zipFile = new File(tempFilePath);
 
-                InputStream inputStream = FileHelper.readFileFromSharedStorage(storageFilePath);
-                try {
-                    Files.copy(inputStream, zipFile.toPath());
+            //copy the file from our storage to temp for the unzipping (since the unzipping library can't work with S3)
+            String tempFilePath = FilenameUtils.concat(tempDir, fileName);
+            zipFile = new File(tempFilePath);
 
-                } finally {
-                    inputStream.close();
-                }
+            InputStream inputStream = FileHelper.readFileFromSharedStorage(storageFilePath);
+            try {
+                Files.copy(inputStream, zipFile.toPath());
 
-            } else {
-                zipFile = new File(storageFilePath);
+            } finally {
+                inputStream.close();
             }
 
             //if we had an error at some point, we may end up calling into here when the source zip file has
@@ -83,18 +78,15 @@ public class VisionBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
             List<File> extractedFiles = unZipFile(zipFile, unzipDir, true);
             LOG.debug("There are " + extractedFiles.size() + " file(s) extracted to: " + unzipDir + " for zip file: " + fileName);
 
-            //and if using different temp to shared storage, we need to copy the unzipped files to storage
-            if (!FilenameUtils.equals(sharedStoragePath, tempDir)) {
+            //copy the unzipped files to storage
+            for (File unzippedFile: extractedFiles) {
+                String unzippedFileName = unzippedFile.getName();
+                String storagePath = FilenameUtils.concat(storageDir, unzippedFileName);
 
-                for (File unzippedFile: extractedFiles) {
-                    String unzippedFileName = unzippedFile.getName();
-                    String storagePath = FilenameUtils.concat(storageDir, unzippedFileName);
+                //the unzipped file doesn't have the path, so we need to create a properly qualified file
+                File unzippedFileWithPath = new File(unzipDir, unzippedFileName);
 
-                    //the unzipped file doesn't have the path, so we need to create a properly qualified file
-                    File unzippedFileWithPath = new File(unzipDir, unzippedFileName);
-
-                    FileHelper.writeFileToSharedStorage(storagePath, unzippedFileWithPath);
-                }
+                FileHelper.writeFileToSharedStorage(storagePath, unzippedFileWithPath);
             }
         }
     }
