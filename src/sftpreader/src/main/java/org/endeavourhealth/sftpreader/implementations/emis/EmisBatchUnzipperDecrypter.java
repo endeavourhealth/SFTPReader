@@ -2,6 +2,7 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 
 import com.google.common.base.Strings;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -14,8 +15,10 @@ import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import org.endeavourhealth.sftpreader.utilities.PgpUtil;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public class EmisBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmisBatchUnzipperDecrypter.class);
@@ -48,10 +51,27 @@ public class EmisBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
             String encryptedFilename = batchFile.getFilename();
 
             String encryptedExtension = dbConfiguration.getPgpFileExtensionFilter();
+            String decryptedFilename = StringUtils.removeEnd(encryptedFilename, encryptedExtension);
+
+            String encryptedSourceFile = FilenameUtils.concat(storageDir, encryptedFilename);
+            String decryptedTempFile = FilenameUtils.concat(tempDir, decryptedFilename);
+
+            InputStream inputStream = FileHelper.readFileFromSharedStorage(encryptedSourceFile);
 
             //on some of the "transform" servers, we use already decrypted Emis data as the source, so
-            //we don't have any encryption config
+            //we don't have any encryption config. In this case, simply copy the source file into temp
+            //so the outcome is the same as it being decrypted
             if (Strings.isNullOrEmpty(encryptedExtension)) {
+
+                try {
+                    LOG.info("   Copying w/o decryption to: " + decryptedTempFile);
+                    Path destination = new File(decryptedTempFile).toPath();
+                    Files.copy(inputStream, destination, StandardCopyOption.REPLACE_EXISTING);
+
+                } finally {
+                    inputStream.close();
+                }
+
                 continue;
             }
 
@@ -62,19 +82,13 @@ public class EmisBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
                 continue;
             }*/
 
-            String decryptedFilename = StringUtils.removeEnd(encryptedFilename, encryptedExtension);
-
-            String encryptedSourceFile = FilenameUtils.concat(storageDir, encryptedFilename);
-            String decryptedTempFile = FilenameUtils.concat(tempDir, decryptedFilename);
 
             String privateKey = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKey();
             String privateKeyPassword = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKeyPassword();
             String publicKey = dbConfiguration.getPgpConfiguration().getPgpSenderPublicKey();
 
-            LOG.info("   Decrypting file to: " + decryptedTempFile);
-            InputStream inputStream = FileHelper.readFileFromSharedStorage(encryptedSourceFile);
-
             try {
+                LOG.info("   Decrypting file to: " + decryptedTempFile);
                 PgpUtil.decryptAndVerify(inputStream, decryptedTempFile, privateKey, privateKeyPassword, publicKey);
 
                 /*long decryptedFileSize = new File(decryptedTempFile).length();
