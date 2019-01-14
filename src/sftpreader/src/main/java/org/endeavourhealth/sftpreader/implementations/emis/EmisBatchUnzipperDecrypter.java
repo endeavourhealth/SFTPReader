@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.implementations.emis;
 
+import com.google.common.base.Strings;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
@@ -46,6 +47,14 @@ public class EmisBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
 
             String encryptedFilename = batchFile.getFilename();
 
+            String encryptedExtension = dbConfiguration.getPgpFileExtensionFilter();
+
+            //on some of the "transform" servers, we use already decrypted Emis data as the source, so
+            //we don't have any encryption config
+            if (Strings.isNullOrEmpty(encryptedExtension)) {
+                continue;
+            }
+
             //if this one has already been decrypted, skip it
             //we delete the decrypted file after splitting, so it we're back in this function, we need to decrypt it again
             /*if (batchFile.isDecrypted()) {
@@ -53,8 +62,7 @@ public class EmisBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
                 continue;
             }*/
 
-            String extension = dbConfiguration.getPgpFileExtensionFilter();
-            String decryptedFilename = StringUtils.removeEnd(encryptedFilename, extension);
+            String decryptedFilename = StringUtils.removeEnd(encryptedFilename, encryptedExtension);
 
             String encryptedSourceFile = FilenameUtils.concat(storageDir, encryptedFilename);
             String decryptedTempFile = FilenameUtils.concat(tempDir, decryptedFilename);
