@@ -236,22 +236,19 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
             ret.add(batchSplit);
 
-            //if we're using separate temp storage to our permanent storage, then copy everything to it
-            if (!FilenameUtils.equals(tempDir, sharedStorageDir)) {
+            //copy everything to storage
+            String storagePath = FilenameUtils.concat(sourcePermDir, SPLIT_FOLDER);
+            storagePath = FilenameUtils.concat(storagePath, orgGuid);
 
-                String storagePath = FilenameUtils.concat(sourcePermDir, SPLIT_FOLDER);
-                storagePath = FilenameUtils.concat(storagePath, orgGuid);
+            File[] splitFiles = orgDir.listFiles();
+            LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage for " + odsCode);
 
-                File[] splitFiles = orgDir.listFiles();
-                LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage for " + odsCode);
+            for (File splitFile: splitFiles) {
 
-                for (File splitFile: splitFiles) {
+                String fileName = splitFile.getName();
+                String storageFilePath = FilenameUtils.concat(storagePath, fileName);
 
-                    String fileName = splitFile.getName();
-                    String storageFilePath = FilenameUtils.concat(storagePath, fileName);
-
-                    FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
-                }
+                FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
             }
         }
 

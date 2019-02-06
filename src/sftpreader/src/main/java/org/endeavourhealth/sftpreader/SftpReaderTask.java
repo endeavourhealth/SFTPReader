@@ -139,13 +139,7 @@ public class SftpReaderTask implements Runnable {
 
     private void deleteTempFiles(Batch batch) throws Exception {
 
-        String sharedStoragePath = dbInstanceConfiguration.getEdsConfiguration().getSharedStoragePath();
         String tempStoragePath = dbInstanceConfiguration.getEdsConfiguration().getTempDirectory();
-
-        //if we don't have separate temp from our permanent storage, do nothing
-        if (FilenameUtils.equals(sharedStoragePath, tempStoragePath)) {
-            return;
-        }
 
         String configurationPath = dbConfiguration.getLocalRootPath();
         String batchPath = batch.getLocalRelativePath();
@@ -181,6 +175,16 @@ public class SftpReaderTask implements Runnable {
         this.dbConfiguration = configuration.getConfiguration(configurationId);
         this.db = configuration.getDataLayer();
         //checkLocalRootPathPrefixExists();
+
+        //the code used to support having the same temp and storage dirs, but this caused more problems
+        //than it solved. So just validate that they're NOT the same
+        DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
+        String sharedStorageDir = edsConfiguration.getSharedStoragePath();
+        String tempDir = edsConfiguration.getTempDirectory();
+
+        if (FilenameUtils.equals(tempDir, sharedStorageDir)) {
+            throw new Exception("Temp and Storage dirs are the same - temp dir must be different");
+        }
     }
 
     /*private void checkLocalRootPathPrefixExists() throws Exception {
@@ -325,20 +329,16 @@ public class SftpReaderTask implements Runnable {
 
         long fileLen = downloadDestination.length();
 
-        //move the file to our permanent storage, only doing this if we're using a different
-        //storage path to our temporary download path
+        //move the file to our permanent storage
         String sharedStoragePath = dbInstanceConfiguration.getEdsConfiguration().getSharedStoragePath();
-        if (!FilenameUtils.equals(tempRootDir, sharedStoragePath)) { //use this util fn to compare, as it normalises the paths
+        String storageDestinationPath = FilenameUtils.concat(sharedStoragePath, localRootDir);
+        storageDestinationPath = FilenameUtils.concat(storageDestinationPath, fileName);
 
-            String storageDestinationPath = FilenameUtils.concat(sharedStoragePath, localRootDir);
-            storageDestinationPath = FilenameUtils.concat(storageDestinationPath, fileName);
+        LOG.info("Writing to permanent storage: " + storageDestinationPath);
+        FileHelper.writeFileToSharedStorage(storageDestinationPath, downloadDestination);
 
-            LOG.info("Writing to permanent storage: " + storageDestinationPath);
-            FileHelper.writeFileToSharedStorage(storageDestinationPath, downloadDestination);
-
-            //and delete from our temporary storage
-            downloadDestination.delete();
-        }
+        //and delete from our temporary storage
+        downloadDestination.delete();
 
         //update the DB to confirm we've downloaded it
         sftpFile.setLocalFileSizeBytes(fileLen);

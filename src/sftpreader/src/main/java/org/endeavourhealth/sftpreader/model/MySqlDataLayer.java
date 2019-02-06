@@ -378,7 +378,7 @@ public class MySqlDataLayer implements DataLayerI {
             //if we're previously added the file but not finished downloading it, delete the batch_file so we re-create it
             if (batchFileId > -1 && !alreadyDownloaded) {
 
-                sql = "DELETE FROM batch_file bf WHERE batch_file_id = ?;";
+                sql = "DELETE FROM batch_file WHERE batch_file_id = ?;";
 
                 psDeleteBatchFile = connection.prepareStatement(sql);
                 psDeleteBatchFile.setInt(1, batchFileId);

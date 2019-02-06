@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.implementations.emis;
 
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.BatchFile;
@@ -105,8 +106,19 @@ public class EmisFilenameParser extends SftpFilenameParser {
         return getDecryptedFileName(batchFile.getFilename(), dbConfiguration);
     }
 
+    /**
+     * the encrypted files have the same name AND extension as the decrypted ones PLUS the gpg extension
+     * e.g. 291_Agreements_SharingOrganisation_20150211164536_45E7CD20-EE37-41AB-90D6-DC9D4B03D102.csv.gpg
+     * so the decrypted filename is simply the filename with the gpg extension removed
+     */
     public static String getDecryptedFileName(String encryptedFilename, DbConfiguration dbConfiguration) {
         String extension = dbConfiguration.getPgpFileExtensionFilter();
+
+        //on "transform" servers, we use unencrypted files as the source, so there's no encryption config
+        if (Strings.isNullOrEmpty(extension)) {
+            return encryptedFilename;
+        }
+
         return StringUtils.removeEnd(encryptedFilename, extension);
     }
 }

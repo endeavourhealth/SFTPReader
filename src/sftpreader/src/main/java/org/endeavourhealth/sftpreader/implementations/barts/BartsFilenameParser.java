@@ -26,16 +26,21 @@ public class BartsFilenameParser extends SftpFilenameParser {
     public static final String TYPE_2_1_TAILIP = "SusInpatientTail";
     public static final String TYPE_2_1_PROC = "Procedure";
     public static final String TYPE_2_1_DIAG = "Diagnosis";
-    public static final String TYPE_2_1_BIRTH = "Birth";
+    public static final String TYPE_2_1_BIRTH = "MaternityBirth";
     public static final String TYPE_2_1_PREG = "Pregnancy";
     public static final String TYPE_2_1_PROB = "Problem";
-    public static final String TYPE_2_2_SPFIT = "SPFIT"; //Surginet ???
+    public static final String TYPE_2_2_SURGINET = "SurginetCaseInfo";
     public static final String TYPE_2_2_CC = "CriticalCare"; //Critial Care
     public static final String TYPE_2_2_HDB = "HomeDeliveryAndBirth"; //Home Delivery and Birth
     public static final String TYPE_2_2_FAMILY_HISTORY = "FamilyHistory";
     public static final String TYPE_EMERGENCY_CARE = "SusEmergencyCareDataSet";
     public static final String TYPE_EMERGENCY_CARE_TAILS = "SusEmergencyCareDataSetTail";
     public static final String TYPE_APPOINTMENT_SCHEDULING = "APPSL2";
+    public static final String TYPE_EVENT_CODE = "EventCode";
+    public static final String TYPE_EVENT_SET_CANON = "EventSetCanon";
+    public static final String TYPE_EVENT_SET = "EventSet";
+    public static final String TYPE_EVENT_SET_EXPLODE = "EventSetExplode";
+    public static final String TYPE_BLOB_CONTENT = "BlobContent";
 
 
     private String fileTypeIdentifier;
@@ -170,12 +175,16 @@ public class BartsFilenameParser extends SftpFilenameParser {
                 || fileName.equals("msds2018-07-20_125022_msds_1243378452_20180720042318.ZIP") //file uploaded by mistake
                 || fileName.equals("msds2018-07-27_110454_msds_1248053721_20180727022323.xml") //file uploaded by mistake
                 || fileName.equals("msds2018-07-27_110454_msds_1248053721_20180727022323.zip") //file uploaded by mistake
-
+                || fileName.equals("msds2018-09-27_103357_msds_1291429657_20180927030230.xml") //file uploaded by mistake
+                || fileName.equals("msds2018-09-28_083024_msds_1292065019_20180928120226.xml") //file uploaded by mistake
+                || fileName.equals("msds2018-11-14_124341_msds_1327632317_20181114032908.xml") //file uploaded by mistake
+                || fileName.equals("msds2018-11-15_142651_msds_1328758451_20181115064427.xml") //file uploaded by mistake
 
                 //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
                 || fileName.equals("V500_event_code.xlsx")
-                || fileName.equals("V500_other_table_contents.xlsx")) {
+                || fileName.equals("V500_other_table_contents.xlsx")
+                || fileName.equals("LIVE SIU Messages.txt")) { //sample SIU messages uploaded 2018/12/04
             isFileNeeded = false;
             return;
         }
@@ -224,8 +233,41 @@ public class BartsFilenameParser extends SftpFilenameParser {
             fileTypeIdentifier = TYPE_EMERGENCY_CARE_TAILS;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
 
+        } else if (tok1.equalsIgnoreCase("eve")) {
+            String tok2 = toks[1];
+            if (tok2.equalsIgnoreCase("cano")) {
+                fileTypeIdentifier = TYPE_EVENT_SET_CANON;
+
+            } else if (tok2.equalsIgnoreCase("code")) {
+                fileTypeIdentifier = TYPE_EVENT_CODE;
+
+            } else if (tok2.equalsIgnoreCase("set")) {
+                fileTypeIdentifier = TYPE_EVENT_SET;
+
+            } else if (tok2.equalsIgnoreCase("expl")) {
+                fileTypeIdentifier = TYPE_EVENT_SET_EXPLODE;
+
+            } else {
+                throw new SftpFilenameParseException("Unsupported token [" + tok2 + "] after [" + tok1 + "]");
+            }
+
+            String tok3 = toks[2];
+            extractDate = LocalDate.parse(tok3, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        } else if (tok1.equalsIgnoreCase("blob")) {
+            String tok2 = toks[1];
+            if (tok2.equalsIgnoreCase("con")) {
+                fileTypeIdentifier = TYPE_BLOB_CONTENT;
+
+            } else {
+                throw new SftpFilenameParseException("Unsupported token [" + tok2 + "] after [" + tok1 + "]");
+            }
+
+            String tok3 = toks[2];
+            extractDate = LocalDate.parse(tok3, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
         } else if (tok1.equalsIgnoreCase("spfit")) {
-            fileTypeIdentifier = TYPE_2_2_SPFIT;
+            fileTypeIdentifier = TYPE_2_2_SURGINET;
             if (toks.length != 6) {
                 throw new SftpFilenameParseException("Expecting six elements in filename [" + fileName + "]");
             }

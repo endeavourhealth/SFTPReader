@@ -53,11 +53,6 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
         FileHelper.deleteRecursiveIfExists(dstDir);
         FileHelper.createDirectoryIfNotExists(dstDir);
 
-        //see if we have separate temp and storage dirs
-        String sourcePermDirToCopyTo = null;
-        if (!FilenameUtils.equals(tempDir, sharedStorageDir)) {
-            sourcePermDirToCopyTo = sourcePermDir;
-        }
 
         List<BatchSplit> batchSplits = new ArrayList<>();
 
@@ -79,10 +74,10 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
 
             if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_REG_STATUS)
                     || srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_REG_STATUS_2)) {
-                splitRegStatusFile(batch, srcFile, dstDir, sourcePermDirToCopyTo, db, batchSplits);
+                splitRegStatusFile(batch, srcFile, dstDir, sourcePermDir, db, batchSplits);
 
             } else if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_ORIGINAL_TERMS)) {
-                splitOriginalTermsFile(batch, srcFile, dstDir, sourcePermDirToCopyTo, batchSplits);
+                splitOriginalTermsFile(batch, srcFile, dstDir, sourcePermDir, batchSplits);
 
             } else {
                 throw new Exception("Unsupported file " + srcFileObj.getName());

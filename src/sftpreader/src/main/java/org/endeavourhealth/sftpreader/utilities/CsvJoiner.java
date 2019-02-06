@@ -78,7 +78,7 @@ public class CsvJoiner {
                     }
                 }
 
-                LOG.trace("Joining source file: "+srcFile);
+                //LOG.trace("Joining source file: "+srcFile);
 
                 //simply print each record from the source into the destination
                 Iterator<CSVRecord> csvIterator = csvParser.iterator();
