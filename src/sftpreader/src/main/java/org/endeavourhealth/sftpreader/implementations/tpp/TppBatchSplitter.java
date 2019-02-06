@@ -216,6 +216,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             set.add("SRMappingGroup");
             set.add("SRConfiguredListOption");
             set.add("SRCtv3ToVersion2");
+            set.add("SRCtv3ToSnomed");
             set.add("SRCtv3Hierarchy");
             set.add("SRImmunisationContent");
             set.add("SRMedicationReadCodeDetails");
