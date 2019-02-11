@@ -1,5 +1,5 @@
 
-create or replace function log.get_incomplete_batches
+create or replace function log.get_all_batches
 (
 	_configuration_id varchar
 )
@@ -12,8 +12,7 @@ begin
 	select
 		array_agg(b.batch_id) into _batch_ids
 	from log.batch b
-	where b.configuration_id = _configuration_id
-	and b.is_complete = false;
+	where b.configuration_id = _configuration_id;
 
 	return query
 	select

@@ -260,6 +260,15 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         return batches.get(0);
     }
 
+    @Override
+    public List<Batch> getAllBatches(String configurationId) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+                .setName("log.get_all_batches")
+                .addParameter("_configuration_id", configurationId);
+
+        return populateBatches(pgStoredProc);
+    }
+
     public List<BatchSplit> getUnnotifiedBatchSplits(String configurationId) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.get_unnotified_batch_splits")

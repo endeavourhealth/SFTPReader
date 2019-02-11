@@ -660,6 +660,36 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     @Override
+    public List<Batch> getAllBatches(String configurationId) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "SELECT b.batch_id FROM batch b"
+                    + " WHERE b.configuration_id = ?";
+
+            ps = connection.prepareStatement(sql);
+            ps.setString(1, configurationId);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                int batchId = rs.getInt(1);
+                List<Integer> batchIds = new ArrayList<>();
+                batchIds.add(new Integer(batchId));
+                return selectBatches(batchIds);
+
+            } else {
+                return null;
+            }
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
     public List<BatchSplit> getUnnotifiedBatchSplits(String configurationId) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;

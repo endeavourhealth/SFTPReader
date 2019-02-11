@@ -93,7 +93,6 @@ public class EmisBatchValidator extends SftpBatchValidator {
         Map<String, String> hmDeletedOld = new HashMap<>();
         readOldSharingAgreementFiles(instanceConfiguration, dbConfiguration, lastCompleteBatch, hmActivatedOld, hmDisabledOld, hmDeletedOld);
 
-
         String sharingAgreementFileNew = EmisBatchSplitter.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, incompleteBatch);
         
         Map<String, String> hmActivatedNew = new HashMap<>();
@@ -121,6 +120,23 @@ public class EmisBatchValidator extends SftpBatchValidator {
             if (disabledOld != null
                     && !disabledOld.equals(disabledNew)) {
                 msgs.add("'disabled' changed " + disabledOld + " -> " + disabledNew);
+
+                //if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
+                //process the full delete before the re-bulk
+                if (disabledOld.equalsIgnoreCase("true")
+                        && disabledNew.equalsIgnoreCase("false")) {
+
+                    EmisOrganisationMap org = findOrgDetails(db, orgGuid);
+                    String configurationId = dbConfiguration.getConfigurationId();
+
+                    EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, configurationId);
+                    try {
+                        fixer.fixDisabledExtract();
+                        msgs.add("Files during disabled period have been fixed");
+                    } catch (Exception ex) {
+                        throw new SftpValidationException("Error fixing disabled feed for " + org.getOdsCode(), ex);
+                    }
+                }
             }
 
             if (deletedOld != null
@@ -129,6 +145,7 @@ public class EmisBatchValidator extends SftpBatchValidator {
             }
 
             if (msgs.size() > 0) {
+
                 String msg = String.join("\r\n", msgs);
                 sendSlackAlert(orgGuid, msg, db, dbConfiguration);
             }
@@ -185,9 +202,8 @@ public class EmisBatchValidator extends SftpBatchValidator {
         }
     }
 
-    private static void sendSlackAlert(String emisOrgGuid, String msg, DataLayerI db, DbConfiguration dbConfiguration) throws SftpValidationException {
+    private static EmisOrganisationMap findOrgDetails(DataLayerI db, String emisOrgGuid) throws SftpValidationException {
 
-        //need to find the org details for the GUID
         EmisOrganisationMap mapping = null;
         try {
             mapping = db.getEmisOrganisationMap(emisOrgGuid);
@@ -198,6 +214,14 @@ public class EmisBatchValidator extends SftpBatchValidator {
         if (mapping == null) {
             throw new SftpValidationException("Failed to look up Org GUID " + emisOrgGuid);
         }
+
+        return mapping;
+    }
+
+    private static void sendSlackAlert(String emisOrgGuid, String msg, DataLayerI db, DbConfiguration dbConfiguration) throws SftpValidationException {
+
+        //need to find the org details for the GUID
+        EmisOrganisationMap mapping = findOrgDetails(db, emisOrgGuid);
 
         String alert = "Sharing agreement for ";
         alert += mapping.getOdsCode();

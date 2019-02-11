@@ -32,6 +32,7 @@ public interface DataLayerI {
     List<Batch> getIncompleteBatches(String configurationId) throws Exception;
 
     Batch getLastCompleteBatch(String configurationId) throws Exception;
+    List<Batch> getAllBatches(String configurationId) throws Exception;
 
     List<BatchSplit> getUnnotifiedBatchSplits(String configurationId) throws Exception;
 
