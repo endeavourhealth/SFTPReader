@@ -92,9 +92,6 @@ public class EmisFixDisabledService {
         dumpNewFileSizes(new File(tempDir));
 
         //copy everything into S3
-        if (true) {
-            throw new Exception("Drew to manually check the temp files before restoring the copy to S3");
-        }
         copyNewFilesToStorage();
         LOG.info("Copied files to permanent storage");
     }
@@ -537,8 +534,7 @@ public class EmisFixDisabledService {
     private String createTempFilePath(BatchSplit split, BatchFile file, boolean addToMap) {
 
         String filePath = this.tempDir;
-
-        //filePath = FilenameUtils.concat(filePath, batch.getLocalRelativePath()); //not required
+        filePath = FilenameUtils.concat(filePath, dbConfiguration.getLocalRootPath());
         filePath = FilenameUtils.concat(filePath, split.getLocalRelativePath());
 
         //create the dir if it's not already there
