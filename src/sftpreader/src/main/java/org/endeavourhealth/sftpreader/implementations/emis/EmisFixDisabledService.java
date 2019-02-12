@@ -474,6 +474,7 @@ public class EmisFixDisabledService {
         //remove any batches from before our org was added to the extract
         String odsCode = org.getOdsCode();
 
+        //iterate backwards, so we can remove as we go
         for (int i=batches.size()-1; i>=0; i--) {
             Batch batch = batches.get(i);
 
