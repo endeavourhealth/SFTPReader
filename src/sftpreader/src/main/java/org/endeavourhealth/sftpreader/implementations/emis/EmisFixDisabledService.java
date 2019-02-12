@@ -166,15 +166,19 @@ public class EmisFixDisabledService {
 
     /**
      * the re-bulk won't contain any data for patient previously deleted or who was deducted/deceased
-     * more than a year ago. So check the admin_patient files received before the disabled state happend
-     * so find these patient GUIDs
+     * more than a year ago. So check all the admin_patient files received to find these patient GUIDs
      */
     private void findPatientsDeletedOrTooOldToBeInRebulk() throws Exception {
 
         patientGuidsDeletedOrTooOld = new HashSet<>();
 
-        for (int i=indexDisabled-1; i>=indexOriginallyBulked; i--) {
-            Batch batch = batches.get(i);
+        for (Batch batch: batches) {
+
+            //skip any batches where we've been told to delete everyone
+            if (isDisabledInSharingAgreementFile(batch)) {
+                continue;
+            }
+
             BatchSplit batchSplit = hmBatchSplits.get(batch);
             BatchFile batchFile = findBatchFile(batch, "Admin_Patient");
             String filePath = createStorageFilePath(batchSplit, batchFile);
