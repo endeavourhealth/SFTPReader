@@ -41,7 +41,7 @@ public class BartsFilenameParser extends SftpFilenameParser {
     public static final String TYPE_EVENT_SET = "EventSet";
     public static final String TYPE_EVENT_SET_EXPLODE = "EventSetExplode";
     public static final String TYPE_BLOB_CONTENT = "BlobContent";
-
+    public static final String TYPE_MATERNITY_SERVICES_DATA_SET = "MaternityServicesDataSet";
 
     private String fileTypeIdentifier;
     private LocalDate extractDate;
@@ -171,14 +171,8 @@ public class BartsFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_CDE_CLINICAL_EVENT_201805_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_54.TXT
                 || fileName.equals("PI_CDE_CLINICAL_EVENT_201806_DiscExtract.zip") //CLEVE bulk - copied as CLEVE_80130_RNJ_19072018_999999_55.TXT
                 || fileName.equals("PI_CDE_CLINICAL_EVENT_201807_DiscExtract.zip") //CLEVE bulk - not processing as duplicating what we've already done
-                || fileName.equals("msds2018-07-19_100753_msds_1242411911_20180719020215.xml") //file uploaded by mistake
                 || fileName.equals("msds2018-07-20_125022_msds_1243378452_20180720042318.ZIP") //file uploaded by mistake
-                || fileName.equals("msds2018-07-27_110454_msds_1248053721_20180727022323.xml") //file uploaded by mistake
                 || fileName.equals("msds2018-07-27_110454_msds_1248053721_20180727022323.zip") //file uploaded by mistake
-                || fileName.equals("msds2018-09-27_103357_msds_1291429657_20180927030230.xml") //file uploaded by mistake
-                || fileName.equals("msds2018-09-28_083024_msds_1292065019_20180928120226.xml") //file uploaded by mistake
-                || fileName.equals("msds2018-11-14_124341_msds_1327632317_20181114032908.xml") //file uploaded by mistake
-                || fileName.equals("msds2018-11-15_142651_msds_1328758451_20181115064427.xml") //file uploaded by mistake
 
                 //these just one-off reference files not for processing
                 || fileName.equals("V500_Event_Set_Code.xlsx")
@@ -193,6 +187,7 @@ public class BartsFilenameParser extends SftpFilenameParser {
         String[] toks = baseName.split("_");
 
         String tok1 = toks[0];
+
         if (tok1.equalsIgnoreCase("susopa")) {
             fileTypeIdentifier = TYPE_2_1_SUSOPA;
             extractDate = lastModified.toLocalDate(); //filename doesn't have the date, so use the modified date
@@ -342,6 +337,19 @@ public class BartsFilenameParser extends SftpFilenameParser {
 
             String tok3 = toks[2];
             extractDate = LocalDate.parse(tok3, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        } else if (tok1.startsWith("msds")) {
+            String tok3 = toks[2];
+            if (tok3.equals("msds")) {
+                fileTypeIdentifier = TYPE_MATERNITY_SERVICES_DATA_SET;
+
+                String tok5 = toks[4];
+                tok5 = tok5.substring(0, 8);
+                extractDate = LocalDate.parse(tok5, DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+            } else {
+                throw new SftpFilenameParseException("Expecting msds element in filename starting msds [" + fileName + "]");
+            }
 
         } else {
             this.fileTypeIdentifier = tok1;
