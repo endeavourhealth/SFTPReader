@@ -127,9 +127,8 @@ public class EmisBatchValidator extends SftpBatchValidator {
                         && disabledNew.equalsIgnoreCase("false")) {
 
                     EmisOrganisationMap org = findOrgDetails(db, orgGuid);
-                    String configurationId = dbConfiguration.getConfigurationId();
 
-                    EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, configurationId);
+                    EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, dbConfiguration);
                     try {
                         fixer.fixDisabledExtract();
                         msgs.add("Files during disabled period have been fixed");

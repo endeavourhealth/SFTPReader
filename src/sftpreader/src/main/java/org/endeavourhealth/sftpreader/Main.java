@@ -214,7 +214,15 @@ public class Main {
             DbInstance dbInstanceConfiguration = configuration.getInstanceConfiguration();
             DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
 
-            EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, edsConfiguration, configurationId);
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+
+            EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, edsConfiguration, dbConfiguration);
 
             fixer.fixDisabledExtract();
 

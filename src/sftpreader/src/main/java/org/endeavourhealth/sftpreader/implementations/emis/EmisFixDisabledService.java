@@ -23,7 +23,7 @@ public class EmisFixDisabledService {
     private final EmisOrganisationMap org;
     private final DataLayerI db;
     private final DbInstanceEds instanceConfiguration;
-    private final String configurationId;
+    private final DbConfiguration dbConfiguration;
 
     private String tempDir = null;
     private List<Batch> batches = null;
@@ -35,11 +35,11 @@ public class EmisFixDisabledService {
     private Map<String, String[]> hmFileHeadersByType = new HashMap<>();
     private Set<String> patientGuidsDeletedOrTooOld = null;
 
-    public EmisFixDisabledService(EmisOrganisationMap org, DataLayerI db, DbInstanceEds instanceConfiguration, String configurationId) {
+    public EmisFixDisabledService(EmisOrganisationMap org, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) {
         this.org = org;
         this.db = db;
         this.instanceConfiguration = instanceConfiguration;
-        this.configurationId = configurationId;
+        this.dbConfiguration = dbConfiguration;
     }
 
     /**
@@ -456,6 +456,7 @@ public class EmisFixDisabledService {
     }
 
     private void retrieveBatches() throws Exception {
+        String configurationId = dbConfiguration.getConfigurationId();
         this.batches = db.getAllBatches(configurationId);
 
         //ensure batches are sorted properly
@@ -520,7 +521,7 @@ public class EmisFixDisabledService {
     private String createStorageFilePath(BatchSplit split, BatchFile file) {
 
         String filePath = this.instanceConfiguration.getSharedStoragePath();
-        //filePath = FilenameUtils.concat(filePath, batch.getLocalRelativePath()); //not required
+        filePath = FilenameUtils.concat(filePath, dbConfiguration.getLocalRootPath());
         filePath = FilenameUtils.concat(filePath, split.getLocalRelativePath());
         filePath = FilenameUtils.concat(filePath, file.getFilename());
 
@@ -530,6 +531,7 @@ public class EmisFixDisabledService {
     private String createTempFilePath(BatchSplit split, BatchFile file, boolean addToMap) {
 
         String filePath = this.tempDir;
+
         //filePath = FilenameUtils.concat(filePath, batch.getLocalRelativePath()); //not required
         filePath = FilenameUtils.concat(filePath, split.getLocalRelativePath());
 
