@@ -106,7 +106,7 @@ public class BartsFilenameParser extends SftpFilenameParser {
                 || fileName.equals("PI_LKP_CDE_LOCATION_REF_15FEB2018.zip") //LOREF 2018/02/15 7MB - dump with with commas and extra cols - ignored as below one replaces this
                 || fileName.equals("PI_LKP_CDE_LOCATION_REF.zip") //LOREF 2018/02/15 5MB - copied as LOREF_80130_RNJ_01122017_999999_1.csv
                 || fileName.equals("PI_CDE_DIAGNOSIS.zip") //DIAGN 2018/03/09 980MB - copied as DIAGN_80130_RNJ_09032018_999999_2.TXT
-                || fileName.equals("PI_CDE_PROCEDURE.zip") //PROCE bulk file 2018/03/09 600MB - copied as PROCE_80130_RNJ_09032018_999999_2.TXT
+                || fileName.equals("PI_CDE_PROCEDURE.zip") //PROCE bulk file 2018/03/09 600MB - copied as PROCE_80130_RNJ_09032018_999999_2.TXT - bulk from 05/02/2015
                 || fileName.equals("PI_CDE_CLINICAL_EVENT.zip") //CLEVE 2018/03/12 - file was corrupt, so cannot be processed
                 || fileName.equals("PI_CDE_ENCOUNTER.zip") //ENCNT 2018/03/09 3GB - copied as ENCNT_80130_RNJ_03122017_999999_1.TXT
                 || fileName.equals("PI_CDE_ENCOUNTER_INFO.zip") //ENCINF 2018/03/09 6GB - copied as ENCINF_80130_RNJ_03122017_999999_3.TXT

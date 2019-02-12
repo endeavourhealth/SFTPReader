@@ -8,6 +8,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.StringMemorySaver;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.slf4j.Logger;
@@ -207,12 +208,12 @@ public class EmisFixDisabledService {
         }
     }
 
-    private Set<String> findGuidsInRebulk(String fileType) throws Exception {
+    private Set<StringMemorySaver> findGuidsInRebulk(String fileType) throws Exception {
 
         String guidColumnName = getGuidColumnName(fileType);
 
         //find all the guids in the re-bulk
-        Set<String> idsInRebulk = new HashSet<>();
+        Set<StringMemorySaver> idsInRebulk = new HashSet<>();
 
         Batch batchRebulked = batches.get(indexRebulked);
         BatchSplit batchSplitRebulked = hmBatchSplits.get(batchRebulked);
@@ -231,7 +232,7 @@ public class EmisFixDisabledService {
             while (iterator.hasNext()) {
                 CSVRecord record = iterator.next();
                 String id = record.get(guidColumnName);
-                idsInRebulk.add(id);
+                idsInRebulk.add(new StringMemorySaver(id));
             }
         } finally {
             csvParser.close();
@@ -246,7 +247,7 @@ public class EmisFixDisabledService {
         LOG.info("Doing " + fileType);
 
         //find all the guids in the re-bulk so we know what we've just been sent
-        Set<String> idsInRebulk = findGuidsInRebulk(fileType);
+        Set<StringMemorySaver> idsInRebulk = findGuidsInRebulk(fileType);
 
         //create a replacement file for the exchange the service was disabled
         Batch batchDisabled = batches.get(indexDisabled);
@@ -264,7 +265,7 @@ public class EmisFixDisabledService {
         CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, EmisBatchSplitter.CSV_FORMAT.withHeader(headers));
         csvPrinter.flush();
 
-        Set<String> pastIdsProcessed = new HashSet<>();
+        Set<StringMemorySaver> pastIdsProcessed = new HashSet<>();
 
         String guidColumnName = getGuidColumnName(fileType);
 
@@ -288,15 +289,16 @@ public class EmisFixDisabledService {
                     CSVRecord record = iterator.next();
                     String patientGuid = record.get("PatientGuid");
                     String recordGuid = record.get(guidColumnName);
+                    StringMemorySaver recordGuidSaver = new StringMemorySaver(recordGuid);
 
                     //if we're already handled this record in a more recent extract, then skip it
-                    if (pastIdsProcessed.contains(recordGuid)) {
+                    if (pastIdsProcessed.contains(recordGuidSaver)) {
                         continue;
                     }
-                    pastIdsProcessed.add(recordGuid);
+                    pastIdsProcessed.add(recordGuidSaver);
 
                     //if the re-bulk contains a record matching this one, then it's OK
-                    if (idsInRebulk.contains(recordGuid)) {
+                    if (idsInRebulk.contains(recordGuidSaver)) {
                         continue;
                     }
 
@@ -342,7 +344,7 @@ public class EmisFixDisabledService {
                     csvPrinter.flush();
 
                     //log out the raw record that's missing from the original
-                    StringBuffer sb = new StringBuffer();
+                    StringBuilder sb = new StringBuilder();
                     sb.append("Record not in re-bulk: ");
                     for (int j=0; j<record.size(); j++) {
                         if (j > 0) {
