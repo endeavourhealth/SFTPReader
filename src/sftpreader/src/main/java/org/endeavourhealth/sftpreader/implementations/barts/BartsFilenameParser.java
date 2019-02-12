@@ -343,9 +343,9 @@ public class BartsFilenameParser extends SftpFilenameParser {
             if (tok3.equals("msds")) {
                 fileTypeIdentifier = TYPE_MATERNITY_SERVICES_DATA_SET;
 
-                String tok5 = toks[4];
-                tok5 = tok5.substring(0, 8);
-                extractDate = LocalDate.parse(tok5, DateTimeFormatter.ofPattern("yyyyMMdd"));
+                //the filename does contain a date, but we're not sent the file until weeks after this date,
+                //so just use the file creation date as the batch date
+                extractDate = lastModified.toLocalDate();
 
             } else {
                 throw new SftpFilenameParseException("Expecting msds element in filename starting msds [" + fileName + "]");
