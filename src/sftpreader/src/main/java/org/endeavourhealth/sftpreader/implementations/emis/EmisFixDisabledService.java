@@ -559,7 +559,13 @@ public class EmisFixDisabledService {
     private boolean isDisabledInSharingAgreementFile(Batch batch) throws Exception {
         String file = findSharingAgreementFilePath(batch);
 
-        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(file);
+        InputStreamReader reader = null;
+        try {
+            reader = FileHelper.readFileReaderFromSharedStorage(file);
+        } catch (Exception ex) {
+            throw new Exception("Failed to read " + file, ex);
+        }
+
         CSVFormat format = EmisBatchSplitter.CSV_FORMAT.withHeader();
         CSVParser csvParser = new CSVParser(reader, format);
         try {
