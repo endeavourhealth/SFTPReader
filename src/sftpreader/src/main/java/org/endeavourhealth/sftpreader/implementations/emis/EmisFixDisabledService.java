@@ -523,7 +523,11 @@ public class EmisFixDisabledService {
         String filePath = this.instanceConfiguration.getSharedStoragePath();
         filePath = FilenameUtils.concat(filePath, dbConfiguration.getLocalRootPath());
         filePath = FilenameUtils.concat(filePath, split.getLocalRelativePath());
-        filePath = FilenameUtils.concat(filePath, file.getFilename());
+
+        //the batch file name has the GPG extension, so remove that to get the CSV file name
+        String name = file.getFilename();
+        name = FilenameUtils.removeExtension(name);
+        filePath = FilenameUtils.concat(filePath, name);
 
         return filePath;
     }
@@ -541,7 +545,10 @@ public class EmisFixDisabledService {
             f.mkdirs();
         }
 
-        filePath = FilenameUtils.concat(filePath, file.getFilename());
+        //the batch file name has the GPG extension, so remove that to get the CSV file name
+        String name = file.getFilename();
+        name = FilenameUtils.removeExtension(name);
+        filePath = FilenameUtils.concat(filePath, name);
 
         //and stick in our map so we know to copy it to S3 later
         if (addToMap) {
