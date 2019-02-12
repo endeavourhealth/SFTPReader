@@ -18,10 +18,16 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.barts.BartsFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.emis.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustomFilenameParser;
 import org.endeavourhealth.sftpreader.management.ManagementService;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.endeavourhealth.sftpreader.model.db.DbInstance;
+import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.endeavourhealth.sftpreader.model.db.EmisOrganisationMap;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
+import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
@@ -148,6 +154,13 @@ public class Main {
                     testOriginalTerms();
                     System.exit(0);
                 }
+
+                if (args[0].equalsIgnoreCase("TestDisabledFix")) {
+                    String odsCode = args[1];
+                    String configurationId = args[2];
+                    testDisabledFix(odsCode, configurationId);
+                    System.exit(0);
+                }
             }
 
             /*if (args.length > 0) {
@@ -189,6 +202,27 @@ public class Main {
         }
 	}
 
+    private static void testDisabledFix(String odsCode, String configurationId) {
+
+        try {
+            LOG.debug("Running test fix for " + odsCode);
+
+            DataLayerI db = configuration.getDataLayer();
+            EmisOrganisationMap org = db.getEmisOrganisationMapForOdsCode(odsCode);
+            LOG.debug("Org = " + org.getName());
+
+            DbInstance dbInstanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
+
+            EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, edsConfiguration, configurationId);
+
+            fixer.fixDisabledExtract();
+
+            LOG.debug("Finished Running test fix for " + odsCode);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     private static void testOriginalTerms() {
 
