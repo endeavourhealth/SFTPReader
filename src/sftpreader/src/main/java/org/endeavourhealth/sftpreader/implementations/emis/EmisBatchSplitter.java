@@ -260,7 +260,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
-    private void attemptDisabledExtractFixIfNecessary(EmisOrganisationMap org, Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws SftpValidationException {
+    private void attemptDisabledExtractFixIfNecessary(EmisOrganisationMap org, Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) {
 
         //work out if this feed was disabled and is now enabled again
         if (lastCompleteBatch == null) {
@@ -268,28 +268,31 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         }
 
         String orgGuid = org.getGuid();
+        String odsCode = org.getOdsCode();
 
-        String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, lastCompleteBatch);
-        Map<String, SharingAgreementRecord> hmOld = EmisHelper.readSharingAgreementsFile(lastSharingAgreementFile);
-        SharingAgreementRecord oldSharingState = hmOld.get(orgGuid);
-        if (oldSharingState == null
-                || !oldSharingState.isDisabled()) {
-            //if not previously disabled, return out
-            return;
-        }
-
-        String newSharingAgreementFile = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, batch);
-        Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
-        SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
-        if (newSharingState.isDisabled()) {
-            //if still disabled, return out
-            return;
-        }
-
-        //if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
-        //process the full delete before the re-bulk
-        EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, dbConfiguration);
         try {
+
+            //the previous sharing agreement file will no longer exist in temp, so we need to read it from permanent storage
+            String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode);
+            Map<String, SharingAgreementRecord> hmOld = EmisHelper.readSharingAgreementsFile(lastSharingAgreementFile);
+            SharingAgreementRecord oldSharingState = hmOld.get(orgGuid);
+            if (oldSharingState == null
+                    || !oldSharingState.isDisabled()) {
+                //if not previously disabled, return out
+                return;
+            }
+
+            String newSharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
+            Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
+            SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
+            if (newSharingState.isDisabled()) {
+                //if still disabled, return out
+                return;
+            }
+
+            //if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
+            //process the full delete before the re-bulk
+            EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, dbConfiguration);
             fixer.fixDisabledExtract();
 
             //send slack notification
@@ -488,7 +491,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                                              Batch batch,
                                              File splitTempDir) throws Exception {
 
-        String sharingAgreementFile = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, batch);
+        String sharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
 
         Set<File> ret = new HashSet<>();
 
@@ -520,7 +523,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
     private static void saveAllOdsCodes(DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         //go through our Admin_Organisation file, saving all new org details to our PostgreSQL DB
-        String adminFilePath = EmisHelper.findOrganisationFile(instanceConfiguration, dbConfiguration, batch);
+        String adminFilePath = EmisHelper.findOrganisationFileInTempDir(instanceConfiguration, dbConfiguration, batch);
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(adminFilePath);
         CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());

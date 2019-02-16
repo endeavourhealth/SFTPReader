@@ -93,7 +93,7 @@ public class EmisBatchValidator extends SftpBatchValidator {
 
         Map<String, SharingAgreementRecord> hmOld = readOldSharingAgreementFiles(instanceConfiguration, dbConfiguration, lastCompleteBatch);
 
-        String sharingAgreementFileNew = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, incompleteBatch);
+        String sharingAgreementFileNew = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, incompleteBatch);
         //LOG.debug("Reading NEW sharing agreement file " + sharingAgreementFileNew);
         
         Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(sharingAgreementFileNew);
