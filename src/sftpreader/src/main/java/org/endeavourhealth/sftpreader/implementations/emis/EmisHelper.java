@@ -152,11 +152,9 @@ public class EmisHelper {
 
         String sharedStoragePath = instanceConfiguration.getSharedStoragePath(); //e.g. s3://discoverysftplanding/endeavour
         String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/EMIS001
-        String batchPath = batch.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35
-        String splitPath = batchSplit.getLocalRelativePath(); //e.g. Split/{F6F4A970-6C2D-4660-A787-0FE0E6B67DCE}
+        String splitPath = batchSplit.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35/Split/{F6F4A970-6C2D-4660-A787-0FE0E6B67DCE}
 
         String path = FilenameUtils.concat(sharedStoragePath, configurationPath);
-        path = FilenameUtils.concat(path, batchPath);
         path = FilenameUtils.concat(path, splitPath);
         path = FilenameUtils.concat(path, fileName);
 
