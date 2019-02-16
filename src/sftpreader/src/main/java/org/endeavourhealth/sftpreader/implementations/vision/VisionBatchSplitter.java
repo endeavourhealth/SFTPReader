@@ -21,7 +21,7 @@ public class VisionBatchSplitter extends SftpBatchSplitter {
      * No further splitting into sub-batches for Vision as single practice batches
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         List<BatchSplit> ret = new ArrayList<>();
 

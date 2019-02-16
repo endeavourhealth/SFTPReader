@@ -503,7 +503,7 @@ public class EmisFixDisabledService {
     }
 
     private BatchFile findSharingAgreementFile(Batch batch) throws Exception {
-        return findBatchFile(batch, "Agreements_SharingOrganisation");
+        return findBatchFile(batch, EmisHelper.EMIS_AGREEMENTS_FILE_ID);
     }
 
     private BatchFile findBatchFile(Batch batch, String fileTypeToFind) throws Exception {

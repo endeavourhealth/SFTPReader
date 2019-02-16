@@ -40,7 +40,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
      * splits the TPP extract files org ID, storing the results in sub-directories using that org ID as the name
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
@@ -86,7 +86,6 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         //before we copy the non-split files into the org directories, we need to make sure
         //to account for any organisations that ARE extracted but just so happen to have no data in this instance
         //by making sure we have an org directory for every org we had in our previous batch
-        Batch lastCompleteBatch = db.getLastCompleteBatch(dbConfiguration.getConfigurationId());
         if (lastCompleteBatch != null) {
             List<BatchSplit> lastCompleteBatchSplits = db.getBatchSplitsForBatch(lastCompleteBatch.getBatchId());
             for (BatchSplit previousBatchSplit : lastCompleteBatchSplits) {

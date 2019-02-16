@@ -29,8 +29,8 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmisBatchSplitter.class);
 
-    public static final String EMIS_AGREEMENTS_FILE_ID = "Agreements_SharingOrganisation";
-    public static final String EMIS_ORGANISATION_FILE_ID = "Admin_Organisation";
+
+
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     private static final String SPLIT_COLUMN_ORG = "OrganisationGuid";
@@ -46,7 +46,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
      * returns a list of directories containing split file sets
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
@@ -222,12 +222,14 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
             //we need to find the ODS code for the EMIS org GUID. When we have a full extract, we can find that mapping
             //in the Organisation CSV file, but for deltas, we use the key-value-pair table which is populated when we get the deltas
-            String odsCode = findOdsCode(orgGuid, db);
+            EmisOrganisationMap org = findOrg(orgGuid, db);
 
             //we've received at least one set of data for a service we don't recognise
-            if (odsCode == null) {
-                throw new RuntimeException("Failed to find ODS code for EMIS Org GUID " + orgGuid);
+            if (org == null) {
+                throw new RuntimeException("Failed to find organisation record for EMIS Org GUID " + orgGuid);
             }
+
+            String odsCode = org.getOdsCode();
 
             BatchSplit batchSplit = new BatchSplit();
             batchSplit.setBatchId(batch.getBatchId());
@@ -250,10 +252,58 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
                 FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
             }
+
+            //now we've split the files, we can attempt to fix any disabled extract
+            attemptDisabledExtractFixIfNecessary(org, batch, lastCompleteBatch, db, instanceConfiguration, dbConfiguration);
         }
 
         return ret;
     }
+
+    private void attemptDisabledExtractFixIfNecessary(EmisOrganisationMap org, Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws SftpValidationException {
+
+        //work out if this feed was disabled and is now enabled again
+        if (lastCompleteBatch == null) {
+            return;
+        }
+
+        String orgGuid = org.getGuid();
+
+        String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, lastCompleteBatch);
+        Map<String, SharingAgreementRecord> hmOld = EmisHelper.readSharingAgreementsFile(lastSharingAgreementFile);
+        SharingAgreementRecord oldSharingState = hmOld.get(orgGuid);
+        if (oldSharingState == null
+                || !oldSharingState.isDisabled()) {
+            //if not previously disabled, return out
+            return;
+        }
+
+        String newSharingAgreementFile = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, batch);
+        Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
+        SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
+        if (newSharingState.isDisabled()) {
+            //if still disabled, return out
+            return;
+        }
+
+        //if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
+        //process the full delete before the re-bulk
+        EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, dbConfiguration);
+        try {
+            fixer.fixDisabledExtract();
+
+            //send slack notification
+            String msg = "Disabled extract files for " + org.getOdsCode() + " " + org.getName()
+            + " have been automatically fixed, and can now be re-queued into Inbound queue";
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
+
+        } catch (Exception ex) {
+            throw new RuntimeException("Error fixing disabled feed for " + org.getOdsCode(), ex);
+        }
+    }
+
+
+
 
     private void appendProcessingIdDirsToMap(List<File> splitFiles, Map<File, Set<File>> processingIdDirsByOrgId) {
         for (File splitFile: splitFiles) {
@@ -414,54 +464,6 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         return ret;
     }*/
 
-    public static String findSharingAgreementsFile(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws SftpValidationException {
-        return findFile(instanceConfiguration, dbConfiguration, batch, EMIS_AGREEMENTS_FILE_ID);
-    }
-
-    public static String findOrganisationFile(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws SftpValidationException {
-        return findFile(instanceConfiguration, dbConfiguration, batch, EMIS_ORGANISATION_FILE_ID);
-    }
-
-    public static String findFile(DbInstanceEds instanceConfiguration,
-                                  DbConfiguration dbConfiguration,
-                                  Batch batch,
-                                  String fileIdentifier) throws SftpValidationException {
-
-        String fileName = null;
-
-        for (BatchFile batchFile: batch.getBatchFiles()) {
-            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(fileIdentifier)) {
-                fileName = EmisFilenameParser.getDecryptedFileName(batchFile, dbConfiguration);
-            }
-        }
-
-        if (Strings.isNullOrEmpty(fileName)) {
-            throw new SftpValidationException("Failed to find file for identifier " + fileIdentifier + " in batch " + batch.getBatchId());
-        }
-
-        String tempStoragePath = instanceConfiguration.getTempDirectory();
-        String sharedStoragePath = instanceConfiguration.getSharedStoragePath();
-        String configurationPath = dbConfiguration.getLocalRootPath();
-        String batchPath = batch.getLocalRelativePath();
-
-        String tempPath = FilenameUtils.concat(tempStoragePath, configurationPath);
-        tempPath = FilenameUtils.concat(tempPath, batchPath);
-        tempPath = FilenameUtils.concat(tempPath, fileName);
-
-        //in most cases, we should be able to find the file in our temporary storage,
-        //even through it will also have been written to permanent storage.
-        File tempFile = new File(tempPath);
-        if (tempFile.exists()) {
-            return tempPath;
-        }
-
-        //if it doesn't exist in temp, then we need to return the permanent path
-        String permanentPath = FilenameUtils.concat(sharedStoragePath, configurationPath);
-        permanentPath = FilenameUtils.concat(permanentPath, batchPath);
-        permanentPath = FilenameUtils.concat(permanentPath, fileName);
-
-        return permanentPath;
-    }
 
     /*public static File findSharingAgreementsFile(Batch batch, String rootPath) {
 
@@ -486,7 +488,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                                              Batch batch,
                                              File splitTempDir) throws Exception {
 
-        String sharingAgreementFile = findSharingAgreementsFile(instanceConfiguration, dbConfiguration, batch);
+        String sharingAgreementFile = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, batch);
 
         Set<File> ret = new HashSet<>();
 
@@ -518,7 +520,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
     private static void saveAllOdsCodes(DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         //go through our Admin_Organisation file, saving all new org details to our PostgreSQL DB
-        String adminFilePath = findOrganisationFile(instanceConfiguration, dbConfiguration, batch);
+        String adminFilePath = EmisHelper.findOrganisationFile(instanceConfiguration, dbConfiguration, batch);
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(adminFilePath);
         CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
@@ -583,15 +585,10 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    public static String findOdsCode(String emisOrgGuid, DataLayerI db) throws Exception {
+    public static EmisOrganisationMap findOrg(String emisOrgGuid, DataLayerI db) throws Exception {
 
         //look in our mapping table to find the ODS code for our org GUID
-        EmisOrganisationMap mapping = db.getEmisOrganisationMap(emisOrgGuid);
-        if (mapping != null) {
-            return mapping.getOdsCode();
-        }
-
-        return null;
+        return db.getEmisOrganisationMap(emisOrgGuid);
     }
 
     /**

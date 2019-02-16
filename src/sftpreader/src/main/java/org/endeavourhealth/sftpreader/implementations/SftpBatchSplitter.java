@@ -11,6 +11,7 @@ import java.util.List;
 
 public abstract class SftpBatchSplitter {
     public abstract List<BatchSplit> splitBatch(Batch batch,
+                                                Batch lastCompleteBatch,
                                                 DataLayerI db,
                                                 DbInstanceEds instanceConfiguration,
                                                 DbConfiguration dbConfiguration) throws Exception;

@@ -13,7 +13,7 @@ public class BartsBatchSplitter extends SftpBatchSplitter {
     private static final Logger LOG = LoggerFactory.getLogger(BartsBatchSplitter.class);
 
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //create a single batch split and return it
         List<BatchSplit> ret = new ArrayList<>();

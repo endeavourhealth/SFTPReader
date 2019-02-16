@@ -91,76 +91,41 @@ public class EmisBatchValidator extends SftpBatchValidator {
             return;
         }
 
-        Map<String, String> hmActivatedOld = new HashMap<>();
-        Map<String, String> hmDisabledOld = new HashMap<>();
-        Map<String, String> hmDeletedOld = new HashMap<>();
-        readOldSharingAgreementFiles(instanceConfiguration, dbConfiguration, lastCompleteBatch, hmActivatedOld, hmDisabledOld, hmDeletedOld);
+        Map<String, SharingAgreementRecord> hmOld = readOldSharingAgreementFiles(instanceConfiguration, dbConfiguration, lastCompleteBatch);
 
-        String sharingAgreementFileNew = EmisBatchSplitter.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, incompleteBatch);
-        LOG.debug("Reading NEW sharing agreement file " + sharingAgreementFileNew);
+        String sharingAgreementFileNew = EmisHelper.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, incompleteBatch);
+        //LOG.debug("Reading NEW sharing agreement file " + sharingAgreementFileNew);
         
-        Map<String, String> hmActivatedNew = new HashMap<>();
-        Map<String, String> hmDisabledNew = new HashMap<>();
-        Map<String, String> hmDeletedNew = new HashMap<>();
-        readSharingAgreementsFile(sharingAgreementFileNew, hmActivatedNew, hmDisabledNew, hmDeletedNew);
+        Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(sharingAgreementFileNew);
 
         //check for changes in orgs that are in the file now, compared to before
-        for (String orgGuid: hmActivatedNew.keySet()) {
-            String activatedNew = hmActivatedNew.get(orgGuid);
-            String disabledNew = hmDisabledNew.get(orgGuid);
-            String deletedNew = hmDeletedNew.get(orgGuid);
-
-            String activatedOld = hmActivatedOld.get(orgGuid);
-            String disabledOld = hmDisabledOld.get(orgGuid);
-            String deletedOld = hmDeletedOld.get(orgGuid);
+        for (String orgGuid: hmNew.keySet()) {
+            SharingAgreementRecord newRecord = hmNew.get(orgGuid);
+            SharingAgreementRecord oldRecord = hmOld.get(orgGuid);
 
             List<String> msgs = new ArrayList<>();
 
-            if (activatedOld != null
-                    && !activatedOld.equals(activatedNew)) {
-                msgs.add("'activated' changed " + activatedOld + " -> " + activatedNew);
+            if (oldRecord != null && oldRecord.isActivated() != newRecord.isActivated()) {
+                msgs.add("'activated' changed " + oldRecord.isActivated() + " -> " + newRecord.isActivated());
             }
 
-            if (disabledOld != null
-                    && !disabledOld.equals(disabledNew)) {
-                msgs.add("'disabled' changed " + disabledOld + " -> " + disabledNew);
-
-                //if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
-                //process the full delete before the re-bulk
-                if (disabledOld.equalsIgnoreCase("true")
-                        && disabledNew.equalsIgnoreCase("false")) {
-
-                    EmisOrganisationMap org = findOrgDetails(db, orgGuid);
-
-                    LOG.debug("Going to fix disabled extracts for " + org.getOdsCode() + " " + org.getName() + " with GUID " + org.getGuid());
-                    LOG.debug("Was disabled = " + disabledOld);
-                    LOG.debug("Now disabled = " + disabledNew);
-
-                    EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, dbConfiguration);
-                    try {
-                        fixer.fixDisabledExtract();
-                        msgs.add("Files during disabled period have been fixed and can now be re-queued into inbound");
-                    } catch (Exception ex) {
-                        throw new SftpValidationException("Error fixing disabled feed for " + org.getOdsCode(), ex);
-                    }
-                }
+            if (oldRecord != null && oldRecord.isDisabled() != newRecord.isDisabled()) {
+                msgs.add("'disabled' changed " + oldRecord.isDisabled() + " -> " + newRecord.isDisabled());
             }
 
-            if (deletedOld != null
-                    && !deletedOld.equals(deletedNew)) {
-                msgs.add("'deleted' changed " + deletedOld + " -> " + deletedNew);
+            if (oldRecord != null && oldRecord.isDeleted() != newRecord.isDeleted()) {
+                msgs.add("'deleted' changed " + oldRecord.isDeleted() + " -> " + newRecord.isDeleted());
             }
 
             if (msgs.size() > 0) {
-
                 String msg = String.join("\r\n", msgs);
                 sendSlackAlert(orgGuid, msg, db, dbConfiguration);
             }
         }
 
         //check for orgs that were in the file but aren't any more
-        for (String orgGuid: hmActivatedOld.keySet()) {
-            if (!hmActivatedNew.containsKey(orgGuid)) {
+        for (String orgGuid: hmOld.keySet()) {
+            if (!hmNew.containsKey(orgGuid)) {
                 sendSlackAlert(orgGuid, "Has been removed from the sharing agreements file", db, dbConfiguration);
             }
         }
@@ -170,14 +135,15 @@ public class EmisBatchValidator extends SftpBatchValidator {
      * the previous sharing agreement file will have been split over all the org directories, so we need
      * to read them all to recreate it as a whole
      */
-    private void readOldSharingAgreementFiles(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration,
-                                              Batch lastCompleteBatch, Map<String, String> hmActivatedOld,
-                                              Map<String, String> hmDisabledOld, Map<String, String> hmDeletedOld) throws SftpValidationException {
+    private Map<String, SharingAgreementRecord> readOldSharingAgreementFiles(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration,
+                                              Batch lastCompleteBatch) throws SftpValidationException {
 
+        Map<String, SharingAgreementRecord> ret = new HashMap<>();
+        
         //all the split files will have the same file name, which we can find from the batch file list
         String fileName = null;
         for (BatchFile batchFile: lastCompleteBatch.getBatchFiles()) {
-            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(EmisBatchSplitter.EMIS_AGREEMENTS_FILE_ID)) {
+            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(EmisHelper.EMIS_AGREEMENTS_FILE_ID)) {
                 fileName = EmisFilenameParser.getDecryptedFileName(batchFile, dbConfiguration);
             }
         }
@@ -203,10 +169,21 @@ public class EmisBatchValidator extends SftpBatchValidator {
 
             String splitFileName = FilenameUtils.getName(filePath);
             if (splitFileName.equalsIgnoreCase(fileName)) {
-                LOG.debug("Reading OLD sharing agreement file " + filePath);
-                readSharingAgreementsFile(filePath, hmActivatedOld, hmDisabledOld, hmDeletedOld);
+                //LOG.debug("Reading OLD sharing agreement file " + filePath);
+
+                Map<String, SharingAgreementRecord> splitFileContents = EmisHelper.readSharingAgreementsFile(filePath);
+                for (String orgGuid: splitFileContents.keySet()) {
+                    if (ret.containsKey(orgGuid)) {
+                        throw new SftpValidationException("Found org GUID " + orgGuid + " in multiple split sub-dirs");
+                    }
+
+                    SharingAgreementRecord r = splitFileContents.get(orgGuid);
+                    ret.put(orgGuid, r);
+                }
             }
         }
+        
+        return ret;
     }
 
     private static EmisOrganisationMap findOrgDetails(DataLayerI db, String emisOrgGuid) throws SftpValidationException {
@@ -245,43 +222,6 @@ public class EmisBatchValidator extends SftpBatchValidator {
         SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, alert);
     }
 
-    private static void readSharingAgreementsFile(String filePath,
-                                                  Map<String, String> hmActivated,
-                                                  Map<String, String> hmDisabled,
-                                                  Map<String, String> hmDeleted) throws SftpValidationException {
-
-        CSVParser csvParser = null;
-        try {
-            InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(filePath);
-            csvParser = new CSVParser(isr, EmisBatchSplitter.CSV_FORMAT.withHeader());
-
-            Iterator<CSVRecord> csvIterator = csvParser.iterator();
-
-            while (csvIterator.hasNext()) {
-                CSVRecord csvRecord = csvIterator.next();
-
-                String orgGuid = csvRecord.get("OrganisationGuid");
-                String activated = csvRecord.get("IsActivated");
-                String disabled = csvRecord.get("Disabled");
-                String deleted = csvRecord.get("Deleted");
-
-                hmActivated.put(orgGuid, activated);
-                hmDisabled.put(orgGuid, disabled);
-                hmDeleted.put(orgGuid, deleted);
-            }
-        } catch (Exception ex) {
-            throw new SftpValidationException("Failed to read sharing agreements file " + filePath, ex);
-
-        } finally {
-            try {
-                if (csvParser != null) {
-                    csvParser.close();
-                }
-            } catch (IOException ioe) {
-                //if we fail to close, then it doesn't matter
-            }
-        }
-    }
 
     private void checkExtractDateTimesIncrementBetweenBatches(Batch incompleteBatch, Batch lastCompleteBatch) throws SftpValidationException {
 

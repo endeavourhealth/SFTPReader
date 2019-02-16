@@ -17,7 +17,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
      * For Adastra, the files in a batch are by date and time stamp for an organisation, so get orgId from the first filename
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         List<BatchSplit> ret = new ArrayList<>();
 

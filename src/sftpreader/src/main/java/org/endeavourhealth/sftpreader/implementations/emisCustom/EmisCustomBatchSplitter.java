@@ -26,7 +26,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
                                                 .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mode NONE, but validation in the library means we need to use this;
 
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
@@ -137,14 +137,15 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
 
             //look up the ODS code using the Emis org table, but adding the curly braces so the GUID
             //is in the same format as the regular extracts
-            String odsCode = EmisBatchSplitter.findOdsCode("{" + orgGuid.toUpperCase() + "}", db);
+            EmisOrganisationMap org = EmisBatchSplitter.findOrg("{" + orgGuid.toUpperCase() + "}", db);
 
             //we've received at least one set of data for a service we don't recognise
-            if (odsCode == null) {
-                LOG.error("Failed to find ODS code for EMIS Org GUID " + orgGuid + " so skipping that content");
+            if (org == null) {
+                LOG.error("Failed to find org record for EMIS Org GUID " + orgGuid + " so skipping that content");
                 //throw new RuntimeException("Failed to find ODS code for EMIS Org GUID " + orgGuid);
                 continue;
             }
+            String odsCode = org.getOdsCode();
 
             BatchSplit batchSplit = new BatchSplit();
             batchSplit.setBatchId(batch.getBatchId());
