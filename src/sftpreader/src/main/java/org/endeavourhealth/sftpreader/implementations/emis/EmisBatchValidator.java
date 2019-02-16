@@ -14,12 +14,15 @@ import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
 public class EmisBatchValidator extends SftpBatchValidator {
+    private static final Logger LOG = LoggerFactory.getLogger(EmisBatchValidator.class);
 
     private static final String SHARING_AGREEMENT_UUID_KEY = "SharingAgreementGuid";
 
@@ -94,6 +97,7 @@ public class EmisBatchValidator extends SftpBatchValidator {
         readOldSharingAgreementFiles(instanceConfiguration, dbConfiguration, lastCompleteBatch, hmActivatedOld, hmDisabledOld, hmDeletedOld);
 
         String sharingAgreementFileNew = EmisBatchSplitter.findSharingAgreementsFile(instanceConfiguration, dbConfiguration, incompleteBatch);
+        LOG.debug("Reading NEW sharing agreement file " + sharingAgreementFileNew);
         
         Map<String, String> hmActivatedNew = new HashMap<>();
         Map<String, String> hmDisabledNew = new HashMap<>();
@@ -128,10 +132,14 @@ public class EmisBatchValidator extends SftpBatchValidator {
 
                     EmisOrganisationMap org = findOrgDetails(db, orgGuid);
 
+                    LOG.debug("Going to fix disabled extracts for " + org.getOdsCode() + " " + org.getName() + " with GUID " + org.getGuid());
+                    LOG.debug("Was disabled = " + disabledOld);
+                    LOG.debug("Now disabled = " + disabledNew);
+
                     EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, dbConfiguration);
                     try {
                         fixer.fixDisabledExtract();
-                        msgs.add("Files during disabled period have been fixed");
+                        msgs.add("Files during disabled period have been fixed and can now be re-queued into inbound");
                     } catch (Exception ex) {
                         throw new SftpValidationException("Error fixing disabled feed for " + org.getOdsCode(), ex);
                     }
@@ -195,7 +203,7 @@ public class EmisBatchValidator extends SftpBatchValidator {
 
             String splitFileName = FilenameUtils.getName(filePath);
             if (splitFileName.equalsIgnoreCase(fileName)) {
-
+                LOG.debug("Reading OLD sharing agreement file " + filePath);
                 readSharingAgreementsFile(filePath, hmActivatedOld, hmDisabledOld, hmDeletedOld);
             }
         }
