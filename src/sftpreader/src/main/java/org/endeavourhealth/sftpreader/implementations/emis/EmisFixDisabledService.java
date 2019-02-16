@@ -461,6 +461,7 @@ public class EmisFixDisabledService {
     private void retrieveBatches() throws Exception {
         String configurationId = dbConfiguration.getConfigurationId();
         this.batches = db.getAllBatches(configurationId);
+        LOG.debug("Found " + batches.size() + " for configuration " + configurationId);
 
         //ensure batches are sorted properly
         batches.sort((o1, o2) -> {
@@ -490,9 +491,11 @@ public class EmisFixDisabledService {
 
             if (splitForOrg == null) {
                 //if no split for this org, remove from the list of batches
+                LOG.debug("No split found for batch " + batch.getBatchId());
                 batches.remove(i);
             } else {
                 hmBatchSplits.put(batch, splitForOrg);
+                LOG.debug("Split found for batch " + batch.getBatchId());
             }
         }
 
