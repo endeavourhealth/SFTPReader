@@ -89,6 +89,9 @@ public class SftpReaderTask implements Runnable {
                 LOG.trace(">>>Splitting batch " + incompleteBatch.getBatchId());
                 splitBatch(incompleteBatch, lastCompleteBatch);
 
+                LOG.trace(">>>Post-Split Validating batch " + incompleteBatch.getBatchId());
+                postSplitValidateBatch(incompleteBatch, lastCompleteBatch);
+
                 LOG.trace(">>>Complete batch " + incompleteBatch.getBatchId());
                 completeBatch(incompleteBatch);
 
@@ -447,6 +450,14 @@ public class SftpReaderTask implements Runnable {
         return valid;
     }
 
+    private void postSplitValidateBatch(Batch incompleteBatch, Batch lastCompleteBatch) throws Exception {
+
+        LOG.trace(" Post-Split Validating batches " + incompleteBatch.getBatchIdentifier());
+
+        SftpPostSplitBatchValidator sftpBatchValidator = ImplementationActivator.createSftpPostSplitBatchValidator(dbConfiguration);
+        sftpBatchValidator.validateBatchPostSplit(incompleteBatch, lastCompleteBatch, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, db);
+    }
+
     private List<Batch> sequenceBatches() throws Exception {
         LOG.trace(" Sequencing batches");
 
@@ -464,12 +475,15 @@ public class SftpReaderTask implements Runnable {
 
         Map<Batch, Integer> sortedBatchSequence = StreamExtension.sortByValue(batchSequence);
 
-        if (!new HashSet<>(incompleteBatches).equals(sortedBatchSequence.keySet()))
+        if (!new HashSet<>(incompleteBatches).equals(sortedBatchSequence.keySet())) {
             throw new SftpValidationException("Batch sequence does not contain all unsequenced batches");
+        }
 
-        for (Batch batch : sortedBatchSequence.keySet())
-            if (sortedBatchSequence.get(batch).intValue() != nextSequenceNumber++)
+        for (Batch batch : sortedBatchSequence.keySet()) {
+            if (sortedBatchSequence.get(batch).intValue() != nextSequenceNumber++) {
                 throw new SftpValidationException("Unexpected batch sequence number");
+            }
+        }
 
         for (Batch batch : sortedBatchSequence.keySet()) {
             LOG.debug("  Batch " + batch.getBatchIdentifier() + " sequenced as " + sortedBatchSequence.get(batch).toString());
@@ -551,12 +565,13 @@ public class SftpReaderTask implements Runnable {
         List<String> organisationIds = new ArrayList<>();
 
         for (BatchSplit batchSplit: unnotifiedBatchSplits) {
-            List<BatchSplit> list = hmByOrg.get(batchSplit.getOrganisationId());
+            String orgId = batchSplit.getOrganisationId();
+            List<BatchSplit> list = hmByOrg.get(orgId);
 
             if (list == null) {
                 list = new ArrayList<>();
                 hmByOrg.put(batchSplit.getOrganisationId(), list);
-                organisationIds.add(batchSplit.getOrganisationId());
+                organisationIds.add(orgId);
             }
 
             list.add(batchSplit);
@@ -570,6 +585,9 @@ public class SftpReaderTask implements Runnable {
             List<BatchSplit> batchSplits = hmByOrg.get(organisationId);
 
             try {
+                //perform any pre-notification checking/fixing on the data required
+
+
                 for (BatchSplit batchSplit: batchSplits) {
 
                     LOG.trace("Notifying EDS for batch split: {}", batchSplit.getBatchSplitId());

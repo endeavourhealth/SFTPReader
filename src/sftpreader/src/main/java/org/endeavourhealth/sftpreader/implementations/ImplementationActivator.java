@@ -105,4 +105,11 @@ public class ImplementationActivator {
         return constructor.newInstance();
     }
 
+    public static SftpPostSplitBatchValidator createSftpPostSplitBatchValidator(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "PostSplitBatchValidator";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpPostSplitBatchValidator> constructor = cls.getConstructor();
+        return constructor.newInstance();
+    }
 }
