@@ -5,15 +5,21 @@ import org.endeavourhealth.sftpreader.implementations.SftpPostSplitBatchValidato
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
 public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
+    private static final Logger LOG = LoggerFactory.getLogger(EmisPostSplitBatchValidator.class);
+
     @Override
     public void validateBatchPostSplit(Batch newBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws Exception {
 
         List<BatchSplit> splits = db.getBatchSplitsForBatch(newBatch.getBatchId());
+        LOG.trace("Found " + splits.size() + " splits for batch " + newBatch.getBatchId());
+
         for (BatchSplit split: splits) {
 
             String odsCode = split.getOrganisationId();
@@ -55,6 +61,8 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
                 //if still disabled, return out
                 return;
             }
+
+            LOG.trace("Looks like " + org.getOdsCode() + " " + org.getName() + " was disabled and is now fixed");
 
             //if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
             //process the full delete before the re-bulk
