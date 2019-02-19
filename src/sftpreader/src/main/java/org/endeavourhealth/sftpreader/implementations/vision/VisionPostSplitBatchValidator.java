@@ -7,7 +7,7 @@ import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 
-public class VisionTppPostSplitBatchValidator extends SftpPostSplitBatchValidator {
+public class VisionPostSplitBatchValidator extends SftpPostSplitBatchValidator {
     @Override
     public void validateBatchPostSplit(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
 
