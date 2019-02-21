@@ -50,20 +50,20 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
             Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
             SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
 
-            LOG.trace("org = " + org);
+            /*LOG.trace("org = " + org);
             LOG.trace("New sharing file is " + newSharingAgreementFile + " exists = " + new File(newSharingAgreementFile).exists());
             LOG.trace("HmNew size = " + hmNew.size());
             for (String key: hmNew.keySet()) {
                 SharingAgreementRecord val = hmNew.get(key);
                 LOG.trace("Got key [" + key + "] value [" + val + "]");
             }
-            LOG.trace("Got new state " + newSharingState + " for key [" + orgGuid + "]");
+            LOG.trace("Got new state " + newSharingState + " for key [" + orgGuid + "]");*/
 
             if (newSharingState.isDisabled()) {
                 //if still disabled, return out
                 return;
             }
-//TODO - need to make whatever fix for new against the old too!!
+
             //the previous sharing agreement file will no longer exist in temp, so we need to read it from permanent storage
             try {
                 String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode);
