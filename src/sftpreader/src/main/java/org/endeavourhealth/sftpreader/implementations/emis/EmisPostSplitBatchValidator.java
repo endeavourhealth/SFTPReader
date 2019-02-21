@@ -48,6 +48,7 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
             //the new sharing agreement file will exist in temp dir, so read from there
             String newSharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
             Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
+            SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
 
             LOG.trace("New sharing file is " + newSharingAgreementFile + " exists = " + new File(newSharingAgreementFile).exists());
             LOG.trace("HmNew size = " + hmNew.size());
@@ -55,13 +56,13 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
                 SharingAgreementRecord val = hmNew.get(key);
                 LOG.trace("Got key [" + key + "] value [" + val + "]");
             }
+            LOG.trace("Got new state " + newSharingState + " for key [" + orgGuid + "]");
 
-            SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
             if (newSharingState.isDisabled()) {
                 //if still disabled, return out
                 return;
             }
-
+//TODO - need to make whatever fix for new against the old too!!
             //the previous sharing agreement file will no longer exist in temp, so we need to read it from permanent storage
             try {
                 String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode);
