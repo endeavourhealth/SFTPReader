@@ -37,4 +37,8 @@ public class EmisOrganisationMap {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "Guid = " + guid + " name = " + name + " odsCode = " + odsCode;
+    }
 }

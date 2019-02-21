@@ -50,6 +50,7 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
             Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
             SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
 
+            LOG.trace("org = " + org);
             LOG.trace("New sharing file is " + newSharingAgreementFile + " exists = " + new File(newSharingAgreementFile).exists());
             LOG.trace("HmNew size = " + hmNew.size());
             for (String key: hmNew.keySet()) {
@@ -68,8 +69,7 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
                 String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode);
                 Map<String, SharingAgreementRecord> hmOld = EmisHelper.readSharingAgreementsFile(lastSharingAgreementFile);
                 SharingAgreementRecord oldSharingState = hmOld.get(orgGuid);
-                if (oldSharingState == null
-                        || !oldSharingState.isDisabled()) {
+                if (!oldSharingState.isDisabled()) {
                     //if not previously disabled, return out
                     return;
                 }
