@@ -72,10 +72,16 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         List<File> filesToNotSplit = new ArrayList<>();
         identifyFiles(sourceTempDir, filesToSplit, filesToNotSplit);
 
+        LOG.info("dstDir files before splitting = " + dstDir.listFiles());
+
         //split the files we can
         for (File f : filesToSplit) {
+
+            LOG.info("Splitting file: " + f.getAbsolutePath() + " to " + dstDir);
             splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
         }
+
+        LOG.info("dstDir files after splitting = " + dstDir.listFiles());
 
         List<File> orgDirs = new ArrayList<>();
         for (File orgDir : dstDir.listFiles()) {
@@ -96,20 +102,20 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 FileHelper.createDirectoryIfNotExists(orgDir);
 
                 File orgDirFile = new File(orgDir);
+
+                LOG.info("orgDirsFile from lastCompleteBatch = " + orgDirFile);
+
                 if (!orgDirs.contains(orgDirFile)) {
                     orgDirs.add(orgDirFile);
                 }
-
-                LOG.info("orgDirs post lastBatch = " + orgDirs);
             }
         }
 
         //copy the non-splitting files into each of the org directories
         for (File f : filesToNotSplit) {
             for (File orgDir : orgDirs) {
-                File dst = new File(orgDir, f.getName());
 
-                LOG.info("About to copy non-split file: "+f.toPath()+ " to " +dst.toPath());
+                File dst = new File(orgDir, f.getName());
                 Files.copy(f.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         }
