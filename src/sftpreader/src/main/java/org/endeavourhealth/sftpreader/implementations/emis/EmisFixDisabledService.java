@@ -249,7 +249,7 @@ public class EmisFixDisabledService {
 
         //find all the guids in the re-bulk so we know what we've just been sent
         Set<StringMemorySaver> idsInRebulk = findGuidsInRebulk(fileType);
-        LOG.trace("Found " + idsInRebulk.size() + " IDs in re-bulk file");
+        //LOG.trace("Found " + idsInRebulk.size() + " IDs in re-bulk file");
 
         //create a replacement file for the exchange the service was disabled
         Batch batchDisabled = batches.get(indexDisabled);
@@ -293,19 +293,19 @@ public class EmisFixDisabledService {
                     String recordGuid = record.get(guidColumnName);
                     StringMemorySaver recordGuidSaver = new StringMemorySaver(recordGuid);
 
+                    //if the re-bulk contains a record matching this one, then it's OK
+                    if (idsInRebulk.contains(recordGuidSaver)) {
+                        continue;
+                    }
+
                     //if we're already handled this record in a more recent extract, then skip it
                     if (pastIdsProcessed.contains(recordGuidSaver)) {
                         continue;
                     }
                     pastIdsProcessed.add(recordGuidSaver);
-                    if (pastIdsProcessed.size() % 10000 == 0) {
+                    /*if (pastIdsProcessed.size() % 10000 == 0) {
                         LOG.trace("Got " + pastIdsProcessed.size() + " past IDs we've already processed");
-                    }
-
-                    //if the re-bulk contains a record matching this one, then it's OK
-                    if (idsInRebulk.contains(recordGuidSaver)) {
-                        continue;
-                    }
+                    }*/
 
                     //if the record is deleted, then we won't expect it in the re-bulk
                     boolean deleted = Boolean.parseBoolean(record.get("Deleted"));
