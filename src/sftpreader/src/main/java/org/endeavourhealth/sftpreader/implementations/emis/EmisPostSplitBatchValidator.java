@@ -42,24 +42,37 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
         String orgGuid = org.getGuid();
         String odsCode = org.getOdsCode();
 
+
         try {
-
-            //the previous sharing agreement file will no longer exist in temp, so we need to read it from permanent storage
-            String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode);
-            Map<String, SharingAgreementRecord> hmOld = EmisHelper.readSharingAgreementsFile(lastSharingAgreementFile);
-            SharingAgreementRecord oldSharingState = hmOld.get(orgGuid);
-            if (oldSharingState == null
-                    || !oldSharingState.isDisabled()) {
-                //if not previously disabled, return out
-                return;
-            }
-
+            //the new sharing agreement file will exist in temp dir, so read from there
             String newSharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
             Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
             SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
             if (newSharingState.isDisabled()) {
                 //if still disabled, return out
                 return;
+            }
+
+            //the previous sharing agreement file will no longer exist in temp, so we need to read it from permanent storage
+            try {
+                String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode);
+                Map<String, SharingAgreementRecord> hmOld = EmisHelper.readSharingAgreementsFile(lastSharingAgreementFile);
+                SharingAgreementRecord oldSharingState = hmOld.get(orgGuid);
+                if (oldSharingState == null
+                        || !oldSharingState.isDisabled()) {
+                    //if not previously disabled, return out
+                    return;
+                }
+            } catch (Exception ex2) {
+                //if we specifically get an exception saying there isn't a previous file for this org, then that's fine
+                //and will happen the first time we get date for a service
+                String msg = ex2.getMessage();
+                if (msg.startsWith("Failed to find batch split")) {
+                    return;
+                } else {
+                    //if something else, throw up
+                    throw ex2;
+                }
             }
 
             LOG.trace("Looks like " + org.getOdsCode() + " " + org.getName() + " was disabled and is now fixed");
