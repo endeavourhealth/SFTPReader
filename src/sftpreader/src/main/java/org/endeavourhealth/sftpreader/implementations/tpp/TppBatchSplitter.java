@@ -81,7 +81,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         for (File orgDir : dstDir.listFiles()) {
             orgDirs.add(orgDir);
         }
-        //LOG.info("Got org dirs = " + dstDir.listFiles().length);
+        LOG.info("orgDirs pre = " + orgDirs);
 
         //before we copy the non-split files into the org directories, we need to make sure
         //to account for any organisations that ARE extracted but just so happen to have no data in this instance
@@ -99,6 +99,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 if (!orgDirs.contains(orgDirFile)) {
                     orgDirs.add(orgDirFile);
                 }
+
+                LOG.info("orgDirs post lastBatch = " + orgDirs);
             }
         }
 
@@ -106,6 +108,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         for (File f : filesToNotSplit) {
             for (File orgDir : orgDirs) {
                 File dst = new File(orgDir, f.getName());
+
+                LOG.info("About to copy non-split file: "+f.toPath()+ " to " +dst.toPath());
                 Files.copy(f.toPath(), dst.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         }
