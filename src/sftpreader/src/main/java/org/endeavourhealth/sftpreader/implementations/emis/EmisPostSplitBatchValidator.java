@@ -8,6 +8,7 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,14 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
             //the new sharing agreement file will exist in temp dir, so read from there
             String newSharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
             Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
+
+            LOG.trace("New sharing file is " + newSharingAgreementFile + " exists = " + new File(newSharingAgreementFile).exists());
+            LOG.trace("HmNew size = " + hmNew.size());
+            for (String key: hmNew.keySet()) {
+                SharingAgreementRecord val = hmNew.get(key);
+                LOG.trace("Got key [" + key + "] value [" + val + "]");
+            }
+
             SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
             if (newSharingState.isDisabled()) {
                 //if still disabled, return out

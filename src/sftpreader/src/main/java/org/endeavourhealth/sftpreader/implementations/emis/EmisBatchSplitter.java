@@ -165,13 +165,13 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         //each org dir with have loads of empty folders for the processing IDs, so delete them
         //iterate using a copy of the orgIdsFolders set, because we'll want to remove from the set while iterating
         for (File orgDir : new HashSet<>(orgIdDirs)) {
-            LOG.trace("Deleting processing ID folders from " + orgDir);
+            //LOG.trace("Deleting processing ID folders from " + orgDir);
 
             Set<File> processingIdDirs = processingIdDirsByOrgId.get(orgDir);
             if (processingIdDirs != null) {
                 //for (File processingIdDir: orgDir.listFiles()) {
                 for (File processingIdDir : processingIdDirs) {
-                    LOG.trace("Checking " + processingIdDir);
+                    //LOG.trace("Checking " + processingIdDir);
                     if (processingIdDir.listFiles().length > 0) {
                         throw new Exception("Processing ID dir " + processingIdDir + " isn't empty");
                     }

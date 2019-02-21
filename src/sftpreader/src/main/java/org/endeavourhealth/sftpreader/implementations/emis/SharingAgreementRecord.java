@@ -29,4 +29,9 @@ public class SharingAgreementRecord {
     public boolean isDeleted() {
         return deleted;
     }
+
+    @Override
+    public String toString() {
+        return "Activated = " + activated + " Disabled = " + disabled + " Deleted = " + deleted;
+    }
 }
