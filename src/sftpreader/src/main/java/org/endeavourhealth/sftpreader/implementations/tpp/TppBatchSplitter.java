@@ -23,6 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
+import static java.util.Arrays.asList;
+
 public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TppBatchSplitter.class);
@@ -72,7 +74,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         List<File> filesToNotSplit = new ArrayList<>();
         identifyFiles(sourceTempDir, filesToSplit, filesToNotSplit);
 
-        LOG.info("dstDir files before splitting = " + dstDir.listFiles());
+        LOG.info("dstDir files before splitting = " + asList(dstDir.listFiles()));
 
         //split the files we can
         for (File f : filesToSplit) {
@@ -81,13 +83,11 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
         }
 
-        LOG.info("dstDir files after splitting = " + dstDir.listFiles());
-
         List<File> orgDirs = new ArrayList<>();
         for (File orgDir : dstDir.listFiles()) {
             orgDirs.add(orgDir);
         }
-        LOG.info("orgDirs pre = " + orgDirs);
+        LOG.info("dstDir files after splitting = " + asList(dstDir.listFiles()));
 
         //before we copy the non-split files into the org directories, we need to make sure
         //to account for any organisations that ARE extracted but just so happen to have no data in this instance
