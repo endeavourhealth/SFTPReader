@@ -413,23 +413,29 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             connection = dataSource.getConnection();
 
             Statement statement = connection.createStatement();
-            ResultSet rs = statement.executeQuery("select name from configuration.emis_organisation_map where ods_code = '" + odsCode + "';");
+            ResultSet rs = statement.executeQuery("select guid, name from configuration.emis_organisation_map where ods_code = '" + odsCode + "';");
 
+            String guid = null;
             String name = null;
 
             //we have multiple names for some orgs in production (e.g. F84636),
             //so return the name with the longest length (for the sake of having some way to choose
             //something more interesting that just "The Surgery")
             while (rs.next()) {
-                String s = rs.getString(1);
+                int col = 1;
+                String possibleGuid = rs.getString(col++);
+                String possibleName = rs.getString(col++);
+
                 if (name == null
-                        || s.length() > name.length()) {
-                    name = s;
+                        || possibleName.length() > name.length()) {
+                    guid = possibleGuid;
+                    name = possibleName;
                 }
             }
 
             if (!Strings.isNullOrEmpty(name)) {
                 EmisOrganisationMap ret = new EmisOrganisationMap();
+                ret.setGuid(guid);
                 ret.setName(name);
                 ret.setOdsCode(odsCode);
                 return ret;
