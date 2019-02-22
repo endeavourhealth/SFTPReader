@@ -23,8 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
-import static java.util.Arrays.asList;
-
 public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TppBatchSplitter.class);
@@ -74,12 +72,9 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         List<File> filesToNotSplit = new ArrayList<>();
         identifyFiles(sourceTempDir, filesToSplit, filesToNotSplit);
 
-        LOG.info("dstDir files before splitting = " + asList(dstDir.listFiles()));
-
         //split the files we can
         for (File f : filesToSplit) {
 
-            LOG.info("Splitting file: " + f.getAbsolutePath() + " to " + dstDir);
             splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
         }
 
@@ -87,7 +82,6 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         for (File orgDir : dstDir.listFiles()) {
             orgDirs.add(orgDir);
         }
-        LOG.info("dstDir files after splitting = " + asList(dstDir.listFiles()));
 
         //before we copy the non-split files into the org directories, we need to make sure
         //to account for any organisations that ARE extracted but just so happen to have no data in this instance
@@ -102,8 +96,6 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 FileHelper.createDirectoryIfNotExists(orgDir);
 
                 File orgDirFile = new File(orgDir);
-
-                LOG.info("orgDirsFile from lastCompleteBatch = " + orgDirFile);
 
                 if (!orgDirs.contains(orgDirFile)) {
                     orgDirs.add(orgDirFile);
