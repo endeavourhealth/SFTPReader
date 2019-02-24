@@ -47,7 +47,7 @@ public interface DataLayerI {
     List<BatchSplit> getBatchSplitsForBatch(int queryBatchId) throws Exception;
 
     void addEmisOrganisationMap(EmisOrganisationMap mapping) throws Exception;
-    EmisOrganisationMap getEmisOrganisationMapForOdsCode(String odsCode) throws Exception;
+    List<EmisOrganisationMap> getEmisOrganisationMapsForOdsCode(String odsCode) throws Exception;
     EmisOrganisationMap getEmisOrganisationMap(String guid) throws Exception;
 
     void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception;

@@ -208,7 +208,11 @@ public class Main {
             LOG.debug("Running test fix for " + odsCode);
 
             DataLayerI db = configuration.getDataLayer();
-            EmisOrganisationMap org = db.getEmisOrganisationMapForOdsCode(odsCode);
+            List<EmisOrganisationMap> orgs = db.getEmisOrganisationMapsForOdsCode(odsCode);
+            if (orgs.size() > 1) {
+                throw new Exception("Found multiple org records for ODS code " + odsCode);
+            }
+            EmisOrganisationMap org = orgs.get(0);
             LOG.debug("Org = " + org.getName());
 
             DbInstance dbInstanceConfiguration = configuration.getInstanceConfiguration();

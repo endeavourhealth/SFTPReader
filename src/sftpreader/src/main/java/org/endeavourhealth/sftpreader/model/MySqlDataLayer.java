@@ -999,7 +999,7 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     @Override
-    public EmisOrganisationMap getEmisOrganisationMapForOdsCode(String queryOdsCode) throws Exception {
+    public List<EmisOrganisationMap> getEmisOrganisationMapsForOdsCode(String queryOdsCode) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
@@ -1009,7 +1009,7 @@ public class MySqlDataLayer implements DataLayerI {
 
             ResultSet rs = ps.executeQuery();
 
-            EmisOrganisationMap ret = null;
+            List<EmisOrganisationMap> ret = new ArrayList<>();
 
             //we have multiple names for some orgs in production (e.g. F84636),
             //so return the name with the longest length (for the sake of having some way to choose
@@ -1020,14 +1020,12 @@ public class MySqlDataLayer implements DataLayerI {
                 String name = rs.getString(col++);
                 String odsCode = rs.getString(col++);
 
-                if (ret == null
-                        || name.length() > ret.getName().length()) {
+                EmisOrganisationMap m = new EmisOrganisationMap();
+                m.setGuid(guid);
+                m.setName(name);
+                m.setOdsCode(odsCode);
 
-                    ret = new EmisOrganisationMap();
-                    ret.setGuid(guid);
-                    ret.setName(name);
-                    ret.setOdsCode(odsCode);
-                }
+                ret.add(m);
             }
 
             return ret;

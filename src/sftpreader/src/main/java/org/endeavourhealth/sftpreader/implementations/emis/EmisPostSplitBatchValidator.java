@@ -24,31 +24,42 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
         for (BatchSplit split: splits) {
 
             String odsCode = split.getOrganisationId();
-            EmisOrganisationMap org = db.getEmisOrganisationMapForOdsCode(odsCode);
+
 
             //now we've split the files, we can attempt to fix any disabled extract
-            attemptDisabledExtractFixIfNecessary(org, newBatch, lastCompleteBatch, db, instanceConfiguration, dbConfiguration);
+            attemptDisabledExtractFixIfNecessary(odsCode, newBatch, lastCompleteBatch, db, instanceConfiguration, dbConfiguration);
 
         }
     }
 
 
-    private void attemptDisabledExtractFixIfNecessary(EmisOrganisationMap org, Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) {
+    private void attemptDisabledExtractFixIfNecessary(String odsCode, Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) {
 
         //work out if this feed was disabled and is now enabled again
         if (lastCompleteBatch == null) {
             return;
         }
 
-        String orgGuid = org.getGuid();
-        String odsCode = org.getOdsCode();
-
-
         try {
             //the new sharing agreement file will exist in temp dir, so read from there
             String newSharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
             Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
-            SharingAgreementRecord newSharingState = hmNew.get(orgGuid);
+
+            //find the new sharing state, handling the fact we may have multiple records for the org ODS code in our mapping table
+            EmisOrganisationMap org = null;
+            SharingAgreementRecord newSharingState = null;
+
+            List<EmisOrganisationMap> possibleOrgs = db.getEmisOrganisationMapsForOdsCode(odsCode);
+            for (EmisOrganisationMap possibleOrg: possibleOrgs) {
+                String possibleGuid = possibleOrg.getGuid();
+                SharingAgreementRecord state = hmNew.get(possibleGuid);
+                if (state != null) {
+                    org = possibleOrg;
+                    newSharingState = state;
+                }
+            }
+
+            String orgGuid = org.getGuid();
 
             /*LOG.trace("org = " + org);
             LOG.trace("New sharing file is " + newSharingAgreementFile + " exists = " + new File(newSharingAgreementFile).exists());
@@ -98,7 +109,7 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
             SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
 
         } catch (Exception ex) {
-            throw new RuntimeException("Error fixing disabled feed for " + org.getOdsCode(), ex);
+            throw new RuntimeException("Error fixing disabled feed for " + odsCode, ex);
         }
     }
 }

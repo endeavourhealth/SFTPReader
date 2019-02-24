@@ -406,7 +406,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     /*
     * quick and dirty function to get the name for an org ODS code
     **/
-    public EmisOrganisationMap getEmisOrganisationMapForOdsCode(String odsCode) {
+    public List<EmisOrganisationMap> getEmisOrganisationMapsForOdsCode(String odsCode) {
         Connection connection = null;
 
         try {
@@ -415,34 +415,21 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("select guid, name from configuration.emis_organisation_map where ods_code = '" + odsCode + "';");
 
-            String guid = null;
-            String name = null;
+            List<EmisOrganisationMap> ret = new ArrayList<>();
 
-            //we have multiple names for some orgs in production (e.g. F84636),
-            //so return the name with the longest length (for the sake of having some way to choose
-            //something more interesting that just "The Surgery")
             while (rs.next()) {
                 int col = 1;
-                String possibleGuid = rs.getString(col++);
-                String possibleName = rs.getString(col++);
+                String guid = rs.getString(col++);
+                String name = rs.getString(col++);
 
-                if (name == null
-                        || possibleName.length() > name.length()) {
-                    guid = possibleGuid;
-                    name = possibleName;
-                }
+                EmisOrganisationMap m = new EmisOrganisationMap();
+                m.setGuid(guid);
+                m.setName(name);
+                m.setOdsCode(odsCode);
+                ret.add(m);
             }
 
-            if (!Strings.isNullOrEmpty(name)) {
-                EmisOrganisationMap ret = new EmisOrganisationMap();
-                ret.setGuid(guid);
-                ret.setName(name);
-                ret.setOdsCode(odsCode);
-                return ret;
-
-            } else {
-                return null;
-            }
+            return ret;
 
         } catch (Exception ex) {
             LOG.error("Error getting name for ODS code " + odsCode, ex);
