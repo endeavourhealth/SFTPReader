@@ -161,8 +161,13 @@ public class Main {
 
                 if (args[0].equalsIgnoreCase("TestS3Tags")) {
                     String s3Path = args[1];
-                    String tag = args[2];
-                    String tagValue = args[3];
+                    String tag = null;
+                    String tagValue = null;
+                    if (args.length > 2) {
+                        tag = args[2];
+                        tagValue = args[3];
+                    }
+
                     testS3Tags(s3Path, tag, tagValue);
                     System.exit(0);
                 }
@@ -269,10 +274,15 @@ public class Main {
             LOG.debug("Testing S3 tagging of " + s3Path);
 
             Map<String, String> hm = new HashMap<>();
-            hm.put(tag, tagValue);
 
-            FileHelper.setPermanentStorageTags(s3Path, hm);
-            LOG.debug("Written tag [" + tag + "] -> [" + tagValue + "]");
+            if (!Strings.isNullOrEmpty(tag)) {
+                hm.put(tag, tagValue);
+
+                FileHelper.setPermanentStorageTags(s3Path, hm);
+                LOG.debug("Written tag [" + tag + "] -> [" + tagValue + "]");
+            } else {
+                LOG.debug("Not writing tag");
+            }
 
             hm = FileHelper.getPermanentStorageTags(s3Path);
             String gotValue = hm.get(tag);
