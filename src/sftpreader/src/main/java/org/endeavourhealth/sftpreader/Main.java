@@ -22,10 +22,7 @@ import org.endeavourhealth.sftpreader.implementations.emis.EmisFixDisabledServic
 import org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustomFilenameParser;
 import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbInstance;
-import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
-import org.endeavourhealth.sftpreader.model.db.EmisOrganisationMap;
+import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
@@ -161,6 +158,20 @@ public class Main {
                     testDisabledFix(odsCode, configurationId);
                     System.exit(0);
                 }
+
+                if (args[0].equalsIgnoreCase("TestS3Tags")) {
+                    String s3Path = args[1];
+                    String tag = args[2];
+                    String tagValue = args[3];
+                    testS3Tags(s3Path, tag, tagValue);
+                    System.exit(0);
+                }
+
+                if (args[0].equalsIgnoreCase("FixEmisS3Tags")) {
+                    String configurationId = args[1];
+                    fixEmisS3Tags(configurationId);
+                    System.exit(0);
+                }
             }
 
             /*if (args.length > 0) {
@@ -201,6 +212,77 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void fixEmisS3Tags(String configurationId) {
+        try {
+            LOG.debug("Fixing S3 Tags for " + configurationId);
+
+            DataLayerI db = configuration.getDataLayer();
+
+            DbInstance dbInstanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
+
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+
+            Map<String, String> tags = new HashMap<>();
+            tags.put("Emis", "raw");
+
+            List<Batch> batches = db.getAllBatches(configurationId);
+            for (Batch batch: batches) {
+                LOG.debug("Fixing batch " + batch.getBatchId() + " " + batch.getBatchIdentifier());
+
+                for (BatchFile batchFile: batch.getBatchFiles()) {
+
+                    String sharedStoragePath = edsConfiguration.getSharedStoragePath(); //e.g. s3://discoverysftplanding/endeavour
+                    String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/EMIS001
+                    String batchPath = batch.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35/
+                    String fileName = batchFile.getFilename(); //e.g. 1-95771_Admin_OrganisationLocation_20170222170437_2D106103-404D-4054-89B8-18F95932B092.csv.gpg
+
+                    String path = FilenameUtils.concat(sharedStoragePath, configurationPath);
+                    path = FilenameUtils.concat(path, batchPath);
+                    path = FilenameUtils.concat(path, fileName);
+
+                    String extension = FilenameUtils.getExtension(fileName);
+                    if (!extension.equalsIgnoreCase("gpg")) {
+                        throw new Exception("" + path + " isn't a GPG file");
+                    }
+
+                    FileHelper.setPermanentStorageTags(path, tags);
+                }
+            }
+
+            LOG.debug("Finished Fixing S3 Tags for " + configurationId);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
+
+    private static void testS3Tags(String s3Path, String tag, String tagValue) {
+
+        try {
+            LOG.debug("Testing S3 tagging of " + s3Path);
+
+            Map<String, String> hm = new HashMap<>();
+            hm.put(tag, tagValue);
+
+            FileHelper.setPermanentStorageTags(s3Path, hm);
+            LOG.debug("Written tag [" + tag + "] -> [" + tagValue + "]");
+
+            hm = FileHelper.getPermanentStorageTags(s3Path);
+            String gotValue = hm.get(tag);
+            LOG.debug("Got tag value back [" + gotValue + "]");
+
+            LOG.debug("Finished Testing S3 tagging of " + s3Path);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     private static void testDisabledFix(String odsCode, String configurationId) {
 
