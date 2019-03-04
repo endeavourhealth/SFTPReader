@@ -161,10 +161,9 @@ public class Main {
 
                 if (args[0].equalsIgnoreCase("TestS3Tags")) {
                     String s3Path = args[1];
-                    String tag = null;
+                    String tag = args[2];
                     String tagValue = null;
-                    if (args.length > 2) {
-                        tag = args[2];
+                    if (args.length > 3) {
                         tagValue = args[3];
                     }
 
@@ -275,7 +274,7 @@ public class Main {
 
             Map<String, String> hm = new HashMap<>();
 
-            if (!Strings.isNullOrEmpty(tag)) {
+            if (!Strings.isNullOrEmpty(tagValue)) {
                 hm.put(tag, tagValue);
 
                 FileHelper.setPermanentStorageTags(s3Path, hm);
