@@ -595,6 +595,10 @@ public class Main {
 
         //if a path, then list contents
         if (path.endsWith("/")) {
+
+            //remove trailing /
+            path = path.substring(0, path.length()-1);
+
             List<FileInfo> infos = FileHelper.listFilesInSharedStorageWithInfo(path);
             LOG.info("Prefix listing:");
             for (FileInfo info: infos) {
