@@ -591,7 +591,7 @@ public class Main {
      * simple utility to log what we can find about an S3 object or prefix
      */
     private static void checkS3(String path) throws Exception {
-        LOG.info("Checking S3 " + path);
+        System.out.println("Checking S3 " + path);
 
         //if a path, then list contents
         if (path.endsWith("/")) {
@@ -600,38 +600,41 @@ public class Main {
             path = path.substring(0, path.length()-1);
 
             List<FileInfo> infos = FileHelper.listFilesInSharedStorageWithInfo(path);
-            LOG.info("Prefix listing:");
+            System.out.println("Prefix listing:");
             for (FileInfo info: infos) {
                 String s = "";
-                s += FileUtils.byteCountToDisplaySize(info.getSize());
-                while (s.length() < 10) {
-                    s += " ";
-                }
+
                 s += info.getLastModified();
-                while (s.length() < 25) {
+                while (s.length() < 31) {
                     s += " ";
                 }
+
+                s += FileUtils.byteCountToDisplaySize(info.getSize());
+                while (s.length() < 41) {
+                    s += " ";
+                }
+
                 s += info.getFilePath();
 
-                LOG.info(s);
+                System.out.println(s);
             }
 
         } else {
             //if an object, list tags and encryption status
-            List<FileInfo> infos = FileHelper.listFilesInSharedStorageWithInfo(path);
+            /*List<FileInfo> infos = FileHelper.listFilesInSharedStorageWithInfo(path);
             FileInfo info = infos.get(0);
 
             LOG.info("Last modified: " + info.getLastModified());
-            LOG.info("Size: " + FileUtils.byteCountToDisplaySize(info.getSize()));
+            LOG.info("Size: " + FileUtils.byteCountToDisplaySize(info.getSize()));*/
 
-            LOG.info("Tags:");
+            System.out.println("Tags:");
             Map<String, String> tags = FileHelper.getPermanentStorageTags(path);
             if (tags == null || tags.isEmpty()) {
-                LOG.info("No tags found");
+                System.out.println("    No tags found");
             } else {
                 for (String tag: tags.keySet()) {
                     String value = tags.get(tag);
-                    LOG.info("    " + tag + " = " + value);
+                    System.out.println("    " + tag + " = " + value);
                 }
             }
 
@@ -649,7 +652,7 @@ public class Main {
             GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
             ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
             String encryption = metadata.getSSEAlgorithm();
-            LOG.info("Encryption: " + encryption);
+            System.out.println("Encryption: " + encryption);
         }
     }
 
