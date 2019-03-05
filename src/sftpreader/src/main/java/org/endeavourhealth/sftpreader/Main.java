@@ -649,6 +649,9 @@ public class Main {
             String bucket = path.substring(0, index);
             String key = path.substring(index+1);
 
+            LOG.debug("Bucket = " + bucket);
+            LOG.debug("key = " + key);
+
             GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
             ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
             String encryption = metadata.getSSEAlgorithm();
