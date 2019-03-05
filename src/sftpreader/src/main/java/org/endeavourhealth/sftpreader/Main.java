@@ -13,10 +13,12 @@ import com.google.common.base.Strings;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.csv.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.sftpreader.implementations.barts.BartsFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustomFilenameParser;
@@ -124,13 +126,6 @@ public class Main {
                     System.exit(0);
                 }*/
 
-                if (args[0].equalsIgnoreCase("CheckS3")) {
-                    String bucket = args[1];
-                    String path = args[2];
-                    checkS3(bucket, path);
-                    System.exit(0);
-                }
-
                 /*if (args[0].equalsIgnoreCase("TestLargeCopy")) {
                     String bucket = args[1];
                     String srcKey = args[2];
@@ -174,6 +169,12 @@ public class Main {
                 if (args[0].equalsIgnoreCase("FixEmisS3Tags")) {
                     String configurationId = args[1];
                     fixEmisS3Tags(configurationId);
+                    System.exit(0);
+                }
+
+                if (args[0].equalsIgnoreCase("CheckS3")) {
+                    String path = args[1];
+                    checkS3(path);
                     System.exit(0);
                 }
             }
@@ -586,46 +587,68 @@ public class Main {
         System.err.println(message + " [" + e.getClass().getName() + "] " + e.getMessage());
     }
 
-    private static void checkS3(String bucket, String path) {
-        LOG.info("Checking S3 " + bucket + " for " + path);
+    /**
+     * simple utility to log what we can find about an S3 object or prefix
+     */
+    private static void checkS3(String path) throws Exception {
+        LOG.info("Checking S3 " + path);
 
-        AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
-                .standard()
-                .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
-                .withRegion(Regions.EU_WEST_2);
+        //if a path, then list contents
+        if (path.endsWith("/")) {
+            List<FileInfo> infos = FileHelper.listFilesInSharedStorageWithInfo(path);
+            LOG.info("Prefix listing:");
+            for (FileInfo info: infos) {
+                String s = "";
+                s += FileUtils.byteCountToDisplaySize(info.getSize());
+                while (s.length() < 10) {
+                    s += " ";
+                }
+                s += info.getLastModified();
+                while (s.length() < 25) {
+                    s += " ";
+                }
+                s += info.getFilePath();
 
-        AmazonS3 s3Client = clientBuilder.build();
+                LOG.info(s);
+            }
 
-        ListObjectsV2Request request = new ListObjectsV2Request();
-        request.setBucketName(bucket);
-        request.setPrefix(path);
+        } else {
+            //if an object, list tags and encryption status
+            List<FileInfo> infos = FileHelper.listFilesInSharedStorageWithInfo(path);
+            FileInfo info = infos.get(0);
 
-        while (true) {
+            LOG.info("Last modified: " + info.getLastModified());
+            LOG.info("Size: " + FileUtils.byteCountToDisplaySize(info.getSize()));
 
-            ListObjectsV2Result result = s3Client.listObjectsV2(request);
-            if (result.getObjectSummaries() != null) {
-                for (S3ObjectSummary objectSummary : result.getObjectSummaries()) {
-                    String key = objectSummary.getKey();
-
-                    GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
-                    ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
-                    String encryption = metadata.getSSEAlgorithm();
-                    LOG.info("" + key + " has encryption [" + encryption + "]");
+            LOG.info("Tags:");
+            Map<String, String> tags = FileHelper.getPermanentStorageTags(path);
+            if (tags == null || tags.isEmpty()) {
+                LOG.info("No tags found");
+            } else {
+                for (String tag: tags.keySet()) {
+                    String value = tags.get(tag);
+                    LOG.info("    " + tag + " = " + value);
                 }
             }
 
-            if (result.isTruncated()) {
-                String nextToken = result.getNextContinuationToken();
-                request.setContinuationToken(nextToken);
-                continue;
+            AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder
+                    .standard()
+                    .withCredentials(DefaultAWSCredentialsProviderChain.getInstance())
+                    .withRegion(Regions.EU_WEST_2);
 
-            } else {
-                break;
-            }
+            AmazonS3 s3Client = clientBuilder.build();
+
+            int index = path.indexOf("/", 5);
+            String bucket = path.substring(0, index);
+            String key = path.substring(index+1);
+
+            GetObjectMetadataRequest request2 = new GetObjectMetadataRequest(bucket, key);
+            ObjectMetadata metadata = s3Client.getObjectMetadata(request2);
+            String encryption = metadata.getSSEAlgorithm();
+            LOG.info("Encryption: " + encryption);
         }
-
-        LOG.info("Finished Checking S3 " + bucket + " for " + path);
     }
+
 
     /*private static void fixS3(String bucket, String path, boolean test) {
         LOG.info("Fixing S3 " + bucket + " for " + path + " test mode = " + test);
