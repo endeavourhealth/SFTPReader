@@ -177,6 +177,14 @@ public class Main {
                     checkS3(path);
                     System.exit(0);
                 }
+
+                if (args[0].equalsIgnoreCase("ReadS3Bytes")) {
+                    String path = args[1];
+                    long start = Long.parseLong(args[2]);
+                    long len = Long.parseLong(args[3]);
+                    readS3Bytes(path, start, len);
+                    System.exit(0);
+                }
             }
 
             /*if (args.length > 0) {
@@ -217,6 +225,20 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void readS3Bytes(String path, long start, long len) {
+        LOG.info("Reading " + path + " from " + start + " len " + len);
+        try {
+            String str = FileHelper.readCharactersFromSharedStorage(path, start, len);
+            LOG.info("");
+            LOG.info(str);
+            LOG.info("");
+            LOG.info("Read " + str.length());
+
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     private static void fixEmisS3Tags(String configurationId) {
         try {
