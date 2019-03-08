@@ -226,6 +226,10 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             set.add("SRStaffMemberProfileRole");
             set.add("SRTrust");
 
+            //we don't transform these although we will retain them in the primary practice(s) file list
+            set.add("SRQuestionnaire");
+            set.add("SRTemplate");
+
             cachedFilesToNotSplit = set;
         }
         return cachedFilesToNotSplit;
