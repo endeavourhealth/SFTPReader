@@ -84,7 +84,9 @@ public class EmisCustomBatchValidator extends SftpBatchValidator {
             while (iterator.hasNext()) {
                 CSVRecord next = iterator.next();
 
-                if (next.size() != 6) {
+                //let through if 5 or 6 now that the transform code doesn't use the ProcessingID coljmn
+                if (next.size() != 6
+                        && next.size() != 5) {
                     throw new Exception("Failed to handle record " + next + " with " + next.size() + " columns");
                 }
             }
