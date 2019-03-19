@@ -522,7 +522,7 @@ public class SftpReaderTask implements Runnable {
 
     private void notifyEds() throws Exception {
 
-        //TODO - add support to pause notifying of EDS, so we still collect new files but hold off on posting them to the Messaging API
+        //add support to pause notifying of EDS, so we still collect new files but hold off on posting them to the Messaging API
         boolean shouldPauseNotifying = false;
         for (DbConfigurationKvp dbConfigurationKvp : dbConfiguration.getDbConfigurationKvp()) {
             if (dbConfigurationKvp.getKey().equals(SHOULD_PAUSE_NOTIFYING)) {
