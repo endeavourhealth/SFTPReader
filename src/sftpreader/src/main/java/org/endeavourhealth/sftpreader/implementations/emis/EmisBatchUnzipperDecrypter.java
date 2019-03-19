@@ -103,9 +103,12 @@ public class EmisBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter {
             }
 
             //also this is a good point to tag our GPG file so that our data retention policy thing works
-            Map<String, String> tags = new HashMap<>();
-            tags.put("Emis", "raw");
-            FileHelper.setPermanentStorageTags(encryptedSourceFile, tags);
+            if (encryptedSourceFile.startsWith("S3")
+                    || encryptedSourceFile.startsWith("s3")) {
+                Map<String, String> tags = new HashMap<>();
+                tags.put("Emis", "raw");
+                FileHelper.setPermanentStorageTags(encryptedSourceFile, tags);
+            }
 
             //if we're using separate temp and permanent storage, then we want to move the decrypted file into permanent storage
             //taking out, since we store the split versions of the files in S3, there's no need to store the un-split versions too

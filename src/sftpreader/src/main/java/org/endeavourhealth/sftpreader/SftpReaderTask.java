@@ -40,6 +40,8 @@ public class SftpReaderTask implements Runnable {
 
     private static Map<Integer, String> notificationErrorrs = new HashMap<>();
 
+    private static final String SHOULD_PAUSE_NOTIFYING = "PauseNotify";
+
 
     private Configuration configuration = null;
     private String configurationId = null;
@@ -519,6 +521,19 @@ public class SftpReaderTask implements Runnable {
     }
 
     private void notifyEds() throws Exception {
+
+        //TODO - add support to pause notifying of EDS, so we still collect new files but hold off on posting them to the Messaging API
+        boolean shouldPauseNotifying = false;
+        for (DbConfigurationKvp dbConfigurationKvp : dbConfiguration.getDbConfigurationKvp()) {
+            if (dbConfigurationKvp.getKey().equals(SHOULD_PAUSE_NOTIFYING)) {
+                shouldPauseNotifying = Boolean.parseBoolean(dbConfigurationKvp.getValue());
+                break;
+            }
+        }
+        if (shouldPauseNotifying) {
+            LOG.info("Skipping notifying Messaging API as paused");
+            return;
+        }
 
         List<BatchSplit> unnotifiedBatchSplits = db.getUnnotifiedBatchSplits(dbConfiguration.getConfigurationId());
         LOG.debug("There are {} complete split batches for notification", unnotifiedBatchSplits.size());
