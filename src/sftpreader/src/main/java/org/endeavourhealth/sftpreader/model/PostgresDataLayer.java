@@ -14,10 +14,7 @@ import org.endeavourhealth.sftpreader.model.db.*;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -213,6 +210,27 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }
 
+    @Override
+    public void setFileAsDeleted(BatchFile batchFile) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "UPDATE log.batch_file SET is_deleted = ? WHERE batch_file_id = ?;";
+
+            ps = connection.prepareStatement(sql);
+            ps.setBoolean(1, true);
+            ps.setInt(2, batchFile.getBatchFileId());
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
     /*public void setFileAsDecrypted(BatchFile batchFile) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.set_file_as_decrypted")
@@ -314,7 +332,9 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                         .setBatchId(resultSet.getInt("batch_id"))
                         .setBatchIdentifier(resultSet.getString("batch_identifier"))
                         .setLocalRelativePath(resultSet.getString("local_relative_path"))
-                        .setSequenceNumber(PgResultSet.getInteger(resultSet, "sequence_number")));
+                        .setInsertDate(getDate(resultSet, "insert_date"))
+                        .setSequenceNumber(PgResultSet.getInteger(resultSet, "sequence_number"))
+                        .setCompleteDate(getDate(resultSet, "complete_date")));
 
         List<BatchFile> batchFiles = pgStoredProc.executeMultiQuery(resultSet ->
                 new BatchFile()
@@ -324,11 +344,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                         .setFilename(resultSet.getString("filename"))
                         .setRemoteSizeBytes(resultSet.getLong("remote_size_bytes"))
                         .setDownloaded(resultSet.getBoolean("is_downloaded"))
-                        /*.setLocalSizeBytes(resultSet.getLong("local_size_bytes"))
-                        .setRequiresDecryption(resultSet.getBoolean("requires_decryption"))
-                        .setDecrypted(resultSet.getBoolean("is_decrypted"))
-                        .setDecryptedFilename(resultSet.getString("decrypted_filename"))
-                        .setDecryptedSizeBytes(resultSet.getLong("decrypted_size_bytes"))*/
+                        .setDeleted(resultSet.getBoolean("is_deleted"))
         );
 
         batchFiles.forEach(t ->
@@ -443,6 +459,15 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                     LOG.error("Error closing connection", se);
                 }
             }
+        }
+    }
+
+    private static Date getDate(ResultSet resultSet, String columnName) throws SQLException {
+        Date d = resultSet.getDate(columnName);
+        if (resultSet.wasNull()) {
+            return null;
+        } else {
+            return d;
         }
     }
 

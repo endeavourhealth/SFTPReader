@@ -1,4 +1,4 @@
-package org.endeavourhealth.sftpreader.implementations.emis;
+package org.endeavourhealth.sftpreader.implementations.emis.utility;
 
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;

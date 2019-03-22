@@ -2,16 +2,10 @@ package org.endeavourhealth.sftpreader;
 
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.kms.AWSKMS;
-import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
-import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
-import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.csv.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -19,28 +13,16 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
-import org.endeavourhealth.sftpreader.implementations.barts.BartsFilenameParser;
-import org.endeavourhealth.sftpreader.implementations.emis.EmisFixDisabledService;
-import org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustomFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
-import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
-import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
-import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
-import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.nio.charset.Charset;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 
 

@@ -1,4 +1,4 @@
-package org.endeavourhealth.sftpreader.implementations.emis;
+package org.endeavourhealth.sftpreader.implementations.emis.utility;
 
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.StringMemorySaver;
+import org.endeavourhealth.sftpreader.implementations.emis.EmisBatchSplitter;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.slf4j.Logger;

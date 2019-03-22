@@ -1,10 +1,12 @@
-package org.endeavourhealth.sftpreader.implementations.emis;
+package org.endeavourhealth.sftpreader.implementations.emis.utility;
 
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.sftpreader.implementations.emis.EmisBatchSplitter;
+import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;

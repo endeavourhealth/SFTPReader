@@ -112,4 +112,12 @@ public class ImplementationActivator {
         Constructor<SftpPostSplitBatchValidator> constructor = cls.getConstructor();
         return constructor.newInstance();
     }
+
+    public static SftpHouseKeeper createSftpHouseKeeper(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "HouseKeeper";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpHouseKeeper> constructor = cls.getConstructor();
+        return constructor.newInstance();
+    }
 }

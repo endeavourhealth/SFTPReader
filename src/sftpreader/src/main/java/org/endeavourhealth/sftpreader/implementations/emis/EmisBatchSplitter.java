@@ -8,12 +8,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
-import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;

@@ -12,6 +12,7 @@ public class BatchFile {
     private boolean isDecrypted;
     private String decryptedFilename;
     private long decryptedSizeBytes;*/
+    private boolean isDeleted;
 
     public int getBatchId() {
         return batchId;
@@ -67,48 +68,12 @@ public class BatchFile {
         return this;
     }
 
-    /*public long getLocalSizeBytes() {
-        return localSizeBytes;
+    public boolean isDeleted() {
+        return isDeleted;
     }
 
-    public BatchFile setLocalSizeBytes(long localSizeBytes) {
-        this.localSizeBytes = localSizeBytes;
+    public BatchFile setDeleted(boolean deleted) {
+        isDeleted = deleted;
         return this;
     }
-
-    public boolean isRequiresDecryption() {
-        return requiresDecryption;
-    }
-
-    public BatchFile setRequiresDecryption(boolean requiresDecryption) {
-        this.requiresDecryption = requiresDecryption;
-        return this;
-    }
-
-    public boolean isDecrypted() {
-        return isDecrypted;
-    }
-
-    public BatchFile setDecrypted(boolean decrypted) {
-        isDecrypted = decrypted;
-        return this;
-    }
-
-    public String getDecryptedFilename() {
-        return decryptedFilename;
-    }
-
-    public BatchFile setDecryptedFilename(String decryptedFilename) {
-        this.decryptedFilename = decryptedFilename;
-        return this;
-    }
-
-    public long getDecryptedSizeBytes() {
-        return decryptedSizeBytes;
-    }
-
-    public BatchFile setDecryptedSizeBytes(long decryptedSizeBytes) {
-        this.decryptedSizeBytes = decryptedSizeBytes;
-        return this;
-    }*/
 }

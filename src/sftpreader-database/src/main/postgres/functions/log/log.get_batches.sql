@@ -17,7 +17,9 @@ begin
 			b.batch_id,
 			b.batch_identifier,
 			b.local_relative_path,
-			b.sequence_number
+			b.insert_date,
+			b.sequence_number,
+			b.complete_date
 		from log.batch b
 		where b.batch_id in
 		(
@@ -36,7 +38,8 @@ begin
 			bf.file_type_identifier,
 			bf.filename,
 			bf.remote_size_bytes,
-			bf.is_downloaded
+			bf.is_downloaded,
+			bf.is_deleted
 		from log.batch b
 		inner join log.batch_file bf on b.batch_id = bf.batch_id 
 		where b.batch_id in

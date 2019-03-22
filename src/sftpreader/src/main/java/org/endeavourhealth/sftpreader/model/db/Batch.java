@@ -1,6 +1,7 @@
 package org.endeavourhealth.sftpreader.model.db;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Batch {
@@ -9,6 +10,9 @@ public class Batch {
     private String localRelativePath;
     private Integer sequenceNumber;
     private List<BatchFile> batchFiles = new ArrayList<>();
+    private Date insertDate;
+    private Date completeDate;
+
 
     public int getBatchId() {
         return batchId;
@@ -54,4 +58,23 @@ public class Batch {
     public List<BatchFile> getBatchFiles() {
         return this.batchFiles;
     }
+
+    public Date getInsertDate() {
+        return insertDate;
+    }
+
+    public Batch setInsertDate(Date insertDate) {
+        this.insertDate = insertDate;
+        return this;
+    }
+
+    public Date getCompleteDate() {
+        return completeDate;
+    }
+
+    public Batch setCompleteDate(Date completeDate) {
+        this.completeDate = completeDate;
+        return this;
+    }
+
 }

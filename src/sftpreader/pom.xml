@@ -18,7 +18,7 @@
         <endeavour-config.version>1.23-SNAPSHOT</endeavour-config.version>
         <endeavour-security.version>1.12-SNAPSHOT</endeavour-security.version>
         <endeavour-postgres.version>1.09-SNAPSHOT</endeavour-postgres.version>
-        <endeavour-utility.version>1.42-SNAPSHOT</endeavour-utility.version>
+        <endeavour-utility.version>1.46-SNAPSHOT</endeavour-utility.version>
         <endeavour-edsclient.version>1.1-SNAPSHOT</endeavour-edsclient.version>
         <endeavour-fhir.version>1.86-SNAPSHOT</endeavour-fhir.version>
         <eds-datasharing.version>0.0.2-SNAPSHOT</eds-datasharing.version>
@@ -41,6 +41,7 @@
         <mysql.version>6.0.5</mysql.version>
         <apache-compress.version>1.18</apache-compress.version>
         <tukanni.version>1.8</tukanni.version>
+        <jackson.version>2.9.8</jackson.version>
 
     </properties>
 
@@ -202,6 +203,33 @@
             <version>${keycloak.version}</version>
         </dependency>
         <!-- end specifically included -->
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-base</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+            <artifactId>jackson-jaxrs-json-provider</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
 
     </dependencies>
 

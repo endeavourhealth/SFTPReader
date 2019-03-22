@@ -106,6 +106,9 @@ public class SftpReaderTask implements Runnable {
             LOG.trace(">>>Notifying EDS");
             notifyEds();
 
+            LOG.trace(">>>Performing housekeeping");
+            performHouseKeeping();
+
             LOG.trace(">>>Completed SftpReader run");
 
         } catch (Exception e) {
@@ -127,6 +130,11 @@ public class SftpReaderTask implements Runnable {
                 }
             }
         }
+    }
+
+    private void performHouseKeeping() throws Exception {
+        SftpHouseKeeper houseKeeper = ImplementationActivator.createSftpHouseKeeper(dbConfiguration);
+        houseKeeper.performHouseKeeping(db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
     }
 
     private void deleteTempDir() {

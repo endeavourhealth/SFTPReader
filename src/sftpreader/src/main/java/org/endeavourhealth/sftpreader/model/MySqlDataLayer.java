@@ -472,6 +472,27 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     @Override
+    public void setFileAsDeleted(BatchFile batchFile) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "UPDATE batch_file SET is_deleted = ? WHERE batch_file_id = ?;";
+
+            ps = connection.prepareStatement(sql);
+            ps.setBoolean(1, true);
+            ps.setInt(2, batchFile.getBatchFileId());
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
     public boolean addUnknownFile(String configurationId, SftpFile batchFile) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement psSelect = null;
@@ -552,8 +573,8 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "SELECT b.batch_id, b.batch_identifier, b.local_relative_path, b.sequence_number, "
-                    + " bf.batch_file_id, bf.file_type_identifier, bf.filename, bf.remote_size_bytes, bf.is_downloaded"
+            String sql = "SELECT b.batch_id, b.batch_identifier, b.local_relative_path, b.insert_date, b.sequence_number, b.complete_date,"
+                    + " bf.batch_file_id, bf.file_type_identifier, bf.filename, bf.remote_size_bytes, bf.is_downloaded, bf.is_deleted"
                     + " FROM batch b"
                     + " LEFT OUTER JOIN batch_file bf"
                     + " ON b.batch_id = bf.batch_id"
@@ -577,7 +598,9 @@ public class MySqlDataLayer implements DataLayerI {
                 int batchId = rs.getInt(col++);
                 String batchIdentifier = rs.getString(col++);
                 String batchLocalRelativePath = rs.getString(col++);
+                Date insertDate = rs.getDate(col++);
                 int sequenceNumber = rs.getInt(col++);
+                Date completeDate = rs.getDate(col++);
 
                 //because we're doing a left outer join, we'll get multiple rows with the batch details, so use a map to handle the duplicates
                 Batch batch = hmBatches.get(new Integer(batchId));
@@ -586,7 +609,9 @@ public class MySqlDataLayer implements DataLayerI {
                     batch.setBatchId(batchId);
                     batch.setBatchIdentifier(batchIdentifier);
                     batch.setLocalRelativePath(batchLocalRelativePath);
+                    batch.setInsertDate(insertDate);
                     batch.setSequenceNumber(sequenceNumber);
+                    batch.setCompleteDate(completeDate);
 
                     ret.add(batch);
                     hmBatches.put(new Integer(batchId), batch);
@@ -599,6 +624,7 @@ public class MySqlDataLayer implements DataLayerI {
                     String fileName = rs.getString(col++);
                     long remoteSizeBytes = rs.getLong(col++);
                     boolean isDownloaded = rs.getBoolean(col++);
+                    boolean isDeleted = rs.getBoolean(col++);
 
                     BatchFile batchFile = new BatchFile();
                     batchFile.setBatchId(batchId);
@@ -607,6 +633,7 @@ public class MySqlDataLayer implements DataLayerI {
                     batchFile.setFilename(fileName);
                     batchFile.setRemoteSizeBytes(remoteSizeBytes);
                     batchFile.setDownloaded(isDownloaded);
+                    batchFile.setDeleted(isDeleted);
 
                     batch.addBatchFile(batchFile);
                 }

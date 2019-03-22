@@ -3,15 +3,14 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.ProcessingIdSet;
 import org.endeavourhealth.sftpreader.model.db.BatchFile;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbConfigurationKvp;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID;
 
 public class EmisFilenameParser extends SftpFilenameParser {
                                                                         // same as ISO pattern but switch : for . so can be used as filename and sorted

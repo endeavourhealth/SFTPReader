@@ -1,4 +1,4 @@
-package org.endeavourhealth.sftpreader.implementations.emis;
+package org.endeavourhealth.sftpreader.implementations.emis.utility;
 
 public class SharingAgreementRecord {
 
