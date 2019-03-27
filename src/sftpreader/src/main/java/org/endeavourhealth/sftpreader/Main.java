@@ -18,6 +18,7 @@ import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
+import org.endeavourhealth.sftpreader.utilities.PgpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,6 +125,13 @@ public class Main {
                     System.exit(0);
                 }*/
 
+                if (args[0].equalsIgnoreCase("DecryptGpg")) {
+                    String filePath = args[1];
+                    String configurationId = args[2];
+                    decryptGpgFile(filePath, configurationId);
+                    System.exit(0);
+                }
+
                 if (args[0].equalsIgnoreCase("TestOriginalTerms")) {
                     testOriginalTerms();
                     System.exit(0);
@@ -207,6 +215,44 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void decryptGpgFile(String filePath, String configurationId) {
+        LOG.info("Decrypting " + filePath + " from configuration " + configurationId);
+        try {
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+            if (dbConfiguration == null) {
+                throw new Exception("Failed to find configuration " + configurationId);
+            }
+
+            InputStream inputStream = FileHelper.readFileFromSharedStorage(filePath);
+
+            String privateKey = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKey();
+            String privateKeyPassword = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKeyPassword();
+            String publicKey = dbConfiguration.getPgpConfiguration().getPgpSenderPublicKey();
+
+            String ext = FilenameUtils.getExtension(filePath);
+            int len = ext.length() + 1;
+            String decryptedTempFile = filePath.substring(0, filePath.length()-len);
+
+            try {
+                LOG.info("   Decrypting file to: " + decryptedTempFile);
+                PgpUtil.decryptAndVerify(inputStream, decryptedTempFile, privateKey, privateKeyPassword, publicKey);
+
+            } finally {
+                inputStream.close();
+            }
+
+            LOG.info("Finished Decrypting " + filePath + " from configuration " + configurationId);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     private static void readS3Bytes(String path, long start, long len) {
         LOG.info("Reading " + path + " from " + start + " len " + len);
