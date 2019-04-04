@@ -92,5 +92,18 @@ public class AdastraFilenameParser extends SftpFilenameParser {
         this.extractDateTime = LocalDateTime.parse(extractDateTime, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
         this.isFileNeeded = true;
+
+        //if it is City and Hackney CHUHSE OOH, we have received rubbish data between two particular dates which we want to ignore
+        if (this.nacsCode.equalsIgnoreCase("Y04474")) {
+
+            LocalDateTime startDate = LocalDateTime.parse("20180516181057", DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+            LocalDateTime endDate = LocalDateTime.parse("20180719090925", DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+            //if the extract date equals or falls between the two known erroneous dates, ignore the file
+            if ((this.extractDateTime.isEqual(startDate) || this.extractDateTime.isEqual(endDate)) ||
+                    (this.extractDateTime.isAfter(startDate) && this.extractDateTime.isBefore(endDate))) {
+                this.isFileNeeded = false;
+            }
+        }
     }
 }
