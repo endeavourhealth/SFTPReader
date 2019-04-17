@@ -99,7 +99,8 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
 
             LOG.trace("Looks like " + org.getOdsCode() + " " + org.getName() + " was disabled and is now fixed");
 
-            //if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
+            //take this out so we don't make things worse until we understand what Emis have changed
+            /*//if our feed was disabled, but is now fixed, then we should try to fix the files so we don't need to
             //process the full delete before the re-bulk
             EmisFixDisabledService fixer = new EmisFixDisabledService(org, db, instanceConfiguration, dbConfiguration);
             fixer.fixDisabledExtract();
@@ -107,7 +108,7 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
             //send slack notification
             String msg = "Disabled extract files for " + org.getOdsCode() + " " + org.getName()
                     + " have been automatically fixed, and can now be re-queued into Inbound queue";
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);*/
 
         } catch (Exception ex) {
             throw new RuntimeException("Error fixing disabled feed for " + odsCode, ex);
