@@ -11,6 +11,7 @@ import org.endeavourhealth.common.eds.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.common.eds.EdsSenderResponse;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.MetricsHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.implementations.*;
 import org.endeavourhealth.sftpreader.model.ConfigurationLockI;
@@ -56,6 +57,7 @@ public class SftpReaderTask implements Runnable {
 
     @Override
     public void run() {
+        MetricsHelper.recordEvent(configurationId + ".check-for-files");
 
         ConfigurationLockI lock = null;
         try {
@@ -175,6 +177,15 @@ public class SftpReaderTask implements Runnable {
 
         //and tell Slack
         SlackNotifier.notifyCompleteBatch(dbConfiguration, batch);
+
+        //and graphite
+        long totalSizeInBytes = 0;
+        for (BatchFile batchFile: batch.getBatchFiles()) {
+            totalSizeInBytes += batchFile.getRemoteSizeBytes();
+        }
+
+        MetricsHelper.recordEvent(configurationId + ".completed-batch");
+        MetricsHelper.recordValue(configurationId + ".completed-batch-size-mb", totalSizeInBytes / (1024*1024));
     }
 
     private void unzipDecryptBatch(Batch batch) throws Exception {
@@ -356,6 +367,8 @@ public class SftpReaderTask implements Runnable {
         //update the DB to confirm we've downloaded it
         sftpFile.setLocalFileSizeBytes(fileLen);
         db.setFileAsDownloaded(sftpFile);
+
+        MetricsHelper.recordEvent(configurationId + ".file-downloaded");
     }
     /*private void downloadFile(Connection connection, SftpFile batchFile) throws Exception {
         String localFilePath = batchFile.getLocalFilePath();
@@ -675,6 +688,8 @@ public class SftpReaderTask implements Runnable {
                 sendSlackOk(batchSplitId, organisationId);
             }
 
+            MetricsHelper.recordEvent(configurationId + ".notified-messaging-api-ok");
+
         } catch (Exception e) {
             String inboundMessage = null;
 
@@ -696,6 +711,8 @@ public class SftpReaderTask implements Runnable {
             if (shouldSendSlackAlert(batchSplitId, inboundMessage)) {
                 sendSlackAlert(batchSplitId, organisationId, inboundMessage);
             }
+
+            MetricsHelper.recordEvent(configurationId + ".notified-messaging-api-error");
 
             throw new SftpReaderException("Error notifying EDS for batch split " + batchSplitId, e);
         }
