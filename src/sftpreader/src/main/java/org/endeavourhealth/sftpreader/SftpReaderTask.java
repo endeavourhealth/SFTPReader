@@ -260,7 +260,7 @@ public class SftpReaderTask implements Runnable {
 
                 AddFileResult addFileResult = db.addFile(configurationId, batchFile);
 
-                if (addFileResult.isFileAlreadyProcessed()) {
+                if (addFileResult.isFileAlreadyDownloaded()) {
                     countAlreadyProcessed ++;
                     continue;
                 }
@@ -535,8 +535,9 @@ public class SftpReaderTask implements Runnable {
     }
 
     private static int getNextSequenceNumber(Batch lastCompleteBatch) {
-        if (lastCompleteBatch == null)
+        if (lastCompleteBatch == null) {
             return 1;
+        }
 
         return lastCompleteBatch.getSequenceNumber() + 1;
     }

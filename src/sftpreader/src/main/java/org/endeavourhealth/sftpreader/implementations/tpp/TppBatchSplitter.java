@@ -240,6 +240,12 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
         String orgFilePath = FilenameUtils.concat(sourceTempDir, ORGANISATION_FILE);
         File f = new File(orgFilePath);
+
+        //added to get around some issues when testing - this won't happen on Live
+        if (!f.exists()) {
+            LOG.warn(ORGANISATION_FILE + " not found in " + sourceTempDir);
+            return;
+        }
         FileInputStream fis = new FileInputStream(f);
         BufferedInputStream bis = new BufferedInputStream(fis);
         InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));

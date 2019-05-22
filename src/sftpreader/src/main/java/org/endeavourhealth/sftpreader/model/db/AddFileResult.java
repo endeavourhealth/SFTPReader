@@ -1,15 +1,15 @@
 package org.endeavourhealth.sftpreader.model.db;
 
 public class AddFileResult {
-    private boolean fileAlreadyProcessed;
+    private boolean fileAlreadyDownloaded;
     private int batchFileId;
 
-    public boolean isFileAlreadyProcessed() {
-        return fileAlreadyProcessed;
+    public boolean isFileAlreadyDownloaded() {
+        return fileAlreadyDownloaded;
     }
 
-    public AddFileResult setFileAlreadyProcessed(boolean fileAlreadyProcessed) {
-        this.fileAlreadyProcessed = fileAlreadyProcessed;
+    public AddFileResult setFileAlreadyDownloaded(boolean fileAlreadyDownloaded) {
+        this.fileAlreadyDownloaded = fileAlreadyDownloaded;
         return this;
     }
 

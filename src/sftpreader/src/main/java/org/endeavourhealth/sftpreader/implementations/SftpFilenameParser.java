@@ -54,21 +54,4 @@ public abstract class SftpFilenameParser {
         return this.isFilenameValid;
     }
 
-    /*public String getBatchIdentifier() {
-        if (!isFilenameValid)
-            return "UNKNOWN";
-
-        return generateBatchIdentifier();
-    }
-
-    public String getFileTypeIdentifier() {
-        if (!isFilenameValid)
-            return "UNKNOWN";
-
-        return generateFileTypeIdentifier();
-    }*/
-
-    /*public String getFileExtension() {
-        return this.fileExtension;
-    }*/
 }

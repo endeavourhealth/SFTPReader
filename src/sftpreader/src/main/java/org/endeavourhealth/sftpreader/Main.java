@@ -58,47 +58,7 @@ public class Main {
                 }
             }*/
 
-            /*if (args.length > 0) {
-                if (args[0].equalsIgnoreCase("TestBarts")) {
 
-                    File f = new File("C:\\Users\\drewl\\Desktop\\RAW_barts_ftp_files.txt");
-                    List<String> lines = Files.readAllLines(f.toPath());
-                    DbConfiguration dbConfiguration = configuration.getConfiguration("BARTSDW");
-
-                    List<String> ok = new ArrayList<>();
-
-                    for (String line : lines) {
-
-                        String dateTok = line.substring(35, 47);
-                        if (dateTok.startsWith("DEC")) {
-                            dateTok = "2017 " + dateTok;
-                        } else {
-                            dateTok = "2018 " + dateTok;
-                        }
-                        dateTok = dateTok.replaceAll("  ", " 0");
-                        LocalDateTime extractDate = LocalDateTime.parse(dateTok, DateTimeFormatter.ofPattern("yyyy MMM dd HH:mm"));
-
-                        String filename = line.substring(48);
-
-                        if (filename.equalsIgnoreCase(".")
-                                || filename.equalsIgnoreCase("..")) {
-                            continue;
-                        }
-
-                        BartsSftpFilenameParser parser = new BartsSftpFilenameParser(filename, extractDate, dbConfiguration);
-                        if (parser.isFilenameValid()) {
-                            ok.add("" + line + " -> " + parser.isFilenameValid() + ", " + parser.generateFileTypeIdentifier() + ", " + parser.generateBatchIdentifier());
-                        } else {
-                            LOG.error(filename);
-                        }
-
-
-                        *//*for (String okLine: ok) {
-                            LOG.info(okLine);
-                        }*//*
-                    }
-                }
-            }*/
 
             if (args.length > 0) {
                 /*if (args[0].equalsIgnoreCase("FixS3")) {

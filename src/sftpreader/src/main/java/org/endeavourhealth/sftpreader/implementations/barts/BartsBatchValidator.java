@@ -58,7 +58,7 @@ public class BartsBatchValidator extends SftpBatchValidator {
         return true;
     }
 
-    private void checkOutpatientFilesPresent(Batch incompleteBatch) throws SftpValidationException {
+    /*private void checkOutpatientFilesPresent(Batch incompleteBatch) throws SftpValidationException {
 
         boolean gotOpaFile = false;
 
@@ -73,7 +73,7 @@ public class BartsBatchValidator extends SftpBatchValidator {
         if (!gotOpaFile) {
             throw new SftpValidationException("No SUSOPA file found in batch " + incompleteBatch.getBatchIdentifier());
         }
-    }
+    }*/
 
     private void checkAllRequiredTailsFilesArePresentInBatch(Batch incompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException {
 

@@ -297,16 +297,9 @@ public class MySqlDataLayer implements DataLayerI {
         }
     }
 
-    @Override
-    public AddFileResult addFile(String configurationId, SftpFile sftpFile) throws Exception {
+    private int findInterfaceTypeId(String configurationId) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement psSelectInterfaceType = null;
-        PreparedStatement psSelectBatch = null;
-        PreparedStatement psInsertBatch = null;
-        PreparedStatement psSelectBatchFile = null;
-        PreparedStatement psDeleteBatchFile = null;
-        PreparedStatement psInsertBatchFile = null;
-
         try {
             //first we need to now the interface file type for our config
             String sql = "SELECT interface_type_id FROM configuration WHERE configuration_id = ?";
@@ -318,136 +311,231 @@ public class MySqlDataLayer implements DataLayerI {
             if (!rs.next()) {
                 throw new Exception("Failed to find interface_type_id from configuation table for ID " + configurationId);
             }
-            int interfaceTypeId = rs.getInt(1);
+            return rs.getInt(1);
+
+        } finally {
+            if (psSelectInterfaceType != null) {
+                psSelectInterfaceType.close();
+            }
+            connection.close();
+        }
+    }
+
+    private Map<Integer, Boolean> findBatches(String configurationId, String batchIdentifier) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement psSelectBatch = null;
+        try {
+
+            Map<Integer, Boolean> ret = new HashMap<>();
 
             //next find the batch that this file would go (or has gone) against
-            sql = "SELECT batch_id FROM batch WHERE configuration_id = ? AND batch_identifier = ?;";
-
+            String sql = "SELECT batch_id, is_complete FROM batch WHERE configuration_id = ? AND batch_identifier = ?";
             psSelectBatch = connection.prepareStatement(sql);
-            psSelectBatch.setString(1, configurationId);
-            psSelectBatch.setString(2, sftpFile.getBatchIdentifier());
 
-            int batchId;
+            int col = 1;
+            psSelectBatch.setString(col++, configurationId);
+            psSelectBatch.setString(col++, batchIdentifier);
 
-            rs = psSelectBatch.executeQuery();
-            if (rs.next()) {
-                batchId = rs.getInt(1);
+            //go through the batches to find one that isn't marked as complete
+            ResultSet rs = psSelectBatch.executeQuery();
+            while (rs.next()) {
 
-            } else {
-                //if no batch ID exists, we need to create one
-                sql = "INSERT INTO batch (configuration_id, batch_identifier, interface_type_id, local_relative_path, insert_date, is_complete) VALUES (?, ?, ?, ?, ?, ?);";
+                col = 1;
+                int id = rs.getInt(col++);
+                boolean isComplete = rs.getBoolean(col++);
 
-                psInsertBatch = connection.prepareStatement(sql);
-                psInsertBatch.setString(1, configurationId);
-                psInsertBatch.setString(2, sftpFile.getBatchIdentifier());
-                psInsertBatch.setInt(3, interfaceTypeId);
-                psInsertBatch.setString(4, sftpFile.getLocalRelativePath());
-                psInsertBatch.setTimestamp(5, new java.sql.Timestamp(new Date().getTime()));
-                psInsertBatch.setBoolean(6, false);
-                psInsertBatch.executeUpdate();
-
-                //then we need to select the auto-assigned batch ID
-                psSelectBatch.setString(1, configurationId);
-                psSelectBatch.setString(2, sftpFile.getBatchIdentifier());
-                rs = psSelectBatch.executeQuery();
-                if (rs.next()) {
-                    batchId = rs.getInt(1);
-                } else {
-                    throw new Exception("Failed to find batch ID after inserting it");
-                }
+                ret.put(new Integer(id), new Boolean(isComplete));
             }
+
+            return ret;
+
+        } finally {
+            if (psSelectBatch != null) {
+                psSelectBatch.close();
+            }
+            connection.close();
+        }
+    }
+
+    private AddFileResult findExistingBatchFile(int batchId, String fileType, String fileName) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement psSelectBatchFile = null;
+        PreparedStatement psDeleteBatchFile = null;
+        try {
 
             //now select from the batch_file to see if we've already handled this file
-            sql = "SELECT batch_file_id, is_downloaded FROM batch_file WHERE batch_id = ? AND file_type_identifier = ? AND filename = ?;";
+            String sql = "SELECT batch_file_id, is_downloaded FROM batch_file WHERE batch_id = ? AND file_type_identifier = ? AND filename = ?;";
 
             psSelectBatchFile = connection.prepareStatement(sql);
-            psSelectBatchFile.setInt(1, batchId);
-            psSelectBatchFile.setString(2, sftpFile.getFileTypeIdentifier());
-            psSelectBatchFile.setString(3, sftpFile.getFilename());
 
-            int batchFileId = -1;
-            boolean alreadyDownloaded = false;
+            int col = 1;
+            psSelectBatchFile.setInt(col++, batchId);
+            psSelectBatchFile.setString(col++, fileType);
+            psSelectBatchFile.setString(col++, fileName);
 
-            rs = psSelectBatchFile.executeQuery();
+            ResultSet rs = psSelectBatchFile.executeQuery();
             if (rs.next()) {
-                int col = 1;
-                batchFileId = rs.getInt(col++);
-                alreadyDownloaded = rs.getBoolean(col++);
-            }
+                col = 1;
+                int batchFileId = rs.getInt(col++);
+                boolean alreadyDownloaded = rs.getBoolean(col++);
 
-            //if we're previously added the file but not finished downloading it, delete the batch_file so we re-create it
-            if (batchFileId > -1 && !alreadyDownloaded) {
+                if (alreadyDownloaded) {
+                    AddFileResult ret = new AddFileResult();
+                    ret.setBatchFileId(batchFileId);
+                    ret.setFileAlreadyDownloaded(true);
+                    return ret;
+                }
 
+                //if we're previously added the file but not finished downloading it, delete the batch_file so we re-create it
                 sql = "DELETE FROM batch_file WHERE batch_file_id = ?;";
 
                 psDeleteBatchFile = connection.prepareStatement(sql);
                 psDeleteBatchFile.setInt(1, batchFileId);
 
                 psDeleteBatchFile.executeUpdate();
-                batchFileId = -1;
             }
 
-            //create the batch file if necessary
-            if (batchFileId == -1) {
-
-                sql = "INSERT INTO batch_file (batch_id, interface_type_id, file_type_identifier, insert_date, filename, remote_size_bytes, remote_created_date)"
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?);";
-
-                Date remoteCreatedDate = java.sql.Timestamp.valueOf(sftpFile.getRemoteLastModifiedDate());
-
-                psInsertBatchFile = connection.prepareStatement(sql);
-                psInsertBatchFile.setInt(1, batchId);
-                psInsertBatchFile.setInt(2, interfaceTypeId);
-                psInsertBatchFile.setString(3, sftpFile.getFileTypeIdentifier());
-                psInsertBatchFile.setTimestamp(4, new java.sql.Timestamp(new Date().getTime()));
-                psInsertBatchFile.setString(5, sftpFile.getFilename());
-                psInsertBatchFile.setLong(6, sftpFile.getRemoteFileSizeInBytes());
-                psInsertBatchFile.setTimestamp(7, new java.sql.Timestamp(remoteCreatedDate.getTime()));
-                psInsertBatchFile.executeUpdate();
-
-                //and select the auto-assigned ID
-                psSelectBatchFile.setInt(1, batchId);
-                psSelectBatchFile.setString(2, sftpFile.getFileTypeIdentifier());
-                psSelectBatchFile.setString(3, sftpFile.getFilename());
-
-                rs = psSelectBatchFile.executeQuery();
-                if (rs.next()) {
-                    int col = 1;
-                    batchFileId = rs.getInt(col++);
-                    alreadyDownloaded = rs.getBoolean(col++);
-                } else {
-                    throw new Exception("Failed to find batch_file just inserted");
-                }
-            }
-
-            AddFileResult ret = new AddFileResult();
-            ret.setBatchFileId(batchFileId);
-            ret.setFileAlreadyProcessed(alreadyDownloaded);
-            return ret;
+            return null;
 
         } finally {
-            if (psSelectInterfaceType != null) {
-                psSelectInterfaceType.close();
-            }
-            if (psSelectBatch != null) {
-                psSelectBatch.close();
-            }
-            if (psInsertBatch != null) {
-                psInsertBatch.close();
-            }
             if (psSelectBatchFile != null) {
                 psSelectBatchFile.close();
             }
             if (psDeleteBatchFile != null) {
                 psDeleteBatchFile.close();
             }
-            if (psInsertBatchFile != null) {
-                psInsertBatchFile.close();
-            }
-
             connection.close();
         }
     }
+
+
+    private int createBatch(String configurationId, String batchIdentifier, int interfaceTypeId, String localPath) throws Exception {
+
+
+
+        Connection connection = dataSource.getConnection();
+        PreparedStatement psInsertBatch = null;
+        PreparedStatement psLastId = null;
+        try {
+            String sql = "INSERT INTO batch (configuration_id, batch_identifier, interface_type_id, local_relative_path, insert_date, is_complete) VALUES (?, ?, ?, ?, ?, ?);";
+
+            psInsertBatch = connection.prepareStatement(sql);
+            psInsertBatch.setString(1, configurationId);
+            psInsertBatch.setString(2, batchIdentifier);
+            psInsertBatch.setInt(3, interfaceTypeId);
+            psInsertBatch.setString(4, localPath);
+            psInsertBatch.setTimestamp(5, new java.sql.Timestamp(new Date().getTime()));
+            psInsertBatch.setBoolean(6, false);
+            psInsertBatch.executeUpdate();
+
+            //then we need to select the auto-assigned batch ID
+            sql = "SELECT LAST_INSERT_ID()";
+            psLastId = connection.prepareStatement(sql);
+
+            ResultSet rs = psLastId.executeQuery();
+            rs.next();
+            return rs.getInt(1);
+
+        } finally {
+            if (psInsertBatch != null) {
+                psInsertBatch.close();
+            }
+            if (psLastId != null) {
+                psLastId.close();
+            }
+            connection.close();
+        }
+    }
+
+    private AddFileResult createBatchFile(int batchId, int interfaceTypeId, String fileType, String fileName, long fileSizeBytes, Date fileCreatedDate) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement psInsertBatchFile = null;
+        PreparedStatement psLastId = null;
+        try {
+
+            String sql = "INSERT INTO batch_file (batch_id, interface_type_id, file_type_identifier, insert_date, filename, remote_size_bytes, remote_created_date)"
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?);";
+
+            psInsertBatchFile = connection.prepareStatement(sql);
+
+            int col = 1;
+            psInsertBatchFile.setInt(col++, batchId);
+            psInsertBatchFile.setInt(col++, interfaceTypeId);
+            psInsertBatchFile.setString(col++, fileType);
+            psInsertBatchFile.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+            psInsertBatchFile.setString(col++, fileName);
+            psInsertBatchFile.setLong(col++, fileSizeBytes);
+            psInsertBatchFile.setTimestamp(col++, new java.sql.Timestamp(fileCreatedDate.getTime()));
+            psInsertBatchFile.executeUpdate();
+
+            //then we need to select the auto-assigned batch ID
+            sql = "SELECT LAST_INSERT_ID()";
+            psLastId = connection.prepareStatement(sql);
+
+            ResultSet rs = psLastId.executeQuery();
+            rs.next();
+            int fileId = rs.getInt(1);
+
+            AddFileResult ret = new AddFileResult();
+            ret.setBatchFileId(fileId);
+            ret.setFileAlreadyDownloaded(false);
+            return ret;
+
+        } finally {
+            if (psInsertBatchFile != null) {
+                psInsertBatchFile.close();
+            }
+            if (psLastId != null) {
+                psLastId.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public AddFileResult addFile(String configurationId, SftpFile sftpFile) throws Exception {
+
+        //find all existing batches for the identifier
+        String batchIdentifier = sftpFile.getBatchIdentifier();
+        Map<Integer, Boolean> batches = findBatches(configurationId, batchIdentifier);
+
+        String fileType = sftpFile.getFileTypeIdentifier();
+        String fileName = sftpFile.getFilename();
+
+        //see if the file already exists against one of those batches
+        for (Integer batchId: batches.keySet()) {
+            AddFileResult r = findExistingBatchFile(batchId.intValue(), fileType, fileName);
+            if (r != null) {
+                return r;
+            }
+        }
+
+        //find a suitable batch, that's not been completed yet
+        int batchIdToUse = -1;
+
+        for (Integer batchId: batches.keySet()) {
+
+            //any that's already completed will have been sent to the messaging API, so can't be added to
+            boolean isComplete = batches.get(batchId).booleanValue();
+            if (!isComplete) {
+                batchIdToUse = batchId.intValue();
+            }
+        }
+
+        int interfaceTypeId = findInterfaceTypeId(configurationId);
+
+        //if no batch ID exists, we need to create one
+        if (batchIdToUse == -1) {
+            String localPath = sftpFile.getLocalRelativePath();
+            batchIdToUse = createBatch(configurationId, batchIdentifier, interfaceTypeId, localPath);
+        }
+
+        long fileSizeBytes = sftpFile.getRemoteFileSizeInBytes();
+        Date fileCreatedDate = java.sql.Timestamp.valueOf(sftpFile.getRemoteLastModifiedDate());
+        return createBatchFile(batchIdToUse, interfaceTypeId, fileType, fileName, fileSizeBytes, fileCreatedDate);
+    }
+
+
 
     @Override
     public void setFileAsDownloaded(SftpFile batchFile) throws Exception {

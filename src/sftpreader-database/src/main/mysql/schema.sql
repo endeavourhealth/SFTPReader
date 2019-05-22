@@ -169,9 +169,11 @@ CREATE TABLE batch
       REFERENCES configuration (configuration_id, interface_type_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT batch_configurationid_batchid_uq UNIQUE (configuration_id, batch_id),
-  CONSTRAINT batch_configurationid_batchidentifier_uq UNIQUE (configuration_id, batch_identifier),
+  -- CONSTRAINT batch_configurationid_batchidentifier_uq UNIQUE (configuration_id, batch_identifier), now allow multiple batches with the same ID
   CONSTRAINT batch_configurationid_sequencenumber_uq UNIQUE (configuration_id, sequence_number)
 );
+
+CREATE INDEX ix_batch_configuration_identifer on batch (configuration_id, batch_identifier);
 
 ALTER TABLE batch MODIFY COLUMN batch_id INT auto_increment;
 

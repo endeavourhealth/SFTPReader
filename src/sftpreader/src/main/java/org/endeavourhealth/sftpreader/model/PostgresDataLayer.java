@@ -197,7 +197,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
         return pgStoredProc.executeSingleRow((resultSet) ->
                 new AddFileResult()
-                    .setFileAlreadyProcessed(resultSet.getBoolean("file_already_processed"))
+                    .setFileAlreadyDownloaded(resultSet.getBoolean("file_already_processed"))
                     .setBatchFileId(resultSet.getInt("batch_file_id")));
     }
 
