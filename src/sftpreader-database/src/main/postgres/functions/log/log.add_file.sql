@@ -40,8 +40,8 @@ begin
 
 	-- delete file if not downloaded
 	if (_batch_file_id is not null
-			&& _file_already_processed is not null
-			&& not _file_already_downloaded)
+			and _file_already_downloaded is not null
+			and not _file_already_downloaded)
 	then
 		delete from log.batch_file bf
 		where bf.batch_file_id = _batch_file_id;
@@ -111,7 +111,7 @@ begin
 
 	return query
 	select
-		_file_already_processed as file_already_processed,
+		_file_already_downloaded as file_already_processed,
 		_batch_file_id as batch_file_id;
 
 end;
