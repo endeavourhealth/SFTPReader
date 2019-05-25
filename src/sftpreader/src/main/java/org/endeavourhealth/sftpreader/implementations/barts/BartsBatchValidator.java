@@ -34,12 +34,18 @@ public class BartsBatchValidator extends SftpBatchValidator {
         //so the batch silently fails validation and isn't processed any further
         LocalDate today = LocalDate.now();
         if (!batchDate.isBefore(today)) {
-            Calendar cal = GregorianCalendar.getInstance();
+
+            //what we were told was just wrong. We get files dripped up to us all day, and although the SFTP Reader
+            //handles files being received later than their batch date, it seems unnecessarily messy to have that
+            //happening every day. So simply don't let a batch complete until the day later.
+            return false;
+
+            /*Calendar cal = GregorianCalendar.getInstance();
             cal.setTime(new Date());
             int hour = cal.get(Calendar.HOUR_OF_DAY);
             if (hour < 15) {
                 return false;
-            }
+            }*/
         }
 
         // All CDS/SUS files must have a matching Tails file
