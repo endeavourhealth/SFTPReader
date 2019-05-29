@@ -38,8 +38,9 @@ public class BatchSplit {
         return configurationId;
     }
 
-    public void setConfigurationId(String configurationId) {
+    public BatchSplit setConfigurationId(String configurationId) {
         this.configurationId = configurationId;
+        return this;
     }
 
     public String getLocalRelativePath() {

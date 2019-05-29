@@ -13,7 +13,7 @@ public class HomertonNotificationCreator extends SftpNotificationCreator {
     public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
-        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit, null);
+        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, db, batchSplit, null);
     }
 
     /*@Override

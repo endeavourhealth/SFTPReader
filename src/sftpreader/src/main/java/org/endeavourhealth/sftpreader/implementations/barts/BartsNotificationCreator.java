@@ -19,10 +19,10 @@ public class BartsNotificationCreator extends SftpNotificationCreator {
     public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
-        //we have multiple file fragments and occasionally get the same file type sent twice
-        //in the same day, so we need to ensure they're properly ordered, so that the queue reader
+        //we have multiple file fragments of the same type in the same day, so we need to ensure they're properly ordered, so that the queue reader
         //can just process them in the order supplied
-        List<ExchangePayloadFile> files = super.findFilesForDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit, null);
+        //return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit, null);
+        List<ExchangePayloadFile> files = super.findFilesForDefaultNotificationMessage(instanceConfiguration, dbConfiguration, db, batchSplit, null);
 
         //the 2.1 and 2.2 files have different naming systems, but if we simply compare on any numeric element
         //of the file names, we get a consistent ordering that works for both
@@ -47,7 +47,6 @@ public class BartsNotificationCreator extends SftpNotificationCreator {
         }
 
         return super.combineFilesForNotificationMessage(files);
-        //return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit, null);
     }
 
 

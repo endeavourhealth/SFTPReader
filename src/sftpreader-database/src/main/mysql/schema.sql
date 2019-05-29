@@ -216,6 +216,8 @@ CREATE TABLE batch_split
 
 ALTER TABLE batch_split MODIFY COLUMN batch_split_id INT auto_increment;
 
+create index log_batchsplit_configurationid_localrelativepath on batch_split (configuration_id, local_relative_path);
+
 CREATE TABLE notification_message
 (
   notification_message_id int NOT NULL,

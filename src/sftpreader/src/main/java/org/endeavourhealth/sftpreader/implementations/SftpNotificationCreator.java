@@ -8,18 +8,14 @@ import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.JsonSerializer;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 
-import org.endeavourhealth.sftpreader.model.db.BatchSplit;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.ExchangePayloadFile;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public abstract class SftpNotificationCreator {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpNotificationCreator.class);
@@ -33,11 +29,11 @@ public abstract class SftpNotificationCreator {
      */
     protected String createDefaultNotificationMessage(DbInstanceEds instanceConfiguration,
                                                    DbConfiguration dbConfiguration,
+                                                      DataLayerI db,
                                                    BatchSplit batchSplit,
                                                    String requiredFileExtension) throws Exception {
 
-        List<ExchangePayloadFile> files = findFilesForDefaultNotificationMessage(instanceConfiguration, dbConfiguration,
-                                                                    batchSplit, requiredFileExtension);
+        List<ExchangePayloadFile> files = findFilesForDefaultNotificationMessage(instanceConfiguration, dbConfiguration, db, batchSplit, requiredFileExtension);
         return combineFilesForNotificationMessage(files);
     }
 
@@ -48,6 +44,7 @@ public abstract class SftpNotificationCreator {
 
     protected List<ExchangePayloadFile> findFilesForDefaultNotificationMessage(DbInstanceEds instanceConfiguration,
                                                                                DbConfiguration dbConfiguration,
+                                                                               DataLayerI db,
                                                                                BatchSplit batchSplit,
                                                                                String requiredFileExtension) throws Exception {
 
@@ -99,7 +96,62 @@ public abstract class SftpNotificationCreator {
             ret.add(new ExchangePayloadFile(file, new Long(size), fileType));
         }
 
+        //we sometimes (for Barts) receive files for a given date late. These late files end up
+        //being put against a new batch with the same batch identifier (which is good). But when we
+        //come to notify for these late batches, the above code will have picked up all the previously
+        //sent files too. So we need to exclude any file that was previously sent to the Messaging API in another batch.
+        removeAlreadyNotifiedFiles(db, batchSplit, ret);
+
         return ret;
+    }
+
+    private void removeAlreadyNotifiedFiles(DataLayerI db, BatchSplit batchSplit, List<ExchangePayloadFile> files) throws Exception {
+
+        Set<String> filesAlreadyNotified = new HashSet<>();
+
+        //the previous notified messages are XML containing the notification payload in Base64 encoding. There's
+        //not pretty way to get that Base64 content out, but this will work so long as the XML template isn't changed
+        List<String> previousMessages = db.getNotifiedMessages(batchSplit);
+        for (String xml: previousMessages) {
+            String startToken = "<content value=\"";
+            int startIndex = xml.indexOf(startToken);
+            if (startIndex == -1) {
+                throw new RuntimeException("Failed to find '" + startToken + "' in XML " + xml);
+            }
+            String endToken = "\"";
+            int endIndex = xml.indexOf(endToken, startIndex + startToken.length());
+            if (endIndex == -1) {
+                throw new RuntimeException("Failed to find '" + endToken + "' in XML " + xml);
+            }
+
+            String base64 = xml.substring(startIndex + startToken.length(), endIndex);
+            byte[] bytes = Base64.getDecoder().decode(base64);
+            String json = new String(bytes);
+
+            try {
+                ExchangePayloadFile[] previousFiles = JsonSerializer.deserialize(json, ExchangePayloadFile[].class);
+                for (ExchangePayloadFile previousFile : previousFiles) {
+                    String path = previousFile.getPath();
+                    filesAlreadyNotified.add(path);
+                }
+            } catch (Exception ex) {
+                //older batches just used a list of files separated by newlines, rather than JSON
+                String[] previousFiles = json.split("\n");
+                for (String previousFile: previousFiles) {
+                    previousFile = previousFile.trim(); //handle inconsistency between windows and linux EOF chars
+                    filesAlreadyNotified.add(previousFile);
+                }
+            }
+        }
+
+        //now remove any file that was in a previous notification
+        for (int i=files.size()-1; i>=0; i--) {
+            ExchangePayloadFile file = files.get(i);
+            String filePath = file.getPath();
+            if (filesAlreadyNotified.contains(filePath)) {
+                files.remove(i);
+            }
+        }
     }
 
     /*

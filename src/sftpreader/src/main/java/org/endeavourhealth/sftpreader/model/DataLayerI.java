@@ -56,4 +56,5 @@ public interface DataLayerI {
 
     ConfigurationLockI createConfigurationLock(String lockName) throws Exception;
 
+    List<String> getNotifiedMessages(BatchSplit batchSplit) throws Exception;
 }

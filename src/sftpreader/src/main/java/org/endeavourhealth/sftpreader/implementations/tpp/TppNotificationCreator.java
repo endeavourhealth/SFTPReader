@@ -13,7 +13,7 @@ public class TppNotificationCreator extends SftpNotificationCreator {
     public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
-        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, batchSplit, "csv");
+        return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, db, batchSplit, "csv");
     }
 
 }

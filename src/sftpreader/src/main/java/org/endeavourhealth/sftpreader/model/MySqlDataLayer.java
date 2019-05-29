@@ -833,6 +833,7 @@ public class MySqlDataLayer implements DataLayerI {
                 batchSplit.setBatchId(rs.getInt(col++));
                 batchSplit.setLocalRelativePath(rs.getString(col++));
                 batchSplit.setOrganisationId(rs.getString(col++));
+                batchSplit.setConfigurationId(configurationId);
 
                 ret.add(batchSplit);
                 batchIds.add(new Integer(batchSplit.getBatchId()));
@@ -1247,5 +1248,48 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = nonPooledDataSource.getConnection();
 
         return new MySqlConfigurationLock(lockName, connection);
+    }
+
+    @Override
+    public List<String> getNotifiedMessages(BatchSplit batchSplit) throws Exception {
+
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "select m.outbound "
+                    + "from batch_split bs "
+                    + "inner join notification_message m "
+                    + "on m.configuration_id = bs.configuration_id "
+                    + "and m.batch_id = bs.batch_id "
+                    + "and m.batch_split_id = bs.batch_split_id "
+                    + "where bs.configuration_id = ? "
+                    + "and bs.local_relative_path = ? "
+                    + "and m.was_success = true "
+                    + "and bs.have_notified = true "
+                    + "and bs.batch_split_id != ?";
+
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setString(col++, batchSplit.getConfigurationId());
+            ps.setString(col++, batchSplit.getLocalRelativePath());
+            ps.setInt(col++, batchSplit.getBatchSplitId());
+
+            List<String> ret = new ArrayList<>();
+
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String s = rs.getString(1);
+                ret.add(s);
+            }
+
+            return ret;
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
     }
 }
