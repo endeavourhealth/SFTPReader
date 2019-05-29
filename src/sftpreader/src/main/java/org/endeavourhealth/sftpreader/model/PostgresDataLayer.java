@@ -584,8 +584,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         PreparedStatement ps = null;
         try {
             String sql = "select m.outbound "
-                    + "from batch_split bs "
-                    + "inner join notification_message m "
+                    + "from log.batch_split bs "
+                    + "inner join log.notification_message m "
                     + "on m.configuration_id = bs.configuration_id "
                     + "and m.batch_id = bs.batch_id "
                     + "and m.batch_split_id = bs.batch_split_id "
