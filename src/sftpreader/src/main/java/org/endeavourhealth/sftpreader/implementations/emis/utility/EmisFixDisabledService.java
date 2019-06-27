@@ -70,6 +70,81 @@ public class EmisFixDisabledService {
             throw new Exception("Failed to find exchanges for original bulk (" + indexOriginallyBulked + ") disabling (" + indexDisabled + ") or re-bulking (" + indexRebulked + ")");
         }
 
+        //work out if disabled old way or new way
+        boolean oldWay = werePatientsDeleted();
+        if (oldWay) {
+            fixDisabledExtractOldWay();
+        } else {
+            fixDisabledExtractNewWay();
+        }
+    }
+
+    /**
+     * checks to see if we received a "delete" for patients on the date the extract became disabled,
+     * which tells us if the service was disabled/fixed in the new way or old way
+     */
+    private boolean werePatientsDeleted() throws Exception {
+        Batch disabledBatch = batches.get(indexDisabled);
+        BatchSplit split = hmBatchSplits.get(disabledBatch);
+        BatchFile batchFile = findBatchFile(disabledBatch, "Admin_Patient");
+        String filePath = createStorageFilePath(split, batchFile);
+
+        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
+        CSVParser csvParser = new CSVParser(reader, EmisBatchSplitter.CSV_FORMAT.withHeader());
+        Iterator<CSVRecord> iterator = csvParser.iterator();
+
+        int countRecords = 0;
+        int countDeletes = 0;
+
+        while (iterator.hasNext()) {
+            CSVRecord record = iterator.next();
+            countRecords ++;
+
+            boolean deleted = Boolean.parseBoolean(record.get("Deleted"));
+            if (deleted) {
+                countDeletes ++;
+            }
+        }
+
+        csvParser.close();
+
+        if (countRecords == 0 && countDeletes == 0) {
+            //in the new style, we receive an empty patient file
+            return false;
+
+        } else if (countRecords == countDeletes) {
+            //in the old style, we received a file of 100% deletes
+            return true;
+
+        } else {
+            throw new Exception("Failed to work out whether new or old pattern for disabled/restored Emis extract");
+        }
+    }
+
+    /**
+     * from 23/03/2019 onwards, when an Emis service becomes disabled, we no longer receive a "delete" for all patients
+     * and when the fix is fixed, we no longer receive a re-bulk. This function supprts fixing that pattern.
+     *
+     * for the new style disabled/restored fix, we simply need to correct the sharing agreement file
+     * since the data files are all empty and the feed simply resumes when its fixed
+     */
+    private void fixDisabledExtractNewWay() throws Exception {
+        LOG.info("Fixing extract disabled new way");
+
+        fixSharingAgreementFile();
+        LOG.debug("Created new sharing agreement file(s)");
+
+        copyNewFilesToStorage();
+        LOG.debug("Copied to storage");
+    }
+
+    /**
+     * prior to 23/03/2019 when Emis services became disabled, we received a "delete" for all patients, and
+     * when the feed was fixed, we received a re-bulk of all data. This function supports fixing that pattern.
+     */
+    private void fixDisabledExtractOldWay() throws Exception {
+        LOG.info("Fixing extract disabled old way");
+
         //find out the GUIDs of any patient genuinely deleted or too old to be in the re-bulk
         findPatientsDeletedOrTooOldToBeInRebulk();
 
