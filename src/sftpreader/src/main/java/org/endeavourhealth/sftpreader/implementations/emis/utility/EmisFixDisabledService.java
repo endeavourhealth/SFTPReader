@@ -62,13 +62,6 @@ public class EmisFixDisabledService {
 
         //go back through them to find the extract where the re-bulk is and when it was disabled (the list is in date order, so we're iterating most-recent first)
         findDisableAndRebulk();
-        findOriginalBulk();
-
-        if (indexDisabled == -1
-                || indexRebulked == -1
-                || indexOriginallyBulked == -1) {
-            throw new Exception("Failed to find exchanges for original bulk (" + indexOriginallyBulked + ") disabling (" + indexDisabled + ") or re-bulking (" + indexRebulked + ")");
-        }
 
         //work out if disabled old way or new way
         boolean oldWay = werePatientsDeleted();
@@ -88,6 +81,7 @@ public class EmisFixDisabledService {
         BatchSplit split = hmBatchSplits.get(disabledBatch);
         BatchFile batchFile = findBatchFile(disabledBatch, "Admin_Patient");
         String filePath = createStorageFilePath(split, batchFile);
+        LOG.debug("Checking if patient deletes were received in " + filePath);
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
         CSVParser csvParser = new CSVParser(reader, EmisBatchSplitter.CSV_FORMAT.withHeader());
@@ -144,6 +138,8 @@ public class EmisFixDisabledService {
      */
     private void fixDisabledExtractOldWay() throws Exception {
         LOG.info("Fixing extract disabled old way");
+
+        findOriginalBulk();
 
         //find out the GUIDs of any patient genuinely deleted or too old to be in the re-bulk
         findPatientsDeletedOrTooOldToBeInRebulk();
@@ -504,6 +500,10 @@ public class EmisFixDisabledService {
             Batch batchOriginallyBulked = batches.get(indexOriginallyBulked);
             LOG.info("Originally bulked on " + batchOriginallyBulked.getBatchIdentifier() + " batch ID " + batchOriginallyBulked.getBatchId());
         }
+
+        if (indexOriginallyBulked == -1) {
+            throw new Exception("Failed to find exchanges for original bulk (" + indexOriginallyBulked + ")");
+        }
     }
 
     private void findDisableAndRebulk() throws Exception {
@@ -535,6 +535,11 @@ public class EmisFixDisabledService {
         if (indexRebulked > -1) {
             Batch batchRebulked = batches.get(indexRebulked);
             LOG.info("Rebulked on " + batchRebulked.getBatchIdentifier() + " batch ID " + batchRebulked.getBatchId());
+        }
+
+        if (indexDisabled == -1
+                || indexRebulked == -1) {
+            throw new Exception("Failed to find exchanges for disabling (" + indexDisabled + ") or re-bulking (" + indexRebulked + ")");
         }
     }
 
