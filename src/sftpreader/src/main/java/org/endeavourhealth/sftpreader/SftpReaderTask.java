@@ -494,29 +494,48 @@ public class SftpReaderTask implements Runnable {
         int nextSequenceNumber = getNextSequenceNumber(lastCompleteBatch);
 
         SftpBatchSequencer sftpBatchSequencer = ImplementationActivator.createSftpBatchSequencer(dbConfiguration);
-        Map<Batch, Integer> batchSequence = sftpBatchSequencer.determineBatchSequenceNumbers(incompleteBatches, nextSequenceNumber, lastCompleteBatch);
+        Map<Batch, Integer> hmBatchSequence = sftpBatchSequencer.determineBatchSequenceNumbers(incompleteBatches, nextSequenceNumber, lastCompleteBatch);
 
-        Map<Batch, Integer> sortedBatchSequence = StreamExtension.sortByValue(batchSequence);
-
-        if (!new HashSet<>(incompleteBatches).equals(sortedBatchSequence.keySet())) {
-            throw new SftpValidationException("Batch sequence does not contain all unsequenced batches");
+        //validate we have a sequence number for each batch
+        for (Batch b: incompleteBatches) {
+            Integer seq = hmBatchSequence.get(b);
+            if (seq == null) {
+                throw new SftpValidationException("Batch sequence does not contain all unsequenced batches");
+            }
         }
 
-        for (Batch batch : sortedBatchSequence.keySet()) {
-            if (sortedBatchSequence.get(batch).intValue() != nextSequenceNumber++) {
+        //create a map sorted by the sequence number
+        Map<Batch, Integer> hmSortedBatchSequence = StreamExtension.sortByValue(hmBatchSequence);
+
+        //validate that each batch number is just one up from the previous
+        for (Batch b : hmSortedBatchSequence.keySet()) {
+
+            Integer seq = hmBatchSequence.get(b);
+            if (seq.intValue() != nextSequenceNumber++) {
                 throw new SftpValidationException("Unexpected batch sequence number");
             }
         }
 
-        for (Batch batch : sortedBatchSequence.keySet()) {
-            LOG.debug("  Batch " + batch.getBatchIdentifier() + " sequenced as " + sortedBatchSequence.get(batch).toString());
+        //Due to the receipt of out-of-order files from Barts we may end up trying to re-assign sequence numbers
+        //to batches that already have them, so we need to make sure we null any sequence numbers first
+        for (Batch b : hmSortedBatchSequence.keySet()) {
+            Integer oldSeq = b.getSequenceNumber();
+            if (oldSeq != null) {
+                db.setBatchSequenceNumber(b, null);
+                LOG.debug("Cleared previous sequence number from batch " + b.getBatchIdentifier() + " " + oldSeq);
+            }
+        }
 
-            db.setBatchSequenceNumber(batch, sortedBatchSequence.get(batch));
+        //save the newly assigned sequence numbers
+        for (Batch b : hmSortedBatchSequence.keySet()) {
+            Integer seq = hmBatchSequence.get(b);
+            db.setBatchSequenceNumber(b, seq);
+            LOG.debug("  Batch " + b.getBatchIdentifier() + " sequenced as " + seq);
         }
 
         LOG.trace(" Completed batch sequencing");
 
-        return new ArrayList<>(sortedBatchSequence.keySet());
+        return new ArrayList<>(hmSortedBatchSequence.keySet());
     }
 
     private void splitBatch(Batch batch, Batch lastCompleteBatch) throws Exception {

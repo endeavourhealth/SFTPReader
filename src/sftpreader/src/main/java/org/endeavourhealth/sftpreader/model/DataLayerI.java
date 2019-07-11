@@ -40,7 +40,7 @@ public interface DataLayerI {
     List<UnknownFile> getUnknownFiles(String configurationId) throws Exception;
 
     void setBatchAsComplete(Batch batch) throws Exception;
-    void setBatchSequenceNumber(Batch batch, int sequenceNumber) throws Exception;
+    void setBatchSequenceNumber(Batch batch, Integer sequenceNumber) throws Exception;
 
     void addBatchNotification(int batchId, int batchSplitId, String configurationId, UUID messageId, String outboundMessage, String inboundMessage, boolean wasSuccess, String errorText) throws Exception;
     void addBatchSplit(BatchSplit batchSplit) throws Exception;

@@ -687,7 +687,14 @@ public class MySqlDataLayer implements DataLayerI {
                 String batchIdentifier = rs.getString(col++);
                 String batchLocalRelativePath = rs.getString(col++);
                 Date insertDate = rs.getDate(col++);
-                int sequenceNumber = rs.getInt(col++);
+
+                //need to handle possible null of sequence number
+                Integer sequenceNumber = null;
+                int i = rs.getInt(col++);
+                if (!rs.wasNull()) {
+                    sequenceNumber = new Integer(i);
+                }
+
                 Date completeDate = rs.getDate(col++);
 
                 //because we're doing a left outer join, we'll get multiple rows with the batch details, so use a map to handle the duplicates
@@ -934,15 +941,21 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     @Override
-    public void setBatchSequenceNumber(Batch batch, int sequenceNumber) throws Exception {
+    public void setBatchSequenceNumber(Batch batch, Integer sequenceNumber) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "UPDATE batch SET sequence_number = ? WHERE batch_id = ?;";
 
             ps = connection.prepareStatement(sql);
-            ps.setInt(1, sequenceNumber);
-            ps.setInt(2, batch.getBatchId());
+
+            int col = 1;
+            if (sequenceNumber == null) {
+                ps.setNull(col++, Types.INTEGER);
+            } else {
+                ps.setInt(col++, sequenceNumber);
+            }
+            ps.setInt(col++, batch.getBatchId());
 
             ps.executeUpdate();
 

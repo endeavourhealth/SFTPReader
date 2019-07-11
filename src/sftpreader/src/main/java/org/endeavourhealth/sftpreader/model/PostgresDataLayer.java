@@ -366,11 +366,17 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void setBatchSequenceNumber(Batch batch, int sequenceNumber) throws PgStoredProcException {
+    public void setBatchSequenceNumber(Batch batch, Integer sequenceNumber) throws PgStoredProcException {
         PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
                 .setName("log.set_batch_sequence_number")
-                .addParameter("_batch_id", batch.getBatchId())
-                .addParameter("_sequence_number", Integer.toString(sequenceNumber));
+                .addParameter("_batch_id", batch.getBatchId());
+
+        //seq number may be null if we're clearing it
+        if (sequenceNumber == null) {
+            pgStoredProc.addParameter("_sequence_number", null);
+        } else {
+            pgStoredProc.addParameter("_sequence_number", Integer.toString(sequenceNumber));
+        }
 
         pgStoredProc.execute();
     }
