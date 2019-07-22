@@ -113,11 +113,11 @@ public class SftpReaderTask implements Runnable {
 
             LOG.trace(">>>Completed SftpReader run");
 
-        } catch (Exception e) {
-            LOG.error(">>>Fatal exception in SftpTask run, terminating this run", e);
+        } catch (Throwable t) {
+            LOG.error(">>>Fatal exception in SftpTask run, terminating this run", t);
 
             //send slack alert, so we don't miss it
-            SlackNotifier.postMessage("Exception in SFTP Reader for " + this.configurationId, e);
+            SlackNotifier.postMessage("Exception in SFTP Reader for " + this.configurationId, t);
 
         } finally {
             //delete any previous temp files that were left around
@@ -589,33 +589,24 @@ public class SftpReaderTask implements Runnable {
             throw new SftpReaderException("Cannot notify EDS - EDS configuration is not set");
         }
 
-LOG.trace("Checking for new logging");
-
         if (edsConfiguration.isUseKeycloak()) {
             LOG.trace("Initialising keycloak at: {}", edsConfiguration.getKeycloakTokenUri());
 
             try {
-                LOG.trace("going to do keycloak init");
                 KeycloakClient.init(edsConfiguration.getKeycloakTokenUri(),
                         edsConfiguration.getKeycloakRealm(),
                         edsConfiguration.getKeycloakUsername(),
                         edsConfiguration.getKeycloakPassword(),
                         edsConfiguration.getKeycloakClientId());
-                LOG.trace("keycloak init done");
 
-                LOG.trace("going to get header");
                 Header response = KeycloakClient.instance().getAuthorizationHeader();
-
                 LOG.trace("Keycloak authorization header is {}: {}", response.getName(), response.getValue());
+
             } catch (IOException e) {
-                LOG.trace("IO Exception ", e);
                 throw new SftpReaderException("Error initialising keycloak", e);
-            } catch (Throwable t) {
-                LOG.trace("Throwable", t);
-                throw t;
             }
-        }
-        else {
+
+        } else {
             LOG.trace("Keycloak is not enabled");
         }
 

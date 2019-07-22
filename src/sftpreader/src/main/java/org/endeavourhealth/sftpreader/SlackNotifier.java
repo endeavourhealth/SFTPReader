@@ -39,7 +39,16 @@ public class SlackNotifier {
         }
     }
 
-    public static void postMessage(String slackMessage, Exception ex) {
+    public static void postMessage(String slackMessage, Throwable t) {
+
+        //need an Exception for SlackHelper, so wrap in a runtime exception if necessary
+        Exception ex;
+        if (t instanceof Exception) {
+            ex = (Exception)t;
+        } else {
+            ex = new RuntimeException(t);
+        }
+
         try {
             LOG.info("Posting message to slack: '" + slackMessage + "'");
             SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, slackMessage, ex);
