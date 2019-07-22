@@ -173,6 +173,14 @@ public class BartsBatchValidator extends SftpBatchValidator {
         if (ret == 0) {
             List<Batch> allBatches = db.getAllBatches(dbConfiguration.getConfigurationId());
             for (Batch b: allBatches) {
+
+                //skip any newer batches
+                if (b.getCompleteDate() == null
+                        || b.getSequenceNumber() == null
+                        || b.getSequenceNumber().intValue() > lastCompleteBatch.getSequenceNumber().intValue()) {
+                    continue;
+                }
+
                 for (BatchFile batchFile: b.getBatchFiles()) {
                     if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(fileType)) {
                         int num = getFileNumber(batchFile.getFilename());
