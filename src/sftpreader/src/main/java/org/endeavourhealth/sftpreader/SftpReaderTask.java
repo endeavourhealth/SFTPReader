@@ -585,20 +585,24 @@ public class SftpReaderTask implements Runnable {
 
         DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
 
-        if (edsConfiguration == null)
+        if (edsConfiguration == null) {
             throw new SftpReaderException("Cannot notify EDS - EDS configuration is not set");
+        }
+
+LOG.trace("Checking for new logging");
 
         if (edsConfiguration.isUseKeycloak()) {
             LOG.trace("Initialising keycloak at: {}", edsConfiguration.getKeycloakTokenUri());
 
-            KeycloakClient.init(edsConfiguration.getKeycloakTokenUri(),
-                    edsConfiguration.getKeycloakRealm(),
-                    edsConfiguration.getKeycloakUsername(),
-                    edsConfiguration.getKeycloakPassword(),
-                    edsConfiguration.getKeycloakClientId());
-            LOG.trace("keycloak init done");
-
             try {
+                LOG.trace("going to do keycloak init");
+                KeycloakClient.init(edsConfiguration.getKeycloakTokenUri(),
+                        edsConfiguration.getKeycloakRealm(),
+                        edsConfiguration.getKeycloakUsername(),
+                        edsConfiguration.getKeycloakPassword(),
+                        edsConfiguration.getKeycloakClientId());
+                LOG.trace("keycloak init done");
+
                 LOG.trace("going to get header");
                 Header response = KeycloakClient.instance().getAuthorizationHeader();
 
