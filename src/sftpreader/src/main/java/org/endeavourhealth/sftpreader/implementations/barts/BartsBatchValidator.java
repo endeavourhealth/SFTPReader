@@ -177,7 +177,7 @@ public class BartsBatchValidator extends SftpBatchValidator {
                 //skip any newer batches
                 if (b.getCompleteDate() == null
                         || b.getSequenceNumber() == null
-                        || b.getSequenceNumber().intValue() > lastCompleteBatch.getSequenceNumber().intValue()) {
+                        || b.getSequenceNumber().intValue() >= lastCompleteBatch.getSequenceNumber().intValue()) {
                     continue;
                 }
 
