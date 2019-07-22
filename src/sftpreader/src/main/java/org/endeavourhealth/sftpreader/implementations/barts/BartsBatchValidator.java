@@ -120,30 +120,32 @@ public class BartsBatchValidator extends SftpBatchValidator {
         //find the previous max sequence number
         BatchFile f = susFiles.get(0);
         String fileType = f.getFileTypeIdentifier();
+        LOG.trace("Received " + susFiles.size() + " " + fileType + " files");
+
         int sequenceNumber = findPreviousSequenceNumber(fileType, lastCompleteBatch, dbConfiguration, db);
+        LOG.trace("Last sequence number = " + sequenceNumber);
+
+        susFiles.sort((o1, o2) -> {
+            int i1 = getFileNumber(o1.getFilename());
+            int i2 = getFileNumber(o2.getFilename());
+            return Integer.compare(i1, i2);
+        });
 
         List<String> missingNumbers = new ArrayList<>();
 
-        while (!susFiles.isEmpty()) {
+        for (BatchFile susFile: susFiles) {
+            int num = getFileNumber(susFile.getFilename());
             sequenceNumber ++;
+            LOG.trace("Received " + susFile.getFilename() + " with num " + num + " expecting " + sequenceNumber);
 
-            boolean found = false;
-
-            for (int i=0; i<susFiles.size(); i++) {
-                BatchFile file = susFiles.get(i);
-                int num = getFileNumber(file.getFilename());
-                if (num == sequenceNumber) {
-                    found = true;
-                    susFiles.remove(i);
-                    break;
+            if (num != sequenceNumber) {
+                for (int i=sequenceNumber; i<num; i++) {
+                    missingNumbers.add("" + i);
+                    LOG.trace("Missing " + i);
                 }
-            }
-
-            if (!found) {
-                missingNumbers.add("" + sequenceNumber);
+                sequenceNumber = num;
             }
         }
-
 
         if (!missingNumbers.isEmpty()) {
             String msg = dbConfiguration.getConfigurationId() + " has missing " + fileType + " sequence numbers: " + String.join(", ", missingNumbers) + " in batch " + incompleteBatch.getBatchIdentifier();
