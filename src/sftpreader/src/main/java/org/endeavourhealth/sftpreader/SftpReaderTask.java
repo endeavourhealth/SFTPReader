@@ -596,13 +596,19 @@ public class SftpReaderTask implements Runnable {
                     edsConfiguration.getKeycloakUsername(),
                     edsConfiguration.getKeycloakPassword(),
                     edsConfiguration.getKeycloakClientId());
+            LOG.trace("keycloak init done");
 
             try {
+                LOG.trace("going to get header");
                 Header response = KeycloakClient.instance().getAuthorizationHeader();
 
                 LOG.trace("Keycloak authorization header is {}: {}", response.getName(), response.getValue());
             } catch (IOException e) {
+                LOG.trace("IO Exception ", e);
                 throw new SftpReaderException("Error initialising keycloak", e);
+            } catch (Throwable t) {
+                LOG.trace("Throwable", t);
+                throw t;
             }
         }
         else {
