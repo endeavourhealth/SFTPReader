@@ -7,6 +7,7 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseExceptio
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDate;
+import java.util.regex.Pattern;
 
 public class EmisCustomFilenameParser extends SftpFilenameParser {
 
@@ -14,9 +15,12 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
     public static final String FILE_TYPE_ORIGINAL_TERMS = "OriginalTerms";
 
     //unzipped file names
-    public static final String FILE_NAME_REG_STATUS = "EndeavourRegistrationStatusHistory.txt";
+    //Emis are inconsistent with naming the files, so need to use a regex to match
+    private static final String REGEX_REG_STATUS = "^(?!201).*Registration(Status)?History.*(txt|7z)";
+    private static final String REGEX_ORIGINAL_TERM = "^(?!201).*OriginalTerm.*(txt|7z)";
+    /*public static final String FILE_NAME_REG_STATUS = "EndeavourRegistrationStatusHistory.txt";
     public static final String FILE_NAME_REG_STATUS_2 = "EndeavourRegistrationStatus.txt";
-    public static final String FILE_NAME_ORIGINAL_TERMS = "EndeavourOriginalTerm.txt";
+    public static final String FILE_NAME_ORIGINAL_TERMS = "EndeavourOriginalTerm.txt";*/
 
 
     private LocalDate extractDate;
@@ -41,15 +45,12 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
             return;
         }
 
-        if (fileName.equalsIgnoreCase("EndeavourRegistrationStatusHistory V2.7z") //raw file name
-                || fileName.equalsIgnoreCase(FILE_NAME_REG_STATUS)
-                || fileName.equalsIgnoreCase(FILE_NAME_REG_STATUS_2)) {
+        if (isRegStatusFile(fileName)) {
             fileTypeIdentifier = FILE_TYPE_REG_STATUS;
             extractDate = remoteFile.getLastModified().toLocalDate();
             isFileNeeded = true;
 
-        } else if (fileName.equalsIgnoreCase("EndeavourOriginalTerm.7z") //raw file name
-                    || fileName.equalsIgnoreCase(FILE_NAME_ORIGINAL_TERMS)) {
+        } else if (isOriginalTermFile(fileName)) {
             fileTypeIdentifier = FILE_TYPE_ORIGINAL_TERMS;
             extractDate = remoteFile.getLastModified().toLocalDate();
             isFileNeeded = true;
@@ -59,6 +60,15 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
             throw new SftpFilenameParseException("Unexpected filename " + fileName);
         }
     }
+
+    public static boolean isRegStatusFile(String fileName) {
+        return Pattern.matches(REGEX_REG_STATUS, fileName);
+    }
+
+    public static boolean isOriginalTermFile(String fileName) {
+        return Pattern.matches(REGEX_ORIGINAL_TERM, fileName);
+    }
+
 
     @Override
     public String generateBatchIdentifier() {

@@ -72,11 +72,10 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
 
             LOG.trace("Splitting " + srcFile);
 
-            if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_REG_STATUS)
-                    || srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_REG_STATUS_2)) {
+            if (EmisCustomFilenameParser.isRegStatusFile(srcFileObj.getName())) {
                 splitRegStatusFile(batch, srcFile, dstDir, sourcePermDir, db, batchSplits);
 
-            } else if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_ORIGINAL_TERMS)) {
+            } else if (EmisCustomFilenameParser.isOriginalTermFile(srcFileObj.getName())) {
                 splitOriginalTermsFile(batch, srcFile, dstDir, sourcePermDir, batchSplits);
 
             } else {

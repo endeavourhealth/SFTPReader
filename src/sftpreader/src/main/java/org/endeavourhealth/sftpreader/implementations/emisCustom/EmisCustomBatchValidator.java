@@ -53,11 +53,11 @@ public class EmisCustomBatchValidator extends SftpBatchValidator {
             LOG.trace("Validating " + srcFile);
 
             try {
-                if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_REG_STATUS)
-                        || srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_REG_STATUS_2)) {
+
+                if (EmisCustomFilenameParser.isRegStatusFile(srcFileObj.getName())) {
                     validateRegStatusFile(batch, srcFile);
 
-                } else if (srcFileObj.getName().equals(EmisCustomFilenameParser.FILE_NAME_ORIGINAL_TERMS)) {
+                } else if (EmisCustomFilenameParser.isOriginalTermFile(srcFileObj.getName())) {
                     validateOriginalTermsFile(batch, srcFile);
 
                 } else {
