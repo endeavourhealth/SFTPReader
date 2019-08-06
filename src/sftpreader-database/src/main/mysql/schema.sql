@@ -1,6 +1,7 @@
 create database sftp_reader;
 use sftp_reader;
 
+DROP TABLE IF EXISTS configuration_polling_attempt;
 DROP TABLE IF EXISTS unknown_file;
 DROP TABLE IF EXISTS notification_message;
 DROP TABLE IF EXISTS batch_split;
@@ -17,6 +18,7 @@ DROP TABLE IF EXISTS configuration_kvp;
 DROP TABLE IF EXISTS configuration;
 DROP TABLE IF EXISTS interface_file_type;
 DROP TABLE IF EXISTS interface_type;
+
 
 CREATE TABLE interface_type
 (
@@ -255,3 +257,17 @@ CREATE TABLE unknown_file
 
 ALTER TABLE unknown_file MODIFY COLUMN unknown_file_id INT auto_increment;
 
+CREATE TABLE configuration_polling_attempt (
+  configuration_id varchar(100) NOT NULL,
+  attempt_started datetime NOT NULL,
+  attempt_finished datetime NOT NULL,
+  exception_text mediumtext,
+  files_downloaded int,
+  batches_completed int,
+  batch_splits_notified_ok int,
+  batch_splits_notified_failure int,
+	CONSTRAINT configuration_polling_attempt_pk PRIMARY KEY (configuration_id, attempt_started),
+	CONSTRAINT configuration_polling_attempt_fk FOREIGN KEY (configuration_id)
+      REFERENCES configuration (configuration_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+);

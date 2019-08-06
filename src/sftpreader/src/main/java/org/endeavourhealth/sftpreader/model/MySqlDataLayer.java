@@ -1305,4 +1305,85 @@ public class MySqlDataLayer implements DataLayerI {
             connection.close();
         }
     }
+
+    @Override
+    public ConfigurationPollingAttempt getLastPollingAttempt(String configurationId) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "SELECT configuration_id, attempt_started, attempt_finished, exception_text, files_downloaded,"
+                    + " batches_completed, batch_splits_notified_ok, batch_splits_notified_failure"
+                    + " FROM configuration_polling_attempt"
+                    + " WHERE configuration_id = ?"
+                    + " ORDER BY attempt_started DESC"
+                    + " LIMIT 1";
+
+            ps = connection.prepareStatement(sql);
+
+            ps.setString(1, configurationId);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+
+                int col = 1;
+
+                ConfigurationPollingAttempt ret = new ConfigurationPollingAttempt();
+                ret.setConfigurationId(rs.getString(col++));
+                ret.setAttemptStarted(new Date(rs.getTimestamp(col++).getTime()));
+                ret.setAttemptFinished(new Date(rs.getTimestamp(col++).getTime()));
+                ret.setErrorText(rs.getString(col++));
+                ret.setFilesDownloaded(rs.getInt(col++));
+                ret.setBatchesCompleted(rs.getInt(col++));
+                ret.setBatchSplitsNotifiedOk(rs.getInt(col++));
+                ret.setBatchSplitsNotifiedFailure(rs.getInt(col++));
+                return ret;
+
+            } else {
+                return null;
+            }
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public void savePollingAttempt(ConfigurationPollingAttempt attempt) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO configuration_polling_attempt"
+            + " (configuration_id, attempt_started, attempt_finished, exception_text, files_downloaded,"
+            + " batches_completed, batch_splits_notified_ok, batch_splits_notified_failure)"
+            + " VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setString(col++, attempt.getConfigurationId());
+            ps.setTimestamp(col++, new Timestamp(attempt.getAttemptStarted().getTime()));
+            ps.setTimestamp(col++, new Timestamp(attempt.getAttemptFinished().getTime()));
+            if (attempt.hasError()) {
+                ps.setString(col++, attempt.getErrorText());
+            } else {
+                ps.setNull(col++, Types.VARCHAR);
+            }
+            ps.setInt(col++, attempt.getFilesDownloaded());
+            ps.setInt(col++, attempt.getBatchesCompleted());
+            ps.setInt(col++, attempt.getBatchSplitsNotifiedOk());
+            ps.setInt(col++, attempt.getBatchSplitsNotifiedFailure());
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+
+    }
 }

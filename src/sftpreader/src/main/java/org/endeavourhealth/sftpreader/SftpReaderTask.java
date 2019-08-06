@@ -25,9 +25,7 @@ import org.endeavourhealth.sftpreader.sources.ConnectionDetails;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -59,6 +57,10 @@ public class SftpReaderTask implements Runnable {
     public void run() {
         MetricsHelper.recordEvent(configurationId + ".check-for-files");
 
+        ConfigurationPollingAttempt attempt = new ConfigurationPollingAttempt();
+        attempt.setConfigurationId(configurationId);
+        attempt.setAttemptStarted(new Date());
+
         ConfigurationLockI lock = null;
         try {
             LOG.trace(">>>Starting scheduled SftpReader run, initialising");
@@ -69,7 +71,7 @@ public class SftpReaderTask implements Runnable {
             lock = db.createConfigurationLock("SftpReader-" + configurationId);
 
             LOG.trace(">>>Downloading and decrypting files");
-            downloadNewFiles();
+            downloadNewFiles(attempt);
 
             LOG.trace(">>>Checking for unknown files");
             validateUnknownFiles();
@@ -78,6 +80,7 @@ public class SftpReaderTask implements Runnable {
             List<Batch> incompleteBatches = sequenceBatches();
 
             Batch lastCompleteBatch = db.getLastCompleteBatch(dbConfiguration.getConfigurationId());
+            int countBatchesCompleted = 0;
 
             for (Batch incompleteBatch: incompleteBatches) {
 
@@ -98,6 +101,8 @@ public class SftpReaderTask implements Runnable {
 
                 LOG.trace(">>>Complete batch " + incompleteBatch.getBatchId());
                 completeBatch(incompleteBatch);
+                countBatchesCompleted ++;
+                attempt.setBatchesCompleted(countBatchesCompleted);
 
                 LOG.trace(">>>Deleting temp file for batch " + incompleteBatch.getBatchId());
                 deleteTempFiles(incompleteBatch);
@@ -106,7 +111,7 @@ public class SftpReaderTask implements Runnable {
             }
 
             LOG.trace(">>>Notifying EDS");
-            notifyEds();
+            notifyEds(attempt);
 
             LOG.trace(">>>Performing housekeeping");
             performHouseKeeping();
@@ -115,11 +120,11 @@ public class SftpReaderTask implements Runnable {
 
         } catch (Throwable t) {
             LOG.error(">>>Fatal exception in SftpTask run, terminating this run", t);
-
-            //send slack alert, so we don't miss it
-            SlackNotifier.postMessage("Exception in SFTP Reader for " + this.configurationId, t);
+            handlePollingException(attempt, t);
 
         } finally {
+            savePollingAttempt(attempt);
+
             //delete any previous temp files that were left around
             deleteTempDir();
 
@@ -131,6 +136,50 @@ public class SftpReaderTask implements Runnable {
                     LOG.error("", ex);
                 }
             }
+        }
+    }
+
+    private void handlePollingException(ConfigurationPollingAttempt attempt, Throwable t) {
+
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        String throwableStr = sw.toString();
+
+        attempt.setErrorText(throwableStr);
+    }
+
+    private void savePollingAttempt(ConfigurationPollingAttempt attempt) {
+        try {
+            LOG.trace(">>>Getting details on previous polling attempt");
+            ConfigurationPollingAttempt previousAttempt = db.getLastPollingAttempt(configurationId);
+
+            if (attempt.hasError()) {
+
+                //if an error now, then see if the error has appeared or changed since last polling attempt
+                if (previousAttempt == null
+                        || !previousAttempt.hasError()
+                        || previousAttempt.getErrorText().equals(attempt.getErrorText())) {
+
+                    SlackNotifier.postMessage("New exception in SFTP Reader for " + this.configurationId, attempt.getErrorText());
+                }
+
+            } else {
+
+                //if no error now but we previously had one, then send a Slack message to say all OK now
+                if (previousAttempt != null
+                        && previousAttempt.hasError()) {
+                    SlackNotifier.postMessage("Previous exception in SFTP Reader for " + this.configurationId + " is now OK");
+                }
+            }
+
+            //save the latest polling attempt
+            attempt.setAttemptFinished(new Date());
+            db.savePollingAttempt(attempt);
+
+        } catch (Throwable t) {
+            LOG.error("Error saving polling attempt", t);
+            SlackNotifier.postMessage("Exception saving polling attempt for " + this.configurationId, t);
         }
     }
 
@@ -209,6 +258,7 @@ public class SftpReaderTask implements Runnable {
         if (FilenameUtils.equals(tempDir, sharedStorageDir)) {
             throw new Exception("Temp and Storage dirs are the same - temp dir must be different");
         }
+
     }
 
     /*private void checkLocalRootPathPrefixExists() throws Exception {
@@ -221,7 +271,7 @@ public class SftpReaderTask implements Runnable {
         }
     }*/
 
-    private void downloadNewFiles() throws SftpReaderException {
+    private void downloadNewFiles(ConfigurationPollingAttempt attempt) throws SftpReaderException {
         Connection connection = null;
 
         try {
@@ -232,6 +282,7 @@ public class SftpReaderTask implements Runnable {
             List<RemoteFile> remoteFiles = getFileList(connection, remotePath);
 
             int countAlreadyProcessed = 0;
+            int countDownloaded = 0;
 
             LOG.trace("Found " + remoteFiles.size() + " files in " + remotePath);
 
@@ -268,13 +319,11 @@ public class SftpReaderTask implements Runnable {
                 batchFile.setBatchFileId(addFileResult.getBatchFileId());
 
                 downloadFile(connection, batchFile);
+                countDownloaded ++;
+                attempt.setFilesDownloaded(countDownloaded);
             }
 
-            if (countAlreadyProcessed > 0) {
-                LOG.trace("Skipped " + countAlreadyProcessed + " files as already downloaded them");
-            }
-
-            LOG.info("Completed processing {} files", Integer.toString(remoteFiles.size()));
+            LOG.info("Completed processing " + remoteFiles.size() + " files, downloaded " + countDownloaded + " new ones, skipped " + countAlreadyProcessed + " as previously done");
 
         } catch (Exception e) {
             throw new SftpReaderException("Exception occurred while downloading files - cannot continue or may process batches out of order", e);
@@ -561,7 +610,7 @@ public class SftpReaderTask implements Runnable {
         return lastCompleteBatch.getSequenceNumber() + 1;
     }
 
-    private void notifyEds() throws Exception {
+    private void notifyEds(ConfigurationPollingAttempt attempt) throws Exception {
 
         //add support to pause notifying of EDS, so we still collect new files but hold off on posting them to the Messaging API
         boolean shouldPauseNotifying = false;
@@ -650,9 +699,11 @@ public class SftpReaderTask implements Runnable {
                     LOG.trace("Notifying EDS for batch split: {}", batchSplit.getBatchSplitId());
                     notify(batchSplit);
                     countSuccess ++;
+                    attempt.setBatchSplitsNotifiedOk(countSuccess);
                 }
             } catch (Exception e) {
                 countFail ++;
+                attempt.setBatchSplitsNotifiedFailure(countFail);
                 LOG.error("Error occurred notifying EDS for batch split", e);
             }
         }
