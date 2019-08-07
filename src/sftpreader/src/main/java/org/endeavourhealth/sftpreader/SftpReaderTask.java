@@ -159,7 +159,7 @@ public class SftpReaderTask implements Runnable {
                 //if an error now, then see if the error has appeared or changed since last polling attempt
                 if (previousAttempt == null
                         || !previousAttempt.hasError()
-                        || previousAttempt.getErrorText().equals(attempt.getErrorText())) {
+                        || !previousAttempt.getErrorText().equals(attempt.getErrorText())) {
 
                     SlackNotifier.postMessage("New exception in SFTP Reader for " + this.configurationId, attempt.getErrorText());
                 }
