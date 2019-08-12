@@ -70,7 +70,7 @@ public class TppBatchValidator extends SftpBatchValidator {
         File f = new File(manifestFilePath);
 
         //get all the files in the temp directory created from the batch alongside the manifest file
-        File [] tempFiles = f.listFiles();
+        File [] tempFiles = new File(sourceTempDir).listFiles();
 
         LOG.debug("TEMP DIR FILES: "+tempFiles.toString());
 
