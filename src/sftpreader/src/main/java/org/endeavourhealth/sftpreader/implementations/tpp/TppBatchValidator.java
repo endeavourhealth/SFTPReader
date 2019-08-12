@@ -64,6 +64,9 @@ public class TppBatchValidator extends SftpBatchValidator {
 
         String manifestFilePath = FilenameUtils.concat(sourceTempDir, MANIFEST_FILE);
         File f = new File(manifestFilePath);
+
+        //get all the files in the temp directory created from the batch alongside the manifest file
+        File [] tempFiles = f.listFiles();
         try {
             FileInputStream fis = new FileInputStream(f);
             BufferedInputStream bis = new BufferedInputStream(fis);
@@ -80,9 +83,9 @@ public class TppBatchValidator extends SftpBatchValidator {
                     //assume the file is missing from the batch until it is found
                     boolean manifestFileFoundInBatch = false;
 
-                    for (BatchFile file: batchFiles) {
+                    for (File tempFile: tempFiles) {
 
-                        String batchFileNameNoExt = file.getFilename().replace(".csv","");
+                        String batchFileNameNoExt = tempFile.getName().replace(".csv","");
                         if (fileName.equalsIgnoreCase(batchFileNameNoExt)) {
                             manifestFileFoundInBatch = false;
                             break;
@@ -91,7 +94,7 @@ public class TppBatchValidator extends SftpBatchValidator {
 
                     if (!manifestFileFoundInBatch) {
 
-                        throw new SftpValidationException("SRManifest.csv FileName: "+fileName+" missing from batch, identifier = " + incompleteBatch.getBatchIdentifier());
+                        throw new SftpValidationException("SRManifest.csv FileName: "+fileName+" missing from temp folder for batch identifier: " + incompleteBatch.getBatchIdentifier());
                     }
                 }
             } finally {
