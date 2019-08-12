@@ -12,6 +12,8 @@ import org.endeavourhealth.sftpreader.model.db.BatchFile;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -26,6 +28,8 @@ public class TppBatchValidator extends SftpBatchValidator {
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.ALL);
     private static final String MANIFEST_FILE = "SRManifest.csv";
     private static final String REQUIRED_CHARSET = "Cp1252";
+
+    private static final Logger LOG = LoggerFactory.getLogger(TppBatchValidator.class);
 
     @Override
     public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
@@ -67,6 +71,9 @@ public class TppBatchValidator extends SftpBatchValidator {
 
         //get all the files in the temp directory created from the batch alongside the manifest file
         File [] tempFiles = f.listFiles();
+
+        LOG.debug("TEMP DIR FILES: "+tempFiles.toString());
+
         try {
             FileInputStream fis = new FileInputStream(f);
             BufferedInputStream bis = new BufferedInputStream(fis);
@@ -86,6 +93,9 @@ public class TppBatchValidator extends SftpBatchValidator {
                     for (File tempFile: tempFiles) {
 
                         String batchFileNameNoExt = tempFile.getName().replace(".csv","");
+
+                        LOG.debug("COMPARING TEMP file "+batchFileNameNoExt+" with SRManifest.csv file ref: "+fileName);
+
                         if (fileName.equalsIgnoreCase(batchFileNameNoExt)) {
                             manifestFileFoundInBatch = false;
                             break;
