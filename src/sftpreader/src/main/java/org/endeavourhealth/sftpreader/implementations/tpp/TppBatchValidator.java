@@ -54,14 +54,15 @@ public class TppBatchValidator extends SftpBatchValidator {
             throw new SftpValidationException("SRManifest.csv file missing from batch, identifier = " + incompleteBatch.getBatchIdentifier());
         }
 
-        //read the manifest file and compare against the contents of the batch
-        String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
+        //read the manifest file and compare against the contents of the batch. Using the temp directory
+        //as all files, including blank ones, will exist in temp storage
+        String tempDir = instanceConfiguration.getTempDirectory();
         String configurationDir = dbConfiguration.getLocalRootPath();
-        String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
         String batchDir = incompleteBatch.getLocalRelativePath();
-        sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
+        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
+        sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
 
-        String manifestFilePath = FilenameUtils.concat(sourcePermDir, MANIFEST_FILE);
+        String manifestFilePath = FilenameUtils.concat(sourceTempDir, MANIFEST_FILE);
         File f = new File(manifestFilePath);
         try {
             FileInputStream fis = new FileInputStream(f);
