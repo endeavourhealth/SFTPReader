@@ -72,8 +72,6 @@ public class TppBatchValidator extends SftpBatchValidator {
         //get all the files in the temp directory created from the batch alongside the manifest file
         File [] tempFiles = new File(sourceTempDir).listFiles();
 
-        LOG.debug("TEMP DIR FILES: "+tempFiles.toString());
-
         try {
             FileInputStream fis = new FileInputStream(f);
             BufferedInputStream bis = new BufferedInputStream(fis);
@@ -94,10 +92,8 @@ public class TppBatchValidator extends SftpBatchValidator {
 
                         String batchFileNameNoExt = tempFile.getName().replace(".csv","");
 
-                        LOG.debug("COMPARING TEMP file "+batchFileNameNoExt+" with SRManifest.csv file ref: "+fileName);
-
                         if (fileName.equalsIgnoreCase(batchFileNameNoExt)) {
-                            manifestFileFoundInBatch = false;
+                            manifestFileFoundInBatch = true;
                             break;
                         }
                     }
