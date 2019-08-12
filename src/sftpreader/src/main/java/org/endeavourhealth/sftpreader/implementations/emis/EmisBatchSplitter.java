@@ -352,7 +352,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
         List<File> separateFiles = orderFilesByProcessingId(splitFiles);
 
-        CsvJoiner joiner = new CsvJoiner(separateFiles, joinedFile, CSV_FORMAT);
+        CsvJoiner joiner = new CsvJoiner(separateFiles, joinedFile, CSV_FORMAT.withHeader());
         boolean joined = joiner.go();
 
         //delete all the separate files
@@ -653,7 +653,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
     }
 
     private static List<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
-        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat, splitColmumns);
+        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat.withHeader(), splitColmumns);
         return csvSplitter.go();
     }
 }

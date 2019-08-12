@@ -75,7 +75,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         //split the files we can
         for (File f : filesToSplit) {
 
-            splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
+            splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT.withHeader(), SPLIT_COLUMN_ORG);
         }
 
         List<File> orgDirs = new ArrayList<>();

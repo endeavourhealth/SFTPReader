@@ -1386,4 +1386,60 @@ public class MySqlDataLayer implements DataLayerI {
         }
 
     }
+
+    @Override
+    public Set<String> getAdastraOdsCodes(String configurationId) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "SELECT ods_code"
+                    + " FROM adastra_organisation_map"
+                    + " WHERE configuration_id = ?";
+
+            ps = connection.prepareStatement(sql);
+
+            ps.setString(1, configurationId);
+
+            Set<String> ret = new HashSet<>();
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                String odsCode = rs.getString(1);
+                ret.add(odsCode);
+            }
+
+            return ret;
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public void saveAdastraOdsCode(String configurationId, String odsCode) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO adastra_organisation_map"
+                    + " (ods_code, configuration_id)"
+                    + " VALUES (?, ?)";
+
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setString(col++, odsCode);
+            ps.setString(col++, configurationId);
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
 }

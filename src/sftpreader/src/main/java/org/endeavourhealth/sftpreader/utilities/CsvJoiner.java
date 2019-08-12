@@ -38,6 +38,12 @@ public class CsvJoiner {
 
     public boolean go() throws Exception {
 
+        //the CSV format either needs to specify the headers (i.e. withHeader("col", "col")) or needs
+        //to instruct that the headers are in the file itself (i.e. withHeader()).
+        if (csvFormat.getHeader() == null) {
+            throw new Exception("Null header in CSV format " + csvFormat);
+        }
+
         CSVPrinter csvPrinter = null;
         CSVParser csvParser = null;
         List<String> firstColumnHeaders = null;
@@ -48,7 +54,7 @@ public class CsvJoiner {
             for (File srcFile : srcFiles) {
 
                 InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFile.getAbsolutePath(), encoding);
-                csvParser = new CSVParser(reader, csvFormat.withHeader());
+                csvParser = new CSVParser(reader, csvFormat);
 
                 //read the headers
                 Map<String, Integer> headerMap = csvParser.getHeaderMap();
@@ -68,7 +74,17 @@ public class CsvJoiner {
                     OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
                     BufferedWriter bufferedWriter = new BufferedWriter(osw);
 
-                    csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeadersArray));
+                    if (csvFormat.getHeader().length == 0) {
+                        //if the CSV format has a zero-length header, then it tells us the header is in the source files
+                        //and we should explicitly carry this over to the target file
+                        csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeadersArray));
+
+                    } else {
+                        //if the CSV format defines the headers itself, then it tells us the source files don't
+                        //have headers and we shouldn't write headers to the target file either
+                        csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withSkipHeaderRecord());
+                    }
+
                     firstColumnHeaders = columnHeadersList;
 
                 } else {

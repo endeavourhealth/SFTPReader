@@ -45,11 +45,17 @@ public class CsvSplitter {
 
     public List<File> go() throws Exception {
 
+        //the CSV format either needs to specify the headers (i.e. withHeader("col", "col")) or needs
+        //to instruct that the headers are in the file itself (i.e. withHeader()).
+        if (csvFormat.getHeader() == null) {
+            throw new Exception("Null header in CSV format " + csvFormat);
+        }
+
         //adding .withHeader() to the csvFormat forces it to treat the first row as the column headers,
         //and read them in, instead of ignoring them
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFilePath, encoding);
 
-        CSVParser csvParser = new CSVParser(reader, csvFormat.withHeader());
+        CSVParser csvParser = new CSVParser(reader, csvFormat);
         filesCreated = new ArrayList<>();
 
         try
@@ -217,11 +223,15 @@ public class CsvSplitter {
         private String cacheKey;
         private File file;
         private CSVPrinter csvPrinter;
-        private boolean haveWrittenHeaders;
+        private boolean needToWriteHeaders;
 
         public PrinterWrapper(String cacheKey, File file) {
             this.cacheKey = cacheKey;
             this.file = file;
+
+            //if the CSV format has the headers specified as withHeader() then it means the file contains
+            //the headers, in which case we also want to make sure we write out the headers in the split files
+            this.needToWriteHeaders = csvFormat.getHeader().length == 0;
         }
 
         public CSVPrinter getCsvPrinter() {
@@ -261,24 +271,24 @@ public class CsvSplitter {
 
         private void openThrowExceptions() throws Exception {
 
-            //if we've previously opened and written our headers / content then we need to make sure
-            //to open for appending and not write out the headers again
-            if (haveWrittenHeaders) {
-                FileOutputStream fos = new FileOutputStream(file, true);
-                OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
-                BufferedWriter bufferedWriter = new BufferedWriter(osw);
-
-                csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withSkipHeaderRecord());
-
-            } else {
+            //only write the headers out if we've decided we need to
+            if (needToWriteHeaders) {
                 FileOutputStream fos = new FileOutputStream(file);
                 OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
                 BufferedWriter bufferedWriter = new BufferedWriter(osw);
 
                 csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withHeader(columnHeaders));
-                csvPrinter.flush();
+                csvPrinter.flush(); //flush headers to disk
 
-                haveWrittenHeaders = true;
+                //set to false so we don't write the headers out again if we re-open the file
+                needToWriteHeaders = false;
+
+            } else {
+                FileOutputStream fos = new FileOutputStream(file, true);
+                OutputStreamWriter osw = new OutputStreamWriter(fos, encoding);
+                BufferedWriter bufferedWriter = new BufferedWriter(osw);
+
+                csvPrinter = new CSVPrinter(bufferedWriter, csvFormat.withSkipHeaderRecord());
             }
         }
 

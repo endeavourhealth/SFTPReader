@@ -15,10 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Date;
-import java.util.List;
-import java.util.UUID;
 
 public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PostgresDataLayer.class);
@@ -696,6 +694,63 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             ps.setInt(col++, attempt.getBatchesCompleted());
             ps.setInt(col++, attempt.getBatchSplitsNotifiedOk());
             ps.setInt(col++, attempt.getBatchSplitsNotifiedFailure());
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+
+    @Override
+    public Set<String> getAdastraOdsCodes(String configurationId) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "SELECT ods_code"
+                    + " FROM configuration.adastra_organisation_map"
+                    + " WHERE configuration_id = ?";
+
+            ps = connection.prepareStatement(sql);
+
+            ps.setString(1, configurationId);
+
+            Set<String> ret = new HashSet<>();
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                String odsCode = rs.getString(1);
+                ret.add(odsCode);
+            }
+
+            return ret;
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public void saveAdastraOdsCode(String configurationId, String odsCode) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO configuration.adastra_organisation_map"
+                    + " (ods_code, configuration_id)"
+                    + " VALUES (?, ?)";
+
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setString(col++, odsCode);
+            ps.setString(col++, configurationId);
 
             ps.executeUpdate();
 

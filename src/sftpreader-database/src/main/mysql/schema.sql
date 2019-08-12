@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS tpp_organisation_map;
 DROP TABLE IF EXISTS instance_configuration;
 DROP TABLE IF EXISTS instance;
 DROP TABLE IF EXISTS emis_organisation_map;
+DROP TABLE IF EXISTS adastra_organisation_map;
 DROP TABLE IF EXISTS configuration_eds;
 DROP TABLE IF EXISTS configuration_sftp;
 DROP TABLE IF EXISTS configuration_pgp;
@@ -271,3 +272,14 @@ CREATE TABLE configuration_polling_attempt (
       REFERENCES configuration (configuration_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION
 );
+
+CREATE TABLE adastra_organisation_map (
+  ods_code varchar(255) NOT NULL,
+  configuration_id varchar(100) NOT NULL,
+  CONSTRAINT adastra_organisation_map_pk PRIMARY KEY (ods_code),
+  CONSTRAINT adastra_organisation_map_fk FOREIGN KEY (configuration_id)
+      REFERENCES configuration (configuration_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE NO ACTION
+);
+
+CREATE INDEX ix_adastra_organisation_map_configuration ON adastra_organisation_map (configuration_id);

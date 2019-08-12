@@ -11,10 +11,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public interface DataLayerI {
 
@@ -60,4 +57,7 @@ public interface DataLayerI {
 
     ConfigurationPollingAttempt getLastPollingAttempt(String configurationId) throws Exception;
     void savePollingAttempt(ConfigurationPollingAttempt attempt) throws Exception;
+
+    Set<String> getAdastraOdsCodes(String configurationId) throws Exception;
+    void saveAdastraOdsCode(String configurationId, String odsCode) throws Exception;
 }

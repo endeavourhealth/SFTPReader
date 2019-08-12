@@ -17,6 +17,7 @@ import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabl
 import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
+import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.endeavourhealth.sftpreader.utilities.PgpUtil;
 import org.slf4j.Logger;
@@ -92,10 +93,10 @@ public class Main {
                     System.exit(0);
                 }
 
-                if (args[0].equalsIgnoreCase("TestOriginalTerms")) {
+                /*if (args[0].equalsIgnoreCase("TestOriginalTerms")) {
                     testOriginalTerms();
                     System.exit(0);
-                }
+                }*/
 
                 if (args[0].equalsIgnoreCase("TestDisabledFix")) {
                     String odsCode = args[1];
@@ -133,6 +134,12 @@ public class Main {
                     long start = Long.parseLong(args[2]);
                     long len = Long.parseLong(args[3]);
                     readS3Bytes(path, start, len);
+                    System.exit(0);
+                }
+
+                if (args[0].equalsIgnoreCase("TestSplitting")) {
+                    String path = args[1];
+                    testSplitting(path);
                     System.exit(0);
                 }
             }
@@ -175,6 +182,33 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void testSplitting(String srcFilePath) {
+        LOG.info("Testing splitting of " + srcFilePath);
+        try {
+            File srcFile = new File(srcFilePath);
+            String srcDir = srcFile.getParent();
+            String dst = FilenameUtils.concat(srcDir, "Split");
+            File dstDir = new File(dst);
+
+            CSVFormat csvFormat = CSVFormat.DEFAULT.withHeader("col1","col2","col3","col4");
+
+            CsvSplitter splitter = new CsvSplitter(srcFilePath, dstDir, csvFormat, "col1");
+            List<File> files = splitter.go();
+            LOG.info("Done split from " + srcFile);
+
+            String targetfileName = "COMBINED_" + srcFile.getName();
+            String targetFilePathStr = FilenameUtils.concat(srcDir, targetfileName);
+            File targetFile = new File(targetFilePathStr);
+            CsvJoiner joiner = new CsvJoiner(files, targetFile, csvFormat);
+            joiner.go();
+            LOG.info("Done join to " + targetFile);
+
+            LOG.info("Finished Testing splitting of " + srcFilePath);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     private static void decryptGpgFile(String filePath, String configurationId) {
         LOG.info("Decrypting " + filePath + " from configuration " + configurationId);
@@ -338,7 +372,7 @@ public class Main {
         }
     }
 
-    private static void testOriginalTerms() {
+    /*private static void testOriginalTerms() {
 
         try {
             LOG.debug("Testing Original Terms");
@@ -358,44 +392,6 @@ public class Main {
             if (r == JFileChooser.CANCEL_OPTION) {
                 return;
             }
-
-            /*File srcFile = f.getSelectedFile();
-            LOG.debug("Selected " + srcFile + " len " + srcFile.length());
-
-            //now we can decompress it
-            SevenZFile sevenZFile = new SevenZFile(srcFile, "Emis123".toCharArray());
-            SevenZArchiveEntry entry = sevenZFile.getNextEntry();
-            //long size = entry.getSize();
-            String entryName = entry.getName();
-
-            String tempDir = srcFile.getParent();
-
-            String unzippedFile = FilenameUtils.concat(tempDir, entryName);
-            FileHelper.deleteRecursiveIfExists(unzippedFile);
-            FileOutputStream fos = new FileOutputStream(unzippedFile);
-            BufferedOutputStream bos = new BufferedOutputStream(fos);
-
-            //the file Emis provide doesn't contain column headings, but later things are easier if we have them, so just insert them first
-            String headers = "OrganisationCdb\tOrganisationOds\tPatientGuid\tObservationGuid\tOriginalTerm\r\n";
-
-            bos.write(headers.getBytes());
-            bos.flush();
-
-            while (true) {
-
-                //can't get reading in blocks to work, so just do it byte by byte
-                int b = sevenZFile.read();
-                if (b == -1) {
-                    break;
-                }
-                bos.write(b);
-            }
-
-            //close everything
-            bos.close();
-            sevenZFile.close();
-
-            LOG.debug("Finished unzip");*/
 
 
             File srcFile = f.getSelectedFile();
@@ -475,7 +471,7 @@ public class Main {
             LOG.debug("Total " + total + " fixed " + fixed + " written " + written);
 
             File dstDir = new File(srcFile.getParentFile(), "Split");
-            CsvSplitter csvSplitter = new CsvSplitter(fixedSrcFile, dstDir, csvFormat, "OrganisationOds");
+            CsvSplitter csvSplitter = new CsvSplitter(fixedSrcFile, dstDir, csvFormat.withHeader(), "OrganisationOds");
             //CsvSplitter csvSplitter = new CsvSplitter(unzippedFile, dstDir, csvFormat, "OrganisationOds");
             List<File> splitFiles = csvSplitter.go();
             LOG.debug("Finished split into " + splitFiles.size());
@@ -486,7 +482,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
     /*private static void testS3(String[] args) {
         LOG.debug("Testing S3");

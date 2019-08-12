@@ -89,7 +89,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private void splitOriginalTermsFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, List<BatchSplit> batchSplits) throws Exception {
 
         //the original terms file doesn't have an org GUID, so split by the ODS code
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSV_FORMAT, "OrganisationOds");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSV_FORMAT.withHeader(), "OrganisationOds");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {
@@ -124,7 +124,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private void splitRegStatusFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, DataLayerI db, List<BatchSplit> batchSplits) throws Exception {
 
         //split the file by org GUID
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSV_FORMAT, "OrganisationGuid");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, CSV_FORMAT.withHeader(), "OrganisationGuid");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {
