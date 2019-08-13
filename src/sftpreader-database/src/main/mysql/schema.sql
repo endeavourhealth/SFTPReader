@@ -25,6 +25,7 @@ CREATE TABLE interface_type
 (
   interface_type_id integer NOT NULL,
   interface_type_name varchar(1000) NOT NULL,
+  data_frequency_days int not null COMMENT 'how often we expect data in days',
   CONSTRAINT interfacetype_interfacetypeid_pk PRIMARY KEY (interface_type_id),
   CONSTRAINT interfacetype_interfacetypename_uq UNIQUE (interface_type_name)
 );

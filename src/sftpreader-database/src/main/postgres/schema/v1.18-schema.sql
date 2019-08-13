@@ -17,3 +17,6 @@ ALTER TABLE configuration.adastra_organisation_map
 GRANT ALL ON TABLE configuration.adastra_organisation_map TO postgres;
 
 
+ALTER TABLE configuration.interface_type
+ADD data_frequency_days int not null default 1;
+
