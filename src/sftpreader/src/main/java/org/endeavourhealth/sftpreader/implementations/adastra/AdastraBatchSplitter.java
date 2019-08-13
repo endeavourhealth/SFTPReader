@@ -66,7 +66,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId());
 
         //find the case file
-        String caseFilePath = findCaseFile(batch, sourceTempDir, dbConfiguration);
+        String caseFilePath = findCaseFile(batch, sourcePermDir, dbConfiguration);
 
         //read case file to work out the case ref -> ODS code mapping
         Map<String, String> hmCaseToOds = parseCaseFile(caseFilePath);
@@ -91,7 +91,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             RemoteFile remoteFile = new RemoteFile(fileName, -1, null);
             AdastraFilenameParser nameParser = new AdastraFilenameParser(false, remoteFile, dbConfiguration);
             String fileType = nameParser.generateFileTypeIdentifier();
-            String filePath = FilenameUtils.concat(sourceTempDir, fileName);
+            String filePath = FilenameUtils.concat(sourcePermDir, fileName);
 
             //skip case and users files
             if (fileType.equals(FILE_TYPE_CASE)) {

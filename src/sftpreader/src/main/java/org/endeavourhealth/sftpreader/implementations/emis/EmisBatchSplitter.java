@@ -53,7 +53,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         String configurationDir = dbConfiguration.getLocalRootPath();
         String batchDir = batch.getLocalRelativePath();
 
-        //the big CSV files should already be in our temp storage. If so, use those files rather than the ones from permanent storage
+        //the big CSV files will already be in our temp storage because we'll have just decrypted the GPG files there
         String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
         sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
 

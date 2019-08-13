@@ -192,6 +192,7 @@ CREATE TABLE batch_file
   remote_size_bytes bigint NOT NULL,
   is_downloaded boolean NOT NULL DEFAULT false,
   download_date datetime null,
+  is_deleted boolean fefault false,
   CONSTRAINT batchfile_batchfileid_pk PRIMARY KEY (batch_file_id),
   CONSTRAINT batchfile_batchid_fk FOREIGN KEY (batch_id)
       REFERENCES batch (batch_id) MATCH SIMPLE
