@@ -1403,7 +1403,7 @@ public class MySqlDataLayer implements DataLayerI {
             Set<String> ret = new HashSet<>();
 
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 String odsCode = rs.getString(1);
                 ret.add(odsCode);
             }
