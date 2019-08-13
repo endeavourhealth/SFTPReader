@@ -165,6 +165,16 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             }
         }
 
+        //ensure there's a sub-directory for each ODS code, even if there was no case content because we'll
+        //want to create empty files in there
+        for (String odsCode: expectedOdsCodes) {
+            String odsDir = FilenameUtils.concat(splitTempDir, odsCode);
+            File odsDirObj = new File(odsDir);
+            if (!odsDirObj.exists()) {
+                odsDirObj.mkdirs();
+            }
+        }
+
         //split the other files according to their case ref and then re-combine back according to their ODS code
         for (BatchFile batchFile: batch.getBatchFiles()) {
 
