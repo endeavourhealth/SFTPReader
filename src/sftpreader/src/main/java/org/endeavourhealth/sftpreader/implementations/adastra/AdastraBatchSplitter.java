@@ -61,9 +61,11 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
         //check the columns to see if it's v1 (no splitting) or v2 (splitting)
         if (isVersion1File(db, dbConfiguration, caseFilePath)) {
+            LOG.debug("Detected case file V1 " + caseFilePath);
             return splitBatchVersion1(batch);
 
         } else {
+            LOG.debug("Detected case file V2 " + caseFilePath);
             return splitBatchVersion2(batch, db, dbConfiguration, caseFilePath, sourcePermDir, splitTempDir);
         }
     }
