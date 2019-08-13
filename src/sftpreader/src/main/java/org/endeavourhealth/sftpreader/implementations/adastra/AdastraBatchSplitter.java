@@ -43,8 +43,8 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         String configurationDir = dbConfiguration.getLocalRootPath();
         String batchDir = batch.getLocalRelativePath();
 
-        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
-        sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
+        /*String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
+        sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);*/
 
         String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
@@ -77,7 +77,8 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
         //save any new ODS codes so it's expected next time
         for (File splitCaseFile: splitCaseFiles) {
-            String odsCode = splitCaseFile.getParent();
+            File odsCodeDir = splitCaseFile.getParentFile();
+            String odsCode = odsCodeDir.getName();
             if (!expectedOdsCodes.contains(odsCode)) {
                 expectedOdsCodes.add(odsCode);
                 db.saveAdastraOdsCode(dbConfiguration.getConfigurationId(), odsCode);
