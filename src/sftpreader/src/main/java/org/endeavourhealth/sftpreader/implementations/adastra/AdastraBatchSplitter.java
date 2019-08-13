@@ -83,7 +83,8 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             //if the CASE file is empty then we can't work out the version from its columns, so check to see if the
             //v2 table containing ODS codes has any content in, which will tell us if we previously received a v2 file.
             if (!iterator.hasNext()) {
-                Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId());
+                String orgCode = getFilenameOrgCode(caseFilePath);
+                Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId(), orgCode);
                 LOG.trace("No records found in start of CASE file so will base version on " + expectedOdsCodes.size() + " previous ODS codes");
                 LOG.trace(firstChars);
                 return expectedOdsCodes.size() == 0;
@@ -117,14 +118,19 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         //for Adastra, the orgCode is the second piece of a file in a batch, so use the first
         List<BatchFile> batchFiles = batch.getBatchFiles();
         BatchFile firstBatchFile = batchFiles.get(0);
-        String [] fileParts = firstBatchFile.getFilename().split("_");
-        String orgCode = fileParts [1];
+        String orgCode = getFilenameOrgCode(firstBatchFile.getFilename());
 
         batchSplit.setOrganisationId(orgCode);
 
         ret.add(batchSplit);
 
         return ret;
+    }
+
+    private static String getFilenameOrgCode(String filePath) {
+        String fileName = FilenameUtils.getBaseName(filePath);
+        String[] fileParts = fileName.split("_");
+        return fileParts [1];
     }
 
     private List<BatchSplit> splitBatchVersion2(Batch batch, DataLayerI db, DbConfiguration dbConfiguration, String caseFilePath, String sourcePermDir, String splitTempDir) throws Exception {
@@ -137,7 +143,8 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         FileHelper.createDirectoryIfNotExists(dstDir);
 
         //find known ODS codes previously in extracts for this configuration
-        Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId());
+        String orgCode = getFilenameOrgCode(caseFilePath);
+        Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId(), orgCode);
         LOG.debug("From previous extracts, expecting " + expectedOdsCodes.size() + " ODS codes: " + expectedOdsCodes);
 
         //read case file to work out the case ref -> ODS code mapping
@@ -153,7 +160,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             String odsCode = odsCodeDir.getName();
             if (!expectedOdsCodes.contains(odsCode)) {
                 LOG.debug("Found new ODS code [" + odsCode + "] from " + odsCodeDir);
-                db.saveAdastraOdsCode(dbConfiguration.getConfigurationId(), odsCode);
+                db.saveAdastraOdsCode(dbConfiguration.getConfigurationId(), orgCode, odsCode);
                 expectedOdsCodes.add(odsCode);
             }
         }

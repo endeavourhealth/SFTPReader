@@ -707,17 +707,20 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
 
     @Override
-    public Set<String> getAdastraOdsCodes(String configurationId) throws Exception {
+    public Set<String> getAdastraOdsCodes(String configurationId, String fileNameOrgCode) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT ods_code"
                     + " FROM configuration.adastra_organisation_map"
-                    + " WHERE configuration_id = ?";
+                    + " WHERE configuration_id = ?"
+                    + " AND file_name_org_code = ?";
 
             ps = connection.prepareStatement(sql);
 
-            ps.setString(1, configurationId);
+            int col = 1;
+            ps.setString(col++, configurationId);
+            ps.setString(col++, fileNameOrgCode);
 
             Set<String> ret = new HashSet<>();
 
@@ -738,18 +741,19 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     }
 
     @Override
-    public void saveAdastraOdsCode(String configurationId, String odsCode) throws Exception {
+    public void saveAdastraOdsCode(String configurationId, String fileNameOrgCode, String odsCode) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO configuration.adastra_organisation_map"
-                    + " (ods_code, configuration_id)"
-                    + " VALUES (?, ?)";
+                    + " (ods_code, file_name_org_code, configuration_id)"
+                    + " VALUES (?, ?, ?)";
 
             ps = connection.prepareStatement(sql);
 
             int col = 1;
             ps.setString(col++, odsCode);
+            ps.setString(col++, fileNameOrgCode);
             ps.setString(col++, configurationId);
 
             ps.executeUpdate();

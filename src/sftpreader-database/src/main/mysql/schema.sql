@@ -276,6 +276,7 @@ CREATE TABLE configuration_polling_attempt (
 
 CREATE TABLE adastra_organisation_map (
   ods_code varchar(255) NOT NULL,
+  file_name_org_code varchar(255) NOT NULL,
   configuration_id varchar(100) NOT NULL,
   CONSTRAINT adastra_organisation_map_pk PRIMARY KEY (ods_code),
   CONSTRAINT adastra_organisation_map_fk FOREIGN KEY (configuration_id)
@@ -283,4 +284,4 @@ CREATE TABLE adastra_organisation_map (
       ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 
-CREATE INDEX ix_adastra_organisation_map_configuration ON adastra_organisation_map (configuration_id);
+CREATE INDEX ix_adastra_organisation_map_configuration ON adastra_organisation_map (configuration_id, file_name_org_code);
