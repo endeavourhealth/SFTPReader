@@ -58,6 +58,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
         //find the case file
         String caseFilePath = findCaseFile(batch, sourcePermDir, dbConfiguration);
+        LOG.trace("CASE file found at " + caseFilePath);
 
         //check the columns to see if it's v1 (no splitting) or v2 (splitting)
         if (isVersion1File(db, dbConfiguration, caseFilePath)) {
@@ -83,11 +84,14 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             //v2 table containing ODS codes has any content in, which will tell us if we previously received a v2 file.
             if (!iterator.hasNext()) {
                 Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId());
+                LOG.trace("No records found in start of CASE file so will base version on " + expectedOdsCodes.size() + " previous ODS codes");
+                LOG.trace(firstChars);
                 return expectedOdsCodes.size() == 0;
             }
 
             CSVRecord firstRecord = iterator.next();
             int columnCount = firstRecord.size();
+            LOG.trace("CASE file column count is " + columnCount);
             if (columnCount == 7) {
                 return true;
 
