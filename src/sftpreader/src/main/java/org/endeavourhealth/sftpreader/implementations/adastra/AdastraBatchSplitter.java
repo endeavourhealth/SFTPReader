@@ -64,6 +64,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
         //find known ODS codes previously in extracts for this configuration
         Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId());
+        LOG.debug("From previous extracts, expecting " + expectedOdsCodes.size() + " ODS codes: " + expectedOdsCodes);
 
         //find the case file
         String caseFilePath = findCaseFile(batch, sourcePermDir, dbConfiguration);
@@ -79,9 +80,11 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         for (File splitCaseFile: splitCaseFiles) {
             File odsCodeDir = splitCaseFile.getParentFile();
             String odsCode = odsCodeDir.getName();
+            LOG.debug("Found ODS code [" + odsCode + "] from " + odsCodeDir);
             if (!expectedOdsCodes.contains(odsCode)) {
-                expectedOdsCodes.add(odsCode);
+                LOG.debug("New ODS code so saving for next time");
                 db.saveAdastraOdsCode(dbConfiguration.getConfigurationId(), odsCode);
+                expectedOdsCodes.add(odsCode);
             }
         }
 
