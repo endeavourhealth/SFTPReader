@@ -22,6 +22,7 @@ public class CsvSplitter {
     private String srcFilePath = null;
     private File dstDir = null;
     private CSVFormat csvFormat = null;
+    private boolean tryRemoveDuplicateRecords = false;
     private String[] splitColumns = null;
     private String[] columnHeaders = null;
     private Map<String, PrinterWrapper> csvPrinterMap = new HashMap<>();
@@ -30,14 +31,15 @@ public class CsvSplitter {
     private Charset encoding = null;
     private List<CSVRecord> lastFewRecords = new ArrayList<>();
 
-    public CsvSplitter(String srcFilePath, File dstDir, CSVFormat csvFormat, String... splitColumns) {
-        this(srcFilePath, dstDir, csvFormat, Charset.defaultCharset(), splitColumns);
+    public CsvSplitter(String srcFilePath, File dstDir, boolean tryRemoveDuplicateRecords, CSVFormat csvFormat, String... splitColumns) {
+        this(srcFilePath, dstDir, tryRemoveDuplicateRecords, csvFormat, Charset.defaultCharset(), splitColumns);
     }
 
-    public CsvSplitter(String srcFilePath, File dstDir, CSVFormat csvFormat, Charset encoding, String... splitColumns) {
+    public CsvSplitter(String srcFilePath, File dstDir, boolean tryRemoveDuplicateRecords, CSVFormat csvFormat, Charset encoding, String... splitColumns) {
 
         this.srcFilePath = srcFilePath;
         this.dstDir = dstDir;
+        this.tryRemoveDuplicateRecords = tryRemoveDuplicateRecords;
         this.csvFormat = csvFormat;
         this.splitColumns = splitColumns;
         this.encoding = encoding;
@@ -91,17 +93,15 @@ public class CsvSplitter {
             CSVRecord previousLine = null;
             while (csvIterator.hasNext()) {
                 CSVRecord csvRecord = csvIterator.next();
-                if (!isSame(csvRecord, previousLine)) {
-                    splitRecord(csvRecord, splitIndexes);
-                    previousLine = csvRecord;
-                }
-            }
-            /*Iterator<CSVRecord> csvIterator = csvParser.iterator();
-            while (csvIterator.hasNext()) {
-                CSVRecord csvRecord = csvIterator.next();
-                splitRecord(csvRecord, splitIndexes);
-            }*/
 
+                if (tryRemoveDuplicateRecords
+                        && isSame(csvRecord, previousLine)) {
+                    continue;
+                }
+
+                splitRecord(csvRecord, splitIndexes);
+                previousLine = csvRecord;
+            }
 
         } finally {
 
@@ -129,6 +129,7 @@ public class CsvSplitter {
     }
 
     private static boolean isSame(CSVRecord one, CSVRecord two) {
+
         if (one == null
                 || two == null
                 || one.size() != two.size()) {

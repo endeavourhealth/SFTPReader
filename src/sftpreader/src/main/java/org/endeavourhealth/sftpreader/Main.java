@@ -193,7 +193,7 @@ public class Main {
 
             CSVFormat csvFormat = CSVFormat.DEFAULT.withHeader("col1","col2","col3","col4");
 
-            CsvSplitter splitter = new CsvSplitter(srcFilePath, dstDir, csvFormat, "col1");
+            CsvSplitter splitter = new CsvSplitter(srcFilePath, dstDir, false, csvFormat, "col1");
             List<File> files = splitter.go();
             LOG.info("Done split from " + srcFile);
 

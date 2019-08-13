@@ -653,7 +653,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
     }
 
     private static List<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
-        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, csvFormat.withHeader(), splitColmumns);
+        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, true, csvFormat.withHeader(), splitColmumns);
         return csvSplitter.go();
     }
 }

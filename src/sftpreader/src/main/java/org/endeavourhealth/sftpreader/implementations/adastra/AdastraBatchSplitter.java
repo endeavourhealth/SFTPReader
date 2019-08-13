@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -55,6 +56,73 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
         LOG.trace("Splitting CSV files to " + splitTempDir);
 
+        //find the case file
+        String caseFilePath = findCaseFile(batch, sourcePermDir, dbConfiguration);
+
+        //check the columns to see if it's v1 (no splitting) or v2 (splitting)
+        if (isVersion1File(db, dbConfiguration, caseFilePath)) {
+            return splitBatchVersion1(batch);
+
+        } else {
+            return splitBatchVersion2(batch, db, dbConfiguration, caseFilePath, sourcePermDir, splitTempDir);
+        }
+    }
+
+    private boolean isVersion1File(DataLayerI db, DbConfiguration dbConfiguration, String caseFilePath) throws Exception {
+
+        String firstChars = FileHelper.readFirstCharactersFromSharedStorage(caseFilePath, 1000); //assuming the first row will be <1000 chars
+        StringReader stringReader = new StringReader(firstChars);
+
+        CSVParser csvReader = new CSVParser(stringReader, getCsvFormat(FILE_TYPE_CASE));
+        try {
+            Iterator<CSVRecord> iterator = csvReader.iterator();
+
+            //if the CASE file is empty then we can't work out the version from its columns, so check to see if the
+            //v2 table containing ODS codes has any content in, which will tell us if we previously received a v2 file.
+            if (!iterator.hasNext()) {
+                Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId());
+                return expectedOdsCodes.size() == 0;
+            }
+
+            CSVRecord firstRecord = iterator.next();
+            int columnCount = firstRecord.size();
+            if (columnCount == 7) {
+                return true;
+
+            } else if (columnCount == 11) {
+                return false;
+
+            } else {
+                throw new Exception("Unknown version for CASE file " + caseFilePath + " as unexpected column count");
+            }
+
+        } finally {
+            csvReader.close();
+        }
+    }
+
+    private List<BatchSplit> splitBatchVersion1(Batch batch) {
+        List<BatchSplit> ret = new ArrayList<>();
+
+        BatchSplit batchSplit = new BatchSplit();
+        batchSplit.setBatchId(batch.getBatchId());
+        batchSplit.setLocalRelativePath(batch.getLocalRelativePath());
+
+        //for Adastra, the orgCode is the second piece of a file in a batch, so use the first
+        List<BatchFile> batchFiles = batch.getBatchFiles();
+        BatchFile firstBatchFile = batchFiles.get(0);
+        String [] fileParts = firstBatchFile.getFilename().split("_");
+        String orgCode = fileParts [1];
+
+        batchSplit.setOrganisationId(orgCode);
+
+        ret.add(batchSplit);
+
+        return ret;
+    }
+
+    private List<BatchSplit> splitBatchVersion2(Batch batch, DataLayerI db, DbConfiguration dbConfiguration, String caseFilePath, String sourcePermDir, String splitTempDir) throws Exception {
+
         File dstDir = new File(splitTempDir);
 
         //if the folder does exist, delete all content within it, since if we're re-splitting a file
@@ -66,23 +134,19 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         Set<String> expectedOdsCodes = db.getAdastraOdsCodes(dbConfiguration.getConfigurationId());
         LOG.debug("From previous extracts, expecting " + expectedOdsCodes.size() + " ODS codes: " + expectedOdsCodes);
 
-        //find the case file
-        String caseFilePath = findCaseFile(batch, sourcePermDir, dbConfiguration);
-
         //read case file to work out the case ref -> ODS code mapping
         Map<String, String> hmCaseToOds = parseCaseFile(caseFilePath);
 
         //split case file by ODS code
-        CsvSplitter csvSplitter = new CsvSplitter(caseFilePath, dstDir, getCsvFormat(FILE_TYPE_CASE), "ODSCode");
+        CsvSplitter csvSplitter = new CsvSplitter(caseFilePath, dstDir, false, getCsvFormat(FILE_TYPE_CASE), "ODSCode");
         List<File> splitCaseFiles = csvSplitter.go();
 
         //save any new ODS codes so it's expected next time
         for (File splitCaseFile: splitCaseFiles) {
             File odsCodeDir = splitCaseFile.getParentFile();
             String odsCode = odsCodeDir.getName();
-            LOG.debug("Found ODS code [" + odsCode + "] from " + odsCodeDir);
             if (!expectedOdsCodes.contains(odsCode)) {
-                LOG.debug("New ODS code so saving for next time");
+                LOG.debug("Found new ODS code [" + odsCode + "] from " + odsCodeDir);
                 db.saveAdastraOdsCode(dbConfiguration.getConfigurationId(), odsCode);
                 expectedOdsCodes.add(odsCode);
             }
@@ -120,7 +184,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             } else {
                 //all other files should be split by case ref then re-combined by ODS code
                 String tempSplitDir = FilenameUtils.concat(splitTempDir, fileType);
-                csvSplitter = new CsvSplitter(filePath, new File(tempSplitDir), getCsvFormat(fileType), "CaseRef");
+                csvSplitter = new CsvSplitter(filePath, new File(tempSplitDir), false, getCsvFormat(fileType), "CaseRef");
                 List<File> splitFiles = csvSplitter.go();
 
                 //hash the split files by their corresponding ODS codes
@@ -373,7 +437,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    private static String findCaseFile(Batch batch, String sourceTempDir, DbConfiguration dbConfiguration) throws Exception {
+    private static String findCaseFile(Batch batch, String sourcePermDir, DbConfiguration dbConfiguration) throws Exception {
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
 
@@ -382,38 +446,12 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             AdastraFilenameParser nameParser = new AdastraFilenameParser(false, remoteFile, dbConfiguration);
             String fileType = nameParser.generateFileTypeIdentifier();
             if (fileType.equals(FILE_TYPE_CASE)) {
-                return FilenameUtils.concat(sourceTempDir, fileName);
+                return FilenameUtils.concat(sourcePermDir, fileName);
             }
         }
 
         throw new Exception("Failed to find " + FILE_TYPE_CASE + " file in batch " + batch.getBatchId());
     }
 
-
-    /**
-     * For Adastra, the files in a batch are by date and time stamp for an organisation, so get orgId from the first filename
-     */
-    /*@Override
-    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
-
-        List<BatchSplit> ret = new ArrayList<>();
-
-        BatchSplit batchSplit = new BatchSplit();
-        batchSplit.setBatchId(batch.getBatchId());
-        batchSplit.setLocalRelativePath(batch.getLocalRelativePath());
-
-        //for Adastra, the orgCode is the second piece of a file in a batch, so use the first
-        List<BatchFile> batchFiles = batch.getBatchFiles();
-        BatchFile firstBatchFile = batchFiles.get(0);
-        String [] fileParts = firstBatchFile.getFilename().split("_");
-        String orgCode = fileParts [1];
-
-        batchSplit.setOrganisationId(orgCode);
-
-        ret.add(batchSplit);
-
-        return ret;
-    }
-*/
 
 }
