@@ -127,7 +127,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         return ret;
     }
 
-    private static String getFilenameOrgCode(String filePath) {
+    public static String getFilenameOrgCode(String filePath) {
         String fileName = FilenameUtils.getBaseName(filePath);
         String[] fileParts = fileName.split("_");
         return fileParts [1];
