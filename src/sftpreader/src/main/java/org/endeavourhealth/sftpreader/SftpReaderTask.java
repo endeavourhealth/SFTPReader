@@ -278,6 +278,7 @@ public class SftpReaderTask implements Runnable {
             connection = openSftpConnection(dbConfiguration.getSftpConfiguration());
 
             String remotePath = dbConfiguration.getSftpConfiguration().getRemotePath();
+            LOG.trace("Connection opened - getting remote file list from " + remotePath);
 
             List<RemoteFile> remoteFiles = getFileList(connection, remotePath);
 
@@ -342,7 +343,6 @@ public class SftpReaderTask implements Runnable {
         Connection connection = ConnectionActivator.createConnection(connectionDetails);
 
         LOG.info("Opening " + connection.getClass().getName() + " to " + hostname + " on port " + port + " with user " + username);
-
         connection.open();
 
         return connection;

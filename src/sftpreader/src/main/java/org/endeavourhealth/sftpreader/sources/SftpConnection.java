@@ -63,10 +63,14 @@ public class SftpConnection extends Connection {
             session.setPassword(pw);
         }
 
+        LOG.trace("Session set up");
+
         this.session.connect();
+        LOG.trace("Session connected");
 
         this.channel = (ChannelSftp)session.openChannel("sftp");
         this.channel.connect();
+        LOG.trace("Channel connected");
 
         //adding this to try to get past an error with new Emis server
         /*KnownHosts knownHosts = (KnownHosts)jSch.getHostKeyRepository();
