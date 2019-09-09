@@ -63,6 +63,12 @@ public class SftpConnection extends Connection {
             session.setPassword(pw);
         }
 
+        //Emis connection has been stalling on weekends when trying to list directories
+        //so set the session timeout to ten mins (in millis) to try to avoid this. Since it has consistently
+        //happened for three successive weeks only on weeks, I believe that this is some kind of consequent
+        //of Emis restarting servers or something similar
+        session.setTimeout(10 * 60 * 1000);
+
         LOG.trace("Session set up");
 
         this.session.connect();
