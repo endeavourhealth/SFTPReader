@@ -3,6 +3,7 @@ package org.endeavourhealth.sftpreader.implementations.adastra;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
@@ -25,7 +26,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdastraBatchSplitter.class);
 
-    private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|');
+    private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|').withQuoteMode(QuoteMode.ALL);
 
     private static final String SPLIT_FOLDER = "Split";
     private static final String FILE_TYPE_CASE = "CASE";
