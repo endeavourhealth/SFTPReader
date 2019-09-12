@@ -361,7 +361,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
                         "GMC",
                         "UserRef"
                 };
-            case "ElectronicPrescriptions":
+            case "ELECTRONICPRESCRIPTIONS":
                 return new String[]{
                         "CaseRef",
                         "ProviderRef",
@@ -390,7 +390,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
                         "CaseRef",
                         "OutcomeName"
                 };
-            case "PATIENT":
+            case "PATIENTS":
                 return new String[]{
                         "CaseRef",
                         "PatientRef",
@@ -431,7 +431,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
                         "DMDCode",
                         "Issue"
                 };
-            case "PROVIDER":
+            case "PROVIDERS":
                 return new String[]{
                         "PatientRef",
                         "RegistrationStatus",
