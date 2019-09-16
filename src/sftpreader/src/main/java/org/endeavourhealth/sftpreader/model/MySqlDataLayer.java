@@ -1,6 +1,5 @@
 package org.endeavourhealth.sftpreader.model;
 
-import com.google.common.base.Strings;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
@@ -10,8 +9,8 @@ import org.endeavourhealth.sftpreader.model.db.*;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDateTime;
-import java.util.*;
 import java.util.Date;
+import java.util.*;
 
 public class MySqlDataLayer implements DataLayerI {
 
@@ -1239,6 +1238,65 @@ public class MySqlDataLayer implements DataLayerI {
             } else {
                 return null;
             }
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public void addTppOrganisationGmsRegistrationMap(TppOrganisationGmsRegistrationMap map) throws Exception {
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO tpp_organisation_gms_registration_map (organisation_id, gms_organisation_id) VALUES (?, ?) "
+                    + " ON DUPLICATE KEY UPDATE"
+                    + " organisation_id = VALUES(organisation_id),"
+                    + " gms_organisation_id = VALUES(gms_organisation_id)";
+
+            ps = connection.prepareStatement(sql);
+            ps.setString(1, map.getOrganisationId());
+            ps.setString(2, map.getGmsOrganisationId());
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public List<TppOrganisationGmsRegistrationMap> getTppOrganisationGmsRegistrationMapsFromOrgId(String orgId) throws Exception {
+
+        Connection connection = dataSource.getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "SELECT * FROM tpp_organisation_gms_registration_map WHERE organisation_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setString(1, orgId);
+
+            List<TppOrganisationGmsRegistrationMap> ret = new ArrayList<>();
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                int col = 1;
+                String organisationId = rs.getString(col++);
+                String gmsOrganisationId = rs.getString(col++);
+
+                TppOrganisationGmsRegistrationMap m = new TppOrganisationGmsRegistrationMap();
+                m.setOrganisationId(organisationId);
+                m.setGmsOrganisationId(gmsOrganisationId);
+
+                ret.add(m);
+            }
+
+            return ret;
 
         } finally {
             if (ps != null) {

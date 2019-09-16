@@ -1,17 +1,11 @@
 package org.endeavourhealth.sftpreader.model;
 
-import org.endeavourhealth.common.postgres.PgResultSet;
-import org.endeavourhealth.common.postgres.PgStoredProc;
-import org.endeavourhealth.common.postgres.PgStoredProcException;
-import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.SftpFile;
 import org.endeavourhealth.sftpreader.model.db.*;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public interface DataLayerI {
 
@@ -50,6 +44,9 @@ public interface DataLayerI {
 
     void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception;
     TppOrganisationMap getTppOrgNameFromOdsCode(String queryOdsCode) throws Exception;
+
+    void addTppOrganisationGmsRegistrationMap(TppOrganisationGmsRegistrationMap map) throws Exception;
+    List<TppOrganisationGmsRegistrationMap> getTppOrganisationGmsRegistrationMapsFromOrgId(String orgId) throws Exception;
 
     ConfigurationLockI createConfigurationLock(String lockName) throws Exception;
 

@@ -1,10 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.tpp;
 
 import com.google.common.base.Strings;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.csv.QuoteMode;
+import org.apache.commons.csv.*;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
@@ -14,10 +11,7 @@ import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -29,12 +23,16 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.ALL);
     private static final String SPLIT_COLUMN_ORG = "IDOrganisationVisibleTo";
+    private static final String FILTER_ORG_COLUMN = "IDOrganisationRegisteredAt";
+    private static final String REMOVED_DATA_COLUMN = "RemovedData";
     private static final String SPLIT_FOLDER = "Split";
     private static final String ORGANISATION_FILE = "SROrganisation.csv";
+    private static final String PATIENT_REGISTRATION_FILE = "SRPatientRegistration.csv";
     private static final String REQUIRED_CHARSET = "Cp1252";
 
     private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
+    private static Set<String> cachedGmsOrgs = new HashSet<>();
 
     /**
      * splits the TPP extract files org ID, storing the results in sub-directories using that org ID as the name
@@ -134,12 +132,16 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
             ret.add(batchSplit);
 
+            File[] splitFiles = orgDir.listFiles();
+
+            //filter each split file to include organisation and GMS registration data only
+            LOG.trace("Filtering " + splitFiles.length + " files in " + orgDir);
+            filterFiles (orgId, splitFiles, db);
+
             //copy everything to storage
+            LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
             String storagePath = FilenameUtils.concat(sourcePermDir, SPLIT_FOLDER);
             storagePath = FilenameUtils.concat(storagePath, orgId);
-
-            File[] splitFiles = orgDir.listFiles();
-            LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
 
             for (File splitFile : splitFiles) {
 
@@ -151,6 +153,189 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         }
 
         return ret;
+    }
+
+    private static void filterFiles (String orgId, File[] splitFiles, DataLayerI db) throws Exception  {
+
+        //save/update the split SRPatientRegistrationFile GMS orgs to the db
+        for (File splitFile : splitFiles) {
+            if (splitFile.getName().equalsIgnoreCase(PATIENT_REGISTRATION_FILE)) {
+
+                LOG.debug("Found "+PATIENT_REGISTRATION_FILE+" file to save into db");
+                FileInputStream fis = new FileInputStream(splitFile);
+                BufferedInputStream bis = new BufferedInputStream(fis);
+                InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
+                CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+
+                int count = 0;
+
+                try {
+                    Iterator<CSVRecord> csvIterator = csvParser.iterator();
+
+                    //clear the cached Gms orgs
+                    cachedGmsOrgs.clear();
+
+                    while (csvIterator.hasNext()) {
+                        CSVRecord csvRecord = csvIterator.next();
+                        String registrationStatus = csvRecord.get("RegistrationStatus");
+                        String organisationRegisteredAt = csvRecord.get(FILTER_ORG_COLUMN);
+
+                        //save GMS registrations only. using .contains as some status values contain both, i.e. GMS,Contraception for example
+                        if (registrationStatus.contains("GMS")
+                                && !Strings.isNullOrEmpty(organisationRegisteredAt)) {
+
+                            //check if already added so do not attempt db write
+                            if (cachedGmsOrgs.contains(orgId)) {
+                                continue;
+                            }
+
+                            TppOrganisationGmsRegistrationMap map = new TppOrganisationGmsRegistrationMap();
+                            map.setOrganisationId(orgId);
+                            map.setGmsOrganisationId(organisationRegisteredAt);
+
+                            db.addTppOrganisationGmsRegistrationMap(map);
+                            cachedGmsOrgs.add(organisationRegisteredAt);
+
+                            count++;
+                        }
+                    }
+                } finally {
+                    csvParser.close();
+                }
+
+                //once we have found and processed the Patient Registration File we can break out this first part
+                LOG.debug(count+" distinct GMS organisations filed for OrganisationId: "+orgId);
+                break;
+            }
+        }
+
+        //get the latest Gms org db entries for this organisation and pop them into a simple list
+        List<TppOrganisationGmsRegistrationMap> maps = db.getTppOrganisationGmsRegistrationMapsFromOrgId(orgId);
+        List<String> filterOrgs = new ArrayList<>();
+        for (TppOrganisationGmsRegistrationMap map : maps) {
+            String filterOrg = map.getGmsOrganisationId();
+            filterOrgs.add(filterOrg);
+        }
+
+        LOG.debug(filterOrgs.size()+" GMS organisations found in DB for OrganisationId: "+orgId);
+
+        //filter each each split file using the List of GMS Organisations
+        for (File splitFile : splitFiles) {
+
+            FileInputStream fis = new FileInputStream(splitFile);
+            BufferedInputStream bis = new BufferedInputStream(fis);
+            InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
+            CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+
+            try {
+
+                Map<String, Integer> headerMap = csvParser.getHeaderMap();  //get the file header
+                // convert the header map into an ordered String array, so we can check for the filter column
+                // and then populate the column headers for the new CSV files later on
+                String [] columnHeaders = new String[headerMap.size()];
+                Iterator<String> headerIterator = headerMap.keySet().iterator();
+                boolean hasfilterOrgColumn = false;
+                boolean hasRemovedDataHeader = false;
+                while (headerIterator.hasNext()) {
+                    String headerName = headerIterator.next();
+                    if (headerName.equalsIgnoreCase(FILTER_ORG_COLUMN))
+                        hasfilterOrgColumn = true;
+
+                    if (headerName.equalsIgnoreCase(REMOVED_DATA_COLUMN))
+                        hasRemovedDataHeader = true;
+
+                    int headerIndex = headerMap.get(headerName);
+                    columnHeaders[headerIndex] = headerName;
+                }
+
+                //if the filter column header is not in this file, ignore and continue to next file
+                if (!hasfilterOrgColumn) {
+                    LOG.debug("Filter column not found in file: "+splitFile.getName()+", skipping...");
+                    csvParser.close();
+                    continue;
+                }
+
+                //create a new list of records based on the filtering process
+                LOG.debug("Filtering file: "+splitFile+" using filterOrgs");
+
+//                Iterable<CSVRecord> records = csvParser.getRecords();
+//                List<Map<String, String>> filteredRecords = StreamSupport
+//                        .stream(records.spliterator(), false)
+//                        .filter(csvRecord -> (csvRecord.get(FILTER_ORG_COLUMN).equals(orgId)
+//                                || filterOrgs.contains(csvRecord.get(FILTER_ORG_COLUMN)))
+//                                || csvRecord.get(REMOVED_DATA_COLUMN)=="1")
+//                        .map(csvRecord -> csvRecord.toMap().entrySet().stream()
+//                                .collect(Collectors.toMap(
+//                                        Map.Entry::getKey,
+//                                        Map.Entry::getValue
+//                                )))
+//                        .collect(Collectors.toList());
+
+
+
+                List<CSVRecord> filteredRecords = new ArrayList<>();
+                Iterator<CSVRecord> csvIterator = csvParser.iterator();
+
+                int count = 0;
+                while (csvIterator.hasNext()) {
+                    CSVRecord csvRecord = csvIterator.next();
+
+                    // if the filter org column value matches the receiving org
+                    // OR is contained in the GMS organisation list, write (include) the record
+                    if (csvRecord.get(FILTER_ORG_COLUMN).equals(orgId)
+                            || filterOrgs.contains(csvRecord.get(FILTER_ORG_COLUMN))) {
+
+                        //csvPrinter.printRecord(csvRecord);
+                        filteredRecords.add(csvRecord);
+                        //LOG.debug(csvRecord.toString());
+                        count++;
+                    } else if (hasRemovedDataHeader) {
+
+                        //RemovedData items have no registered organisation, so write anyway
+                        if (csvRecord.get(REMOVED_DATA_COLUMN)=="1") {
+
+                            //csvPrinter.printRecord(csvRecord);
+                            filteredRecords.add(csvRecord);
+                            //LOG.debug(csvRecord.toString());
+                            count++;
+                        }
+                    }
+                }
+
+                LOG.debug("File filtering done: "+filteredRecords.size()+" records for file: "+splitFile);
+
+                //close the parser
+                csvParser.close();
+
+                //create a new file output from the splitFile filtered records
+                FileOutputStream fos = new FileOutputStream(splitFile);
+                OutputStreamWriter osw = new OutputStreamWriter(fos, Charset.forName(REQUIRED_CHARSET));
+                BufferedWriter bufferedWriter = new BufferedWriter(osw);
+                CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, CSV_FORMAT.withHeader(columnHeaders));
+                try {
+
+                    //create a new CSV printer to write the header and filtered data to
+                    LOG.debug("Writing file: " + splitFile.getName() + " with " + columnHeaders.length + " headers and " + filteredRecords.size() + " rows");
+                    csvPrinter.printRecords(filteredRecords);
+                    csvPrinter.flush(); //flush filtered data to disk
+                }
+                finally {
+                    //make sure everything is closed
+                    fos.close();
+                    osw.close();
+                    bufferedWriter.close();
+                    csvPrinter.close();
+                    filteredRecords.clear();
+                }
+            }
+            finally {
+                //make sure everything is closed
+                fis.close();
+                bis.close();
+                reader.close();
+                csvParser.close();
+            }
+        }
     }
 
     private void identifyFiles(String sourceTempDir, List<File> filesToSplit, List<File> filesToNotSplit) throws Exception {
