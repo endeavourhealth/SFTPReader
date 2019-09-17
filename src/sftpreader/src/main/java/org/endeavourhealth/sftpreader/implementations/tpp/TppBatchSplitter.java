@@ -253,7 +253,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
                 //if the filter column header is not in this file, ignore and continue to next file
                 if (!hasfilterOrgColumn) {
-                    LOG.debug("Filter column not found in file: "+splitFile.getName()+", skipping...");
+                    //LOG.debug("Filter column not found in file: "+splitFile.getName()+", skipping...");
                     csvParser.close();
                     continue;
                 }
@@ -283,7 +283,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                     } else if (hasRemovedDataHeader) {
 
                         //RemovedData items have no registered organisation, so write anyway
-                        if (csvRecord.get(REMOVED_DATA_COLUMN)=="1") {
+                        if (csvRecord.get(REMOVED_DATA_COLUMN).equals("1")) {
 
                             csvPrinter.printRecord(csvRecord);
                         }
