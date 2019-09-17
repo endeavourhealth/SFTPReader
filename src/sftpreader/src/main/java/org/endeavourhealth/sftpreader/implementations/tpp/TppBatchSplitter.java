@@ -185,7 +185,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                                 && !Strings.isNullOrEmpty(organisationRegisteredAt)) {
 
                             //check if already added so do not attempt db write
-                            if (cachedGmsOrgs.contains(orgId)) {
+                            if (cachedGmsOrgs.contains(organisationRegisteredAt)) {
                                 continue;
                             }
 
@@ -222,10 +222,13 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         //filter each each split file using the List of GMS Organisations
         for (File splitFile : splitFiles) {
 
+            //create the csv parser input
             FileInputStream fis = new FileInputStream(splitFile);
             BufferedInputStream bis = new BufferedInputStream(fis);
             InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
             CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+
+            CSVPrinter csvPrinter = null;
 
             try {
 
@@ -255,28 +258,18 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                     continue;
                 }
 
+                //create a new temp file output from the splitFile to write the filtered records
+                File splitFileTmp = new File (splitFile+".tmp");
+                FileOutputStream fos = new FileOutputStream(splitFileTmp);
+                OutputStreamWriter osw = new OutputStreamWriter(fos, Charset.forName(REQUIRED_CHARSET));
+                BufferedWriter bufferedWriter = new BufferedWriter(osw);
+                csvPrinter = new CSVPrinter(bufferedWriter, CSV_FORMAT.withHeader(columnHeaders));
+
                 //create a new list of records based on the filtering process
-                LOG.debug("Filtering file: "+splitFile+" using filterOrgs");
+                //LOG.debug("Filtering file: "+splitFile+" using filterOrgs");
 
-//                Iterable<CSVRecord> records = csvParser.getRecords();
-//                List<Map<String, String>> filteredRecords = StreamSupport
-//                        .stream(records.spliterator(), false)
-//                        .filter(csvRecord -> (csvRecord.get(FILTER_ORG_COLUMN).equals(orgId)
-//                                || filterOrgs.contains(csvRecord.get(FILTER_ORG_COLUMN)))
-//                                || csvRecord.get(REMOVED_DATA_COLUMN)=="1")
-//                        .map(csvRecord -> csvRecord.toMap().entrySet().stream()
-//                                .collect(Collectors.toMap(
-//                                        Map.Entry::getKey,
-//                                        Map.Entry::getValue
-//                                )))
-//                        .collect(Collectors.toList());
-
-
-
-                List<CSVRecord> filteredRecords = new ArrayList<>();
                 Iterator<CSVRecord> csvIterator = csvParser.iterator();
 
-                int count = 0;
                 while (csvIterator.hasNext()) {
                     CSVRecord csvRecord = csvIterator.next();
 
@@ -285,55 +278,34 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                     if (csvRecord.get(FILTER_ORG_COLUMN).equals(orgId)
                             || filterOrgs.contains(csvRecord.get(FILTER_ORG_COLUMN))) {
 
-                        //csvPrinter.printRecord(csvRecord);
-                        filteredRecords.add(csvRecord);
-                        //LOG.debug(csvRecord.toString());
-                        count++;
+                        csvPrinter.printRecord(csvRecord);
+
                     } else if (hasRemovedDataHeader) {
 
                         //RemovedData items have no registered organisation, so write anyway
                         if (csvRecord.get(REMOVED_DATA_COLUMN)=="1") {
 
-                            //csvPrinter.printRecord(csvRecord);
-                            filteredRecords.add(csvRecord);
-                            //LOG.debug(csvRecord.toString());
-                            count++;
+                            csvPrinter.printRecord(csvRecord);
                         }
                     }
                 }
 
-                LOG.debug("File filtering done: "+filteredRecords.size()+" records for file: "+splitFile);
+                //LOG.debug("File filtering done: "+count+" records for file: "+splitFileTmp);
 
-                //close the parser
-                csvParser.close();
+                //delete original file
+                splitFile.delete();
 
-                //create a new file output from the splitFile filtered records
-                FileOutputStream fos = new FileOutputStream(splitFile);
-                OutputStreamWriter osw = new OutputStreamWriter(fos, Charset.forName(REQUIRED_CHARSET));
-                BufferedWriter bufferedWriter = new BufferedWriter(osw);
-                CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, CSV_FORMAT.withHeader(columnHeaders));
-                try {
-
-                    //create a new CSV printer to write the header and filtered data to
-                    LOG.debug("Writing file: " + splitFile.getName() + " with " + columnHeaders.length + " headers and " + filteredRecords.size() + " rows");
-                    csvPrinter.printRecords(filteredRecords);
-                    csvPrinter.flush(); //flush filtered data to disk
-                }
-                finally {
-                    //make sure everything is closed
-                    fos.close();
-                    osw.close();
-                    bufferedWriter.close();
-                    csvPrinter.close();
-                    filteredRecords.clear();
-                }
+                //rename the filtered tmp file to original filename
+                splitFileTmp.renameTo(splitFile);
             }
             finally {
                 //make sure everything is closed
-                fis.close();
-                bis.close();
-                reader.close();
-                csvParser.close();
+                if (csvParser != null) {
+                    csvParser.close();
+                    }
+                if (csvPrinter != null) {
+                    csvPrinter.close();
+                }
             }
         }
     }
