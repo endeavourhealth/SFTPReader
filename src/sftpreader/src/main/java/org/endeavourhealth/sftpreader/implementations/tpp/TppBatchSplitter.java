@@ -23,7 +23,9 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.ALL);
     private static final String SPLIT_COLUMN_ORG = "IDOrganisationVisibleTo";
-    private static final String FILTER_ORG_COLUMN = "IDOrganisationRegisteredAt";
+    private static final String FILTER_ORG_REG_AT_COLUMN = "IDOrganisationRegisteredAt";
+    private static final String ORG_COLUMN = "IDOrganisation";
+    private static final String PATIENT_ID_COLUMN = "IDPatient";
     private static final String REMOVED_DATA_COLUMN = "RemovedData";
     private static final String SPLIT_FOLDER = "Split";
     private static final String ORGANISATION_FILE = "SROrganisation.csv";
@@ -32,7 +34,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
-    private static Set<String> cachedGmsOrgs = new HashSet<>();
+    private static HashMap<Integer,List<String>> cachedPatientGmsOrgs = new HashMap<>();
 
     /**
      * splits the TPP extract files org ID, storing the results in sub-directories using that org ID as the name
@@ -172,30 +174,51 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 try {
                     Iterator<CSVRecord> csvIterator = csvParser.iterator();
 
-                    //clear the cached Gms orgs
-                    cachedGmsOrgs.clear();
+                    //clear the cached Patient Gms orgs
+                    cachedPatientGmsOrgs.clear();
 
                     while (csvIterator.hasNext()) {
                         CSVRecord csvRecord = csvIterator.next();
                         String registrationStatus = csvRecord.get("RegistrationStatus");
-                        String organisationRegisteredAt = csvRecord.get(FILTER_ORG_COLUMN);
 
-                        //save GMS registrations only. using .contains as some status values contain both, i.e. GMS,Contraception for example
+                        // NOTE: IDOrganisationId is used to get the correct Orgs from patient registration status file,
+                        // not the IDOrganisationRegisteredAt column
+                        String gmsOrganisationId = csvRecord.get(ORG_COLUMN);
+                        String patientId = csvRecord.get(PATIENT_ID_COLUMN);
+
+                        // save GMS registrations only. Using .contains as some status values contain both,
+                        // i.e. GMS,Contraception for example
                         if (registrationStatus.contains("GMS")
-                                && !Strings.isNullOrEmpty(organisationRegisteredAt)) {
+                                && !Strings.isNullOrEmpty(gmsOrganisationId) && !Strings.isNullOrEmpty(patientId)) {
 
-                            //check if already added so do not attempt db write
-                            if (cachedGmsOrgs.contains(organisationRegisteredAt)) {
+                            //don't bother added the same organisation as the one being processed as that is the default
+                            if (gmsOrganisationId.equals(orgId)) {
                                 continue;
+                            }
+
+                            Integer patId = Integer.parseInt(patientId);
+
+                            //check if already added for that patient and org so do not attempt another db write
+                            List<String> gmsOrgs;
+                            if (cachedPatientGmsOrgs.containsKey(patId)) {
+
+                                gmsOrgs = cachedPatientGmsOrgs.get(patId);
+                                if (gmsOrgs.contains(gmsOrganisationId)) {
+                                    continue;
+                                }
+                            } else {
+                                gmsOrgs = new ArrayList<>();
                             }
 
                             TppOrganisationGmsRegistrationMap map = new TppOrganisationGmsRegistrationMap();
                             map.setOrganisationId(orgId);
-                            map.setGmsOrganisationId(organisationRegisteredAt);
-
+                            map.setPatientId(patId);
+                            map.setGmsOrganisationId(gmsOrganisationId);
                             db.addTppOrganisationGmsRegistrationMap(map);
-                            cachedGmsOrgs.add(organisationRegisteredAt);
 
+                            //cache the patient Gms Orgs
+                            gmsOrgs.add(gmsOrganisationId);
+                            cachedPatientGmsOrgs.put(patId, gmsOrgs);
                             count++;
                         }
                     }
@@ -204,22 +227,37 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 }
 
                 //once we have found and processed the Patient Registration File we can break out this first part
-                LOG.debug(count+" distinct GMS organisations filed for OrganisationId: "+orgId);
+                LOG.debug(count+" potentially new distinct Patient GMS organisations filed for OrganisationId: "+orgId);
                 break;
             }
         }
 
-        //get the latest Gms org db entries for this organisation and pop them into a simple list
+        //get the latest Gms org db entries for this organisation and pop them into a hash map
         List<TppOrganisationGmsRegistrationMap> maps = db.getTppOrganisationGmsRegistrationMapsFromOrgId(orgId);
-        List<String> filterOrgs = new ArrayList<>();
+
+        HashMap<Integer,List<String>> filterPatientGmsOrgs = new HashMap<>();
+        int count = 0;
         for (TppOrganisationGmsRegistrationMap map : maps) {
-            String filterOrg = map.getGmsOrganisationId();
-            filterOrgs.add(filterOrg);
+            String filterGmsOrgId = map.getGmsOrganisationId();
+            Integer patientId = map.getPatientId();
+
+            List<String> filterGmsOrgs;
+            if (filterPatientGmsOrgs.containsKey(patientId)) {
+
+                filterGmsOrgs = filterPatientGmsOrgs.get(patientId);
+            } else {
+
+                filterGmsOrgs = new ArrayList<>();
+            }
+
+            filterGmsOrgs.add(filterGmsOrgId);
+            filterPatientGmsOrgs.put(patientId, filterGmsOrgs);
+            count++;
         }
 
-        LOG.debug(filterOrgs.size()+" GMS organisations found in DB for OrganisationId: "+orgId);
+        LOG.debug(count+" Patient GMS organisation records found in DB for OrganisationId: "+orgId);
 
-        //filter each each split file using the List of GMS Organisations
+        // finally, filter each each split file
         for (File splitFile : splitFiles) {
 
             //create the csv parser input
@@ -241,7 +279,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 boolean hasRemovedDataHeader = false;
                 while (headerIterator.hasNext()) {
                     String headerName = headerIterator.next();
-                    if (headerName.equalsIgnoreCase(FILTER_ORG_COLUMN))
+                    if (headerName.equalsIgnoreCase(FILTER_ORG_REG_AT_COLUMN))
                         hasfilterOrgColumn = true;
 
                     if (headerName.equalsIgnoreCase(REMOVED_DATA_COLUMN))
@@ -266,31 +304,52 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 csvPrinter = new CSVPrinter(bufferedWriter, CSV_FORMAT.withHeader(columnHeaders));
 
                 //create a new list of records based on the filtering process
-                //LOG.debug("Filtering file: "+splitFile+" using filterOrgs");
+                LOG.debug("Filtering file: "+splitFile);
 
                 Iterator<CSVRecord> csvIterator = csvParser.iterator();
+                count = 0;
 
                 while (csvIterator.hasNext()) {
                     CSVRecord csvRecord = csvIterator.next();
 
-                    // if the filter org column value matches the receiving org
-                    // OR is contained in the GMS organisation list, write (include) the record
-                    if (csvRecord.get(FILTER_ORG_COLUMN).equals(orgId)
-                            || filterOrgs.contains(csvRecord.get(FILTER_ORG_COLUMN))) {
+                    // if the filter org column value matches the receiving org, include the data by default
+                    // OR if it contains a removed data header header and it is a delete == 1, include the data
+                    // OR is contained in the GMS organisation list for that patient, include the data
+                    if (csvRecord.get(FILTER_ORG_REG_AT_COLUMN).equals(orgId)) {
 
                         csvPrinter.printRecord(csvRecord);
+                        count++;
 
-                    } else if (hasRemovedDataHeader) {
+                    } else if (hasRemovedDataHeader && csvRecord.get(REMOVED_DATA_COLUMN).equals("1")) {
+                        //RemovedData == 1 items have no registered organisation, so write anyway
 
-                        //RemovedData items have no registered organisation, so write anyway
-                        if (csvRecord.get(REMOVED_DATA_COLUMN).equals("1")) {
+                        csvPrinter.printRecord(csvRecord);
+                        count++;
 
-                            csvPrinter.printRecord(csvRecord);
-                        }
+                    } else {
+                        //otherwise, perform filtering on patient and GMS registered orgs
+
+                        String patientId = csvRecord.get(PATIENT_ID_COLUMN);
+                        Integer patId = Integer.parseInt(patientId);
+                        String organisationRegisteredAt = csvRecord.get(FILTER_ORG_REG_AT_COLUMN);
+                        if (filterPatientGmsOrgs.containsKey(patId)) {
+
+                            List<String> filterGmsOrgs = filterPatientGmsOrgs.get(patId);
+                            if (filterGmsOrgs.contains(organisationRegisteredAt)) {
+
+                                csvPrinter.printRecord(csvRecord);
+                                count++;
+                            } //else {
+
+                                //LOG.debug("Record excluded from filter: " + csvRecord.toString());
+                            //}
+                        } //else {
+                            //LOG.error("Record has no other Patient GMS organisations to filter with: "+csvRecord.toString());
+                        //}
                     }
                 }
 
-                //LOG.debug("File filtering done: "+count+" records for file: "+splitFileTmp);
+                LOG.debug("File filtering done: "+count+" records written for file: "+splitFile);
 
                 //delete original file
                 splitFile.delete();

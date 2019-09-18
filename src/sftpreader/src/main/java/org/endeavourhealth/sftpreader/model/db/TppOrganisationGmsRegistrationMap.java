@@ -4,6 +4,7 @@ public class TppOrganisationGmsRegistrationMap {
 
     private String organisationId = null;
     private String GmsOrganisationId = null;
+    private Integer patientId = null;
 
 
     public TppOrganisationGmsRegistrationMap() {
@@ -16,6 +17,14 @@ public class TppOrganisationGmsRegistrationMap {
 
     public void setOrganisationId(String organisationId) {
         this.organisationId = organisationId;
+    }
+
+    public Integer getPatientId() {
+        return patientId;
+    }
+
+    public void setPatientId(Integer patientId) {
+        this.patientId = patientId;
     }
 
     public String getGmsOrganisationId() {
