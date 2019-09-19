@@ -769,14 +769,14 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "INSERT INTO tpp_organisation_gms_registration_map (organisation_id, gms_organisation_id) VALUES (?, ?) "
-                    + " ON DUPLICATE KEY UPDATE"
-                    + " organisation_id = VALUES(organisation_id),"
-                    + " gms_organisation_id = VALUES(gms_organisation_id)";
+            String sql = "INSERT INTO tpp_organisation_gms_registration_map (organisation_id, patient_id, gms_organisation_id) VALUES (?, ?, ?) "
+                        + "ON CONFLICT ON CONSTRAINT tpp_organisation_gms_registration_map_pk "
+                        + "DO NOTHING ";
 
             ps = connection.prepareStatement(sql);
             ps.setString(1, map.getOrganisationId());
-            ps.setString(2, map.getGmsOrganisationId());
+            ps.setInt(2, map.getPatientId());
+            ps.setString(3, map.getGmsOrganisationId());
 
             ps.executeUpdate();
 
@@ -804,10 +804,12 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             while (rs.next()) {
                 int col = 1;
                 String organisationId = rs.getString(col++);
+                Integer patientId = rs.getInt(col++);
                 String gmsOrganisationId = rs.getString(col++);
 
                 TppOrganisationGmsRegistrationMap m = new TppOrganisationGmsRegistrationMap();
                 m.setOrganisationId(organisationId);
+                m.setPatientId(patientId);
                 m.setGmsOrganisationId(gmsOrganisationId);
 
                 ret.add(m);
