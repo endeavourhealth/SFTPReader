@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS configuration_kvp;
 DROP TABLE IF EXISTS configuration;
 DROP TABLE IF EXISTS interface_file_type;
 DROP TABLE IF EXISTS interface_type;
+DROP TABLE IF EXISTS tpp_organisation_gms_registration_map;
 
 
 CREATE TABLE interface_type
@@ -286,3 +287,15 @@ CREATE TABLE adastra_organisation_map (
 );
 
 CREATE INDEX ix_adastra_organisation_map_configuration ON adastra_organisation_map (configuration_id, file_name_org_code);
+
+
+CREATE TABLE tpp_organisation_gms_registration_map (
+  organisation_id		varchar(20),
+  patient_id bigint,
+  gms_organisation_id	varchar(20),
+  CONSTRAINT tpp_organisation_gms_registration_map_pk PRIMARY KEY (organisation_id, patient_id, gms_organisation_id)
+);
+
+CREATE INDEX tpp_organisation_gms_registration_map_organisation_id_ix
+  ON tpp_organisation_gms_registration_map
+    (organisation_id);
