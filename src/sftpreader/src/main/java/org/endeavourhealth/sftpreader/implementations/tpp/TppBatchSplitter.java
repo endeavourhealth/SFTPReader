@@ -34,7 +34,6 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
-    private static HashMap<Integer,List<String>> cachedPatientGmsOrgs = new HashMap<>();
 
     /**
      * splits the TPP extract files org ID, storing the results in sub-directories using that org ID as the name
@@ -174,8 +173,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 try {
                     Iterator<CSVRecord> csvIterator = csvParser.iterator();
 
-                    //clear the cached Patient Gms orgs
-                    cachedPatientGmsOrgs.clear();
+                    //create a cached hashmap of Patient Gms orgs
+                    HashMap<Integer,List<String>> cachedPatientGmsOrgs = new HashMap<>();
 
                     while (csvIterator.hasNext()) {
                         CSVRecord csvRecord = csvIterator.next();
@@ -192,6 +191,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                                 && !Strings.isNullOrEmpty(gmsOrganisationId) && !Strings.isNullOrEmpty(patientId)) {
 
                             //don't bother added the same organisation as the one being processed as that is the default
+                            //check when filtering so no need to add it to the DB
                             if (gmsOrganisationId.equals(orgId)) {
                                 continue;
                             }
@@ -327,7 +327,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                         count++;
 
                     } else {
-                        //otherwise, perform filtering on patient and GMS registered orgs
+                        //otherwise, perform filtering on patient and additional GMS registered orgs
 
                         String patientId = csvRecord.get(PATIENT_ID_COLUMN);
                         Integer patId = Integer.parseInt(patientId);
