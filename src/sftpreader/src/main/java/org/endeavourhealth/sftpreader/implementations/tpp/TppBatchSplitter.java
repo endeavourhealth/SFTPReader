@@ -185,12 +185,15 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                         String gmsOrganisationId = csvRecord.get(ORG_COLUMN);
                         String patientId = csvRecord.get(PATIENT_ID_COLUMN);
 
+                        // this is used on the rare occasion noted below
+                        String organisationRegisteredAt = csvRecord.get(FILTER_ORG_REG_AT_COLUMN);
+
                         // save GMS registrations only. Using .contains as some status values contain both,
                         // i.e. GMS,Contraception for example
                         if (registrationStatus.contains("GMS")
                                 && !Strings.isNullOrEmpty(gmsOrganisationId) && !Strings.isNullOrEmpty(patientId)) {
 
-                            //don't bother added the same organisation as the one being processed as that is the default
+                            //don't bother adding the same organisation as the one being processed as that is the default
                             //check when filtering so no need to add it to the DB
                             if (gmsOrganisationId.equals(orgId)) {
                                 continue;
@@ -220,6 +223,27 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                             gmsOrgs.add(gmsOrganisationId);
                             cachedPatientGmsOrgs.put(patId, gmsOrgs);
                             count++;
+
+                            // if on the v rare occasion, the IDOrganisationRegisteredAt is different to the IDOrganisation
+                            // and the IDOrganisationRegisteredAt is not part of the patient's GMS list, add it in to make
+                            // sure SRPatientRegistration is filtered correctly later on.  First check it's not the
+                            // same as the actual organisationId
+                            if (!organisationRegisteredAt.equals(orgId)) {
+
+                                if (!gmsOrgs.contains(organisationRegisteredAt)) {
+
+                                    map = new TppOrganisationGmsRegistrationMap();
+                                    map.setOrganisationId(orgId);
+                                    map.setPatientId(patId);
+                                    map.setGmsOrganisationId(organisationRegisteredAt);
+                                    db.addTppOrganisationGmsRegistrationMap(map);
+
+                                    //cache the patient Gms Orgs
+                                    gmsOrgs.add(organisationRegisteredAt);
+                                    cachedPatientGmsOrgs.put(patId, gmsOrgs);
+                                    count++;
+                                }
+                            }
                         }
                     }
                 } finally {
