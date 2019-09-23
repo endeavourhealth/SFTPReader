@@ -769,7 +769,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "INSERT INTO tpp_organisation_gms_registration_map (organisation_id, patient_id, gms_organisation_id) VALUES (?, ?, ?) "
+            String sql = "INSERT INTO configuration.tpp_organisation_gms_registration_map (organisation_id, patient_id, gms_organisation_id) VALUES (?, ?, ?) "
                         + "ON CONFLICT ON CONSTRAINT tpp_organisation_gms_registration_map_pk "
                         + "DO NOTHING ";
 
@@ -794,7 +794,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = dataSource.getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "SELECT * FROM tpp_organisation_gms_registration_map WHERE organisation_id = ?";
+            String sql = "SELECT * FROM configuration.tpp_organisation_gms_registration_map WHERE organisation_id = ?";
             ps = connection.prepareStatement(sql);
             ps.setString(1, orgId);
 
