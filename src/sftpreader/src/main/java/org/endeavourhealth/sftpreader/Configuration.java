@@ -149,17 +149,20 @@ public final class Configuration {
 
         //new settings are stored in a single JSON structure, but old settings are stored in three separate records
         JsonNode json = ConfigManager.getConfigurationAsJson("database");
-        if (json == null) {
-            dbUrl = ConfigManager.getConfiguration("postgres-url");
-            dbUsername = ConfigManager.getConfiguration("postgres-username");
-            dbPassword = ConfigManager.getConfiguration("postgres-password");
-            dbDriverClassName = "org.postgresql.Driver";
-
-        } else {
+        if (json != null) {
+            LOG.debug("Got configuration NEW way");
             dbUrl = json.get("url").asText();
             dbUsername = json.get("username").asText();
             dbPassword = json.get("password").asText();
             dbDriverClassName = json.get("class").asText();
+
+        } else {
+            //support for legacy format for dev deployments etc.
+            LOG.debug("Got configuration OLD way");
+            dbUrl = ConfigManager.getConfiguration("postgres-url");
+            dbUsername = ConfigManager.getConfiguration("postgres-username");
+            dbPassword = ConfigManager.getConfiguration("postgres-password");
+            dbDriverClassName = "org.postgresql.Driver";
         }
 
         //bit of a lazy way to check, but it works
