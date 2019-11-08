@@ -16,7 +16,7 @@
 
     <properties>
       <endeavour-postgres.version>1.09-SNAPSHOT</endeavour-postgres.version>
-      <endeavour-edsclient.version>1.1-SNAPSHOT</endeavour-edsclient.version>
+      <!--<endeavour-edsclient.version>1.1-SNAPSHOT</endeavour-edsclient.version>-->
 
       <apache-compress.version>1.18</apache-compress.version>
       <bouncy-castle.version>1.56</bouncy-castle.version>
@@ -35,11 +35,11 @@
         <artifactId>postgres</artifactId>
         <version>${endeavour-postgres.version}</version>
       </dependency>
-      <dependency>
+      <!--<dependency>
         <groupId>org.endeavourhealth.common</groupId>
         <artifactId>eds-client</artifactId>
         <version>${endeavour-edsclient.version}</version>
-      </dependency>
+      </dependency>-->
       <dependency>
         <groupId>com.jcraft</groupId>
         <artifactId>jsch</artifactId>
