@@ -186,7 +186,12 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                         String patientId = csvRecord.get(PATIENT_ID_COLUMN);
 
                         // this is used on the rare occasion noted below
-                        String organisationRegisteredAt = csvRecord.get(FILTER_ORG_REG_AT_COLUMN);
+                        String organisationRegisteredAt = null;
+
+                        //note this column isn't present in the test pack, so we need to check if the column exists
+                        if (csvRecord.isMapped(FILTER_ORG_REG_AT_COLUMN)) {
+                            organisationRegisteredAt = csvRecord.get(FILTER_ORG_REG_AT_COLUMN);
+                        }
 
                         // save GMS registrations only. Using .contains as some status values contain both,
                         // i.e. GMS,Contraception for example
@@ -228,7 +233,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                             // and the IDOrganisationRegisteredAt is not part of the patient's GMS list, add it in to make
                             // sure SRPatientRegistration is filtered correctly later on.  First check it's not the
                             // same as the actual organisationId
-                            if (!organisationRegisteredAt.equals(orgId)) {
+                            if (organisationRegisteredAt != null
+                                && !organisationRegisteredAt.equals(orgId)) {
 
                                 if (!gmsOrgs.contains(organisationRegisteredAt)) {
 
