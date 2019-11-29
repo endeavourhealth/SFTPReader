@@ -234,7 +234,7 @@ public class SftpReaderTask implements Runnable {
         }
 
         MetricsHelper.recordEvent(configurationId + ".completed-batch");
-        MetricsHelper.recordValue(configurationId + ".completed-batch-size-mb", totalSizeInBytes / (1024*1024));
+        MetricsHelper.recordEvents(configurationId + ".completed-batch-size-mb", (int)(totalSizeInBytes / (1024*1024)));
     }
 
     private void unzipDecryptBatch(Batch batch) throws Exception {

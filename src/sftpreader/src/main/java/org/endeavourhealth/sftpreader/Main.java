@@ -13,6 +13,7 @@ import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
+import org.endeavourhealth.common.utility.MetricsHelper;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -171,6 +172,9 @@ public class Main {
 
             sftpReaderTaskScheduler = new SftpReaderTaskScheduler(configuration);
             sftpReaderTaskScheduler.start();
+
+            //now we're running, start this
+            MetricsHelper.startHeartbeat();
 
         } catch (ConfigManagerException cme) {
             printToErrorConsole("Fatal exception occurred initializing ConfigManager", cme);
