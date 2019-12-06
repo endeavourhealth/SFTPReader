@@ -756,18 +756,18 @@ public class SftpReaderTask implements Runnable {
                     null);
 
             //notify to Slack to say any previous error is now cleared, so we don't have to keep monitoring files
-            if (shouldSendSlackOk(batchSplitId)) {
-                sendSlackOk(batchSplitId, organisationId);
-            }
+            sendSlackOk(batchSplitId, organisationId);
 
             MetricsHelper.recordEvent(configurationId + ".notified-messaging-api-ok");
 
-        } catch (Exception e) {
+        } catch (Exception ex) {
             String inboundMessage = null;
 
-            if (e instanceof EdsSenderHttpErrorResponseException) {
-                EdsSenderResponse edsSenderResponse = ((EdsSenderHttpErrorResponseException)e).getEdsSenderResponse();
+            if (ex instanceof EdsSenderHttpErrorResponseException) {
+                EdsSenderResponse edsSenderResponse = ((EdsSenderHttpErrorResponseException)ex).getEdsSenderResponse();
                 inboundMessage = edsSenderResponse.getStatusLine() + "\r\n" + edsSenderResponse.getResponseBody();
+            } else {
+                inboundMessage = ex.getMessage();
             }
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),
@@ -777,16 +777,14 @@ public class SftpReaderTask implements Runnable {
                     outboundMessage,
                     inboundMessage,
                     false,
-                    getExceptionNameAndMessage(e));
+                    getExceptionNameAndMessage(ex));
 
             //notify to Slack, so we don't have to keep monitoring files
-            if (shouldSendSlackAlert(batchSplitId, inboundMessage)) {
-                sendSlackAlert(batchSplitId, organisationId, inboundMessage);
-            }
+            sendSlackAlert(batchSplitId, organisationId, inboundMessage);
 
             MetricsHelper.recordEvent(configurationId + ".notified-messaging-api-error");
 
-            throw new SftpReaderException("Error notifying EDS for batch split " + batchSplitId, e);
+            throw new SftpReaderException("Error notifying EDS for batch split " + batchSplitId, ex);
         }
     }
 
@@ -809,6 +807,11 @@ public class SftpReaderTask implements Runnable {
 
     private void sendSlackAlert(int batchSplitId, String organisationId, String errorMessage) throws Exception {
 
+        //only send a Slack alert if the error message is the first time this has come up for this batch split
+        if (!shouldSendSlackAlert(batchSplitId, errorMessage)) {
+            return;
+        }
+
         String publisherSoftware = dbConfiguration.getSoftwareContentType(); //e.g. EMISCSV, VISIONCSV
         SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration);
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
@@ -819,37 +822,46 @@ public class SftpReaderTask implements Runnable {
         String message = configurationId + " exception notifying " + publisherSoftware + " batch for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + "\r\n" + errorMessage;
 
         SlackNotifier.postMessage(message);
-
-        //add to the map so we don't send the same message again in a few minutes
-        notificationErrorrs.put(batchSplitId, errorMessage);
     }
 
     private boolean shouldSendSlackAlert(int batchSplitId, String errorMessage) {
 
-        if (!notificationErrorrs.containsKey(new Integer(batchSplitId))) {
-            return true;
+        //bit of a hack, but the error message always changes each time, but we can work out if the meaning
+        //has changed by trimming off part of it
+        String consistentError = null;
+
+        if (errorMessage == null) {
+            consistentError = "";
+        } else {
+            int index = errorMessage.indexOf("opening exchange");
+            if (index > -1) {
+                consistentError = errorMessage.substring(0, index);
+            } else {
+                consistentError = errorMessage;
+            }
         }
 
-        //don't keep sending the alert for the same error message
-        String previousError = notificationErrorrs.get(new Integer(batchSplitId));
-        if (previousError == null && errorMessage == null) {
-            return false;
+        if (notificationErrorrs.containsKey(new Integer(batchSplitId))) {
+
+            //don't keep sending the alert for the same error message
+            String previousError = notificationErrorrs.get(new Integer(batchSplitId));
+            if (previousError.equals(consistentError)) {
+                return false;
+            }
         }
 
-        if (previousError != null
-                && errorMessage != null
-                && previousError.equals(errorMessage)) {
-            return false;
-        }
+        //add to the map so we don't send the same message again in a few minutes
+        notificationErrorrs.put(batchSplitId, consistentError);
 
         return true;
     }
 
-    private boolean shouldSendSlackOk(int batchSplitId) {
-        return notificationErrorrs.containsKey(new Integer(batchSplitId));
-    }
-
     private void sendSlackOk(int batchSplitId, String organisationId) throws Exception {
+
+        //only send a Slack OK if we were previously in error
+        if (!notificationErrorrs.containsKey(new Integer(batchSplitId))) {
+            return;
+        }
 
         SftpOrganisationHelper orgHelper = ImplementationActivator.createSftpOrganisationHelper(dbConfiguration);
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
