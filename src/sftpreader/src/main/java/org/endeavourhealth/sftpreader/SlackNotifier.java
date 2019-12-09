@@ -26,45 +26,7 @@ public class SlackNotifier {
         SftpSlackNotifier slackNotifier = ImplementationActivator.createSftpSlackNotifier(dbConfiguration);
         message += slackNotifier.getCompleteBatchMessageSuffix(batch);
 
-        postMessage(message);
+        SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderReceipts, message);
     }
 
-    public static void postMessage(String slackMessage) {
-        try {
-            LOG.info("Posting message to slack: '" + slackMessage + "'");
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, slackMessage);
-
-        } catch (Exception e) {
-            LOG.warn("Error posting message to slack", e);
-        }
-    }
-
-    public static void postMessage(String slackMessage, String attachmentStr) {
-        try {
-            LOG.info("Posting message to slack: '" + slackMessage + "'");
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, slackMessage, attachmentStr);
-
-        } catch (Exception e) {
-            LOG.warn("Error posting message to slack", e);
-        }
-    }
-
-    public static void postMessage(String slackMessage, Throwable t) {
-
-        //need an Exception for SlackHelper, so wrap in a runtime exception if necessary
-        Exception ex;
-        if (t instanceof Exception) {
-            ex = (Exception)t;
-        } else {
-            ex = new RuntimeException(t);
-        }
-
-        try {
-            LOG.info("Posting message to slack: '" + slackMessage + "'");
-            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, slackMessage, ex);
-
-        } catch (Exception e) {
-            LOG.warn("Error posting message to slack", e);
-        }
-    }
 }

@@ -9,6 +9,7 @@ import org.apache.http.Header;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.MetricsHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
 import org.endeavourhealth.sftpreader.implementations.*;
 import org.endeavourhealth.sftpreader.model.ConfigurationLockI;
@@ -161,7 +162,7 @@ public class SftpReaderTask implements Runnable {
                         || !previousAttempt.hasError()
                         || !previousAttempt.getErrorText().equals(attempt.getErrorText())) {
 
-                    SlackNotifier.postMessage("New exception in SFTP Reader for " + this.configurationId, attempt.getErrorText());
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "New exception in SFTP Reader for " + this.configurationId, attempt.getErrorText());
                 }
 
             } else {
@@ -169,7 +170,7 @@ public class SftpReaderTask implements Runnable {
                 //if no error now but we previously had one, then send a Slack message to say all OK now
                 if (previousAttempt != null
                         && previousAttempt.hasError()) {
-                    SlackNotifier.postMessage("Previous exception in SFTP Reader for " + this.configurationId + " is now OK");
+                    SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "Previous exception in SFTP Reader for " + this.configurationId + " is now OK");
                 }
             }
 
@@ -179,7 +180,7 @@ public class SftpReaderTask implements Runnable {
 
         } catch (Throwable t) {
             LOG.error("Error saving polling attempt", t);
-            SlackNotifier.postMessage("Exception saving polling attempt for " + this.configurationId, t);
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "Exception saving polling attempt for " + this.configurationId, t);
         }
     }
 
@@ -304,7 +305,7 @@ public class SftpReaderTask implements Runnable {
                         //if it's a new unknown file, send a Slack message about it
                         if (newUnknownFile) {
                             String message = "New unknown file for " + dbConfiguration.getSoftwareContentType() + ": " + batchFile.getFilename();
-                            SlackNotifier.postMessage(message);
+                            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, message);
                         }
                     }
                     continue;
@@ -821,7 +822,7 @@ public class SftpReaderTask implements Runnable {
 
         String message = configurationId + " exception notifying " + publisherSoftware + " batch for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + "\r\n" + errorMessage;
 
-        SlackNotifier.postMessage(message);
+        SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, message);
     }
 
     private boolean shouldSendSlackAlert(int batchSplitId, String errorMessage) {
@@ -867,7 +868,7 @@ public class SftpReaderTask implements Runnable {
         String organisationName = orgHelper.findOrganisationNameFromOdsCode(db, organisationId);
         String message = "Previous error notifying Messaging API for Organisation " + organisationId + ", " + organisationName + " and Batch Split " + batchSplitId + " is now cleared";
 
-        SlackNotifier.postMessage(message);
+        SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, message);
 
         //remove from the map, so we know we're in a good state now
         notificationErrorrs.remove(batchSplitId);
