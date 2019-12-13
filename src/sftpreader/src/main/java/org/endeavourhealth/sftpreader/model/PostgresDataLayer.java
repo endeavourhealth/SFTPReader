@@ -7,6 +7,7 @@ import org.endeavourhealth.common.postgres.PgStoredProc;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
 import org.endeavourhealth.common.postgres.logdigest.IDBDigestLogger;
 import org.endeavourhealth.common.utility.StreamExtension;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.SftpFile;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.slf4j.LoggerFactory;
@@ -19,36 +20,11 @@ import java.util.*;
 public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PostgresDataLayer.class);
 
-    private String dbUrl;
-    private String dbUsername;
-    private String dbPassword;
-    private String dbDriverClassName;
-    private DataSource dataSource;
+    public PostgresDataLayer() {}
 
-    public PostgresDataLayer(String dbUrl, String dbUsername, String dbPassword, String dbDriverClassName) throws Exception {
-        this.dbUrl = dbUrl;
-        this.dbUsername = dbUsername;
-        this.dbPassword = dbPassword;
-        this.dbDriverClassName = dbDriverClassName;
+    public DbInstance getInstanceConfiguration(String instanceName, String hostname) throws Exception {
 
-        Class.forName(dbDriverClassName);
-
-        HikariDataSource hikariDataSource = new HikariDataSource();
-        hikariDataSource.setJdbcUrl(dbUrl);
-        hikariDataSource.setUsername(dbUsername);
-        hikariDataSource.setPassword(dbPassword);
-        hikariDataSource.setDriverClassName(dbDriverClassName);
-        hikariDataSource.setMaximumPoolSize(5);
-        hikariDataSource.setMinimumIdle(1);
-        hikariDataSource.setIdleTimeout(60000);
-        hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
-
-        this.dataSource = hikariDataSource;
-    }
-
-    public DbInstance getInstanceConfiguration(String instanceName, String hostname) throws PgStoredProcException {
-
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("configuration.get_instance_configuration")
                 .addParameter("_instance_name", instanceName)
                 .addParameter("_hostname", hostname);
@@ -87,9 +63,9 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 .setSlackConfiguration(dbInstanceSlack);*/
     }
 
-    public DbConfiguration getConfiguration(String configurationId) throws PgStoredProcException {
+    public DbConfiguration getConfiguration(String configurationId) throws Exception {
 
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("configuration.get_configuration")
                 .addParameter("_configuration_id", configurationId);
 
@@ -152,9 +128,9 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 .setInterfaceFileTypes(interfaceFileTypes);
     }
 
-    public void addEmisOrganisationMap(EmisOrganisationMap mapping) throws PgStoredProcException {
+    public void addEmisOrganisationMap(EmisOrganisationMap mapping) throws Exception {
 
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("configuration.add_emis_organisation_map")
                 .addParameter("_guid", mapping.getGuid())
                 .addParameter("_name", mapping.getName())
@@ -163,8 +139,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public EmisOrganisationMap getEmisOrganisationMap(String guid) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public EmisOrganisationMap getEmisOrganisationMap(String guid) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("configuration.get_emis_organisation_map")
                 .addParameter("_guid", guid);
 
@@ -179,8 +155,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         return mappings.get(0);
     }
 
-    public AddFileResult addFile(String configurationId, SftpFile sftpFile) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public AddFileResult addFile(String configurationId, SftpFile sftpFile) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.add_file")
                 .addParameter("_configuration_id", configurationId)
                 .addParameter("_batch_identifier", sftpFile.getBatchIdentifier())
@@ -197,8 +173,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                     .setBatchFileId(resultSet.getInt("batch_file_id")));
     }
 
-    public void setFileAsDownloaded(SftpFile batchFile) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public void setFileAsDownloaded(SftpFile batchFile) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.set_file_as_downloaded")
                 .addParameter("_batch_file_id", batchFile.getBatchFileId());
                 //.addParameter("_local_size_bytes", batchFile.getLocalFileSizeBytes());
@@ -208,7 +184,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
     @Override
     public void setFileAsDeleted(BatchFile batchFile) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "UPDATE log.batch_file SET is_deleted = ? WHERE batch_file_id = ?;";
@@ -228,7 +204,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     }
 
     /*public void setFileAsDecrypted(BatchFile batchFile) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.set_file_as_decrypted")
                 .addParameter("_batch_file_id", batchFile.getBatchFileId())
                 .addParameter("_decrypted_filename", batchFile.getDecryptedFilename())
@@ -237,8 +213,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }*/
 
-    public boolean addUnknownFile(String configurationId, SftpFile batchFile) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public boolean addUnknownFile(String configurationId, SftpFile batchFile) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.add_unknown_file")
                 .addParameter("_configuration_id", configurationId)
                 .addParameter("_filename", batchFile.getFilename())
@@ -250,16 +226,16 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         //pgStoredProc.execute();
     }
 
-    public List<Batch> getIncompleteBatches(String configurationId) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public List<Batch> getIncompleteBatches(String configurationId) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.get_incomplete_batches")
                 .addParameter("_configuration_id", configurationId);
 
         return populateBatches(pgStoredProc);
     }
 
-    public Batch getLastCompleteBatch(String configurationId) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public Batch getLastCompleteBatch(String configurationId) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.get_last_complete_batch")
                 .addParameter("_configuration_id", configurationId);
 
@@ -276,22 +252,22 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
     @Override
     public List<Batch> getAllBatches(String configurationId) throws Exception {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.get_all_batches")
                 .addParameter("_configuration_id", configurationId);
 
         return populateBatches(pgStoredProc);
     }
 
-    public List<BatchSplit> getUnnotifiedBatchSplits(String configurationId) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public List<BatchSplit> getUnnotifiedBatchSplits(String configurationId) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.get_unnotified_batch_splits")
                 .addParameter("_configuration_id", configurationId);
 
         return populateBatchSplits(pgStoredProc, configurationId);
     }
 
-    private static List<BatchSplit> populateBatchSplits(PgStoredProc pgStoredProc, String configurationId) throws PgStoredProcException {
+    private static List<BatchSplit> populateBatchSplits(PgStoredProc pgStoredProc, String configurationId) throws Exception {
         List<BatchSplit> batchSplits = pgStoredProc.executeMultiQuery(resultSet ->
                 new BatchSplit()
                     .setBatchSplitId(resultSet.getInt("batch_split_id"))
@@ -310,8 +286,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         return batchSplits;
     }
 
-    public List<UnknownFile> getUnknownFiles(String configurationId) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public List<UnknownFile> getUnknownFiles(String configurationId) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.get_unknown_files")
                 .addParameter("_configuration_id", configurationId);
 
@@ -354,16 +330,16 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         return batches;
     }
 
-    public void setBatchAsComplete(Batch batch) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public void setBatchAsComplete(Batch batch) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.set_batch_as_complete")
                 .addParameter("_batch_id", batch.getBatchId());
 
         pgStoredProc.execute();
     }
 
-    public void setBatchSequenceNumber(Batch batch, Integer sequenceNumber) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public void setBatchSequenceNumber(Batch batch, Integer sequenceNumber) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.set_batch_sequence_number")
                 .addParameter("_batch_id", batch.getBatchId());
 
@@ -377,8 +353,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void addBatchNotification(int batchId, int batchSplitId, String configurationId, UUID messageId, String outboundMessage, String inboundMessage, boolean wasSuccess, String errorText) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public void addBatchNotification(int batchId, int batchSplitId, String configurationId, UUID messageId, String outboundMessage, String inboundMessage, boolean wasSuccess, String errorText) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.add_batch_notification")
                 .addParameter("_batch_id", batchId)
                 .addParameter("_batch_split_id", batchSplitId)
@@ -392,8 +368,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void addBatchSplit(BatchSplit batchSplit) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public void addBatchSplit(BatchSplit batchSplit) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.add_batch_split")
                 .addParameter("_batch_id", batchSplit.getBatchId())
                 .addParameter("_configuration_id", batchSplit.getConfigurationId())
@@ -403,16 +379,16 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         pgStoredProc.execute();
     }
 
-    public void deleteBatchSplits(Batch batch) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public void deleteBatchSplits(Batch batch) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.delete_batch_splits")
                 .addParameter("_batch_id", batch.getBatchId());
 
         pgStoredProc.execute();
     }
 
-    public void logErrorDigest(String logClass, String logMethod, String logMessage, String exception) throws PgStoredProcException {
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+    public void logErrorDigest(String logClass, String logMethod, String logMessage, String exception) throws Exception {
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.log_error_digest")
                 .addParameter("_log_class", logClass)
                 .addParameter("_log_method", logMethod)
@@ -429,7 +405,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = null;
 
         try {
-            connection = dataSource.getConnection();
+            connection = getConnection();
 
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("select guid, name from configuration.emis_organisation_map where ods_code = '" + odsCode + "';");
@@ -478,7 +454,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = null;
 
         try {
-            connection = dataSource.getConnection();
+            connection = getConnection();
 
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("select * from log.batch_split where batch_id = " + queryBatchId + ";");
@@ -521,9 +497,9 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         }
     }
 
-    public void addTppOrganisationMap(TppOrganisationMap mapping) throws PgStoredProcException {
+    public void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception {
 
-        PgStoredProc pgStoredProc = new PgStoredProc(dataSource)
+        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("configuration.add_tpp_organisation_map")
                 .addParameter("_ods_code", mapping.getOdsCode())
                 .addParameter("_name", mapping.getName());
@@ -536,7 +512,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = null;
 
         try {
-            connection = dataSource.getConnection();
+            connection = getConnection();
 
             Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery("select * from configuration.tpp_organisation_map where ods_code = '" + queryOdsCode + "';");
@@ -571,18 +547,14 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     @Override
     public ConfigurationLockI createConfigurationLock(String lockName) throws Exception {
 
-        //the lock uses a single connection over a long period of time, so we want a connection
-        //that's not managed by the connection pool
-        DataSource nonPooledSource = PgDataSource.get(dbUrl, dbUsername, dbPassword);
-        Connection connection = nonPooledSource.getConnection();
-
+        Connection connection = ConnectionManager.getSftpReaderNonPooledConnection();
         return new PostgresConfigurationLock(lockName, connection);
     }
 
     @Override
     public List<String> getNotifiedMessages(BatchSplit batchSplit) throws Exception {
 
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "select m.outbound "
@@ -625,7 +597,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
     @Override
     public ConfigurationPollingAttempt getLastPollingAttempt(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT configuration_id, attempt_started, attempt_finished, exception_text, files_downloaded,"
@@ -669,7 +641,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
     @Override
     public void savePollingAttempt(ConfigurationPollingAttempt attempt) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO log.configuration_polling_attempt"
@@ -706,7 +678,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
     @Override
     public Set<String> getAdastraOdsCodes(String configurationId, String fileNameOrgCode) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT ods_code"
@@ -740,7 +712,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
     @Override
     public void saveAdastraOdsCode(String configurationId, String fileNameOrgCode, String odsCode) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO configuration.adastra_organisation_map"
@@ -766,7 +738,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
 
     @Override
     public void addTppOrganisationGmsRegistrationMap(TppOrganisationGmsRegistrationMap map) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO configuration.tpp_organisation_gms_registration_map (organisation_id, patient_id, gms_organisation_id) VALUES (?, ?, ?) "
@@ -791,7 +763,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     @Override
     public List<TppOrganisationGmsRegistrationMap> getTppOrganisationGmsRegistrationMapsFromOrgId(String orgId) throws Exception {
 
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * FROM configuration.tpp_organisation_gms_registration_map WHERE organisation_id = ?";
@@ -823,5 +795,11 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             }
             connection.close();
         }
+    }
+
+    private Connection getConnection() throws Exception {
+        Connection conn = ConnectionManager.getSftpReaderConnection();
+        conn.setAutoCommit(true);
+        return conn;
     }
 }

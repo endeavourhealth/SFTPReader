@@ -14,8 +14,8 @@ import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
+import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
-import org.endeavourhealth.sftpreader.management.ManagementService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
@@ -35,7 +35,7 @@ public class Main {
 	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static Configuration configuration;
     private static SftpReaderTaskScheduler sftpReaderTaskScheduler;
-    private static ManagementService managementService;
+    //private static ManagementService managementService;
     //private static SlackNotifier slackNotifier;
 
 	public static void main(String[] args) {
@@ -167,14 +167,12 @@ public class Main {
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown()));
 
-            managementService = new ManagementService(configuration);
-            managementService.start();
-
             sftpReaderTaskScheduler = new SftpReaderTaskScheduler(configuration);
             sftpReaderTaskScheduler.start();
 
             //now we're running, start this
             MetricsHelper.startHeartbeat();
+            ApplicationHeartbeatHelper.start(sftpReaderTaskScheduler);
 
         } catch (ConfigManagerException cme) {
             printToErrorConsole("Fatal exception occurred initializing ConfigManager", cme);
@@ -577,12 +575,6 @@ public class Main {
     private static void shutdown() {
         try {
             LOG.info("Shutting down...");
-
-            /*if (slackNotifier != null)
-                slackNotifier.notifyShutdown();*/
-
-            if (managementService != null)
-                managementService.stop();
 
             if (sftpReaderTaskScheduler != null)
                 sftpReaderTaskScheduler.stop();

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.kstruct.gethostname4j.Hostname;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.config.ConfigManager;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 
 import org.endeavourhealth.sftpreader.model.MySqlDataLayer;
@@ -15,6 +16,7 @@ import org.endeavourhealth.sftpreader.utilities.StringHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -142,38 +144,17 @@ public final class Configuration {
 
     private synchronized void initialiseDataLayer() throws Exception {
 
-        String dbUrl = null;
-        String dbUsername = null;
-        String dbPassword = null;
-        String dbDriverClassName = null;
+        //work out the underlying DB type from a connection
+        Connection connection = ConnectionManager.getSftpReaderConnection();
+        boolean isPostgreSql = ConnectionManager.isPostgreSQL(connection);
+        connection.close();;
 
-        //new settings are stored in a single JSON structure, but old settings are stored in three separate records
-        JsonNode json = ConfigManager.getConfigurationAsJson("database");
-        if (json != null) {
-            LOG.debug("Got configuration NEW way");
-            dbUrl = json.get("url").asText();
-            dbUsername = json.get("username").asText();
-            dbPassword = json.get("password").asText();
-            dbDriverClassName = json.get("class").asText();
+        if (isPostgreSql) {
+            this.cachedDataLayer = new PostgresDataLayer();
 
         } else {
-            //support for legacy format for dev deployments etc.
-            LOG.debug("Got configuration OLD way");
-            dbUrl = ConfigManager.getConfiguration("postgres-url");
-            dbUsername = ConfigManager.getConfiguration("postgres-username");
-            dbPassword = ConfigManager.getConfiguration("postgres-password");
-            dbDriverClassName = "org.postgresql.Driver";
+            this.cachedDataLayer = new MySqlDataLayer();
         }
-
-        //bit of a lazy way to check, but it works
-        if (dbDriverClassName.contains("postgresql")) {
-            this.cachedDataLayer = new PostgresDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
-
-        } else {
-            this.cachedDataLayer = new MySqlDataLayer(dbUrl, dbUsername, dbPassword, dbDriverClassName);
-        }
-
-
 
     }
 }

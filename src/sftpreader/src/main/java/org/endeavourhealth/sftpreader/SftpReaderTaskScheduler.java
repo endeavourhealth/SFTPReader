@@ -1,5 +1,7 @@
 package org.endeavourhealth.sftpreader;
 
+import org.endeavourhealth.core.application.ApplicationHeartbeatCallbackI;
+import org.endeavourhealth.core.database.dal.audit.models.ApplicationHeartbeat;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SftpReaderTaskScheduler {
+public class SftpReaderTaskScheduler implements ApplicationHeartbeatCallbackI {
 
     private static final Logger LOG = LoggerFactory.getLogger(SftpReaderTaskScheduler.class);
     private static final DateTimeFormatter DATE_DISPLAY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MMM-dd HH:mm:ss");
@@ -17,6 +19,7 @@ public class SftpReaderTaskScheduler {
 
     private Configuration configuration;
     private List<SftpReaderTaskInfo> tasks;
+    private boolean isRunning = false;
 
     public SftpReaderTaskScheduler(Configuration configuration) {
         this.configuration = configuration;
@@ -30,6 +33,7 @@ public class SftpReaderTaskScheduler {
 
         while (true) {
 
+            isRunning = true;
             for (SftpReaderTaskInfo task : tasks) {
 
                 if (task.getNextScheduledDate().isBefore(LocalDateTime.now())) {
@@ -45,6 +49,7 @@ public class SftpReaderTaskScheduler {
                     LOG.trace("SftpReaderTask " + task.getTaskName() + " next scheduled for " + task.getNextScheduledDate().format(DATE_DISPLAY_FORMAT));
                 }
             }
+            isRunning = false;
 
             Thread.sleep(THREAD_SLEEP_SECONDS);
         }
@@ -67,5 +72,10 @@ public class SftpReaderTaskScheduler {
         }
 
         return tasks;
+    }
+
+    @Override
+    public void populateIsBusy(ApplicationHeartbeat applicationHeartbeat) {
+        applicationHeartbeat.setBusy(new Boolean(this.isRunning));
     }
 }

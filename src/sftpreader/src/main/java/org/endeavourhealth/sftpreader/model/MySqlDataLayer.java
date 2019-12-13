@@ -3,6 +3,7 @@ package org.endeavourhealth.sftpreader.model;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import org.endeavourhealth.common.postgres.PgStoredProcException;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.SftpFile;
 import org.endeavourhealth.sftpreader.model.db.*;
 
@@ -14,36 +15,11 @@ import java.util.*;
 
 public class MySqlDataLayer implements DataLayerI {
 
-    private String dbUrl;
-    private String dbUsername;
-    private String dbPassword;
-    private String dbDriverClassName;
-    private DataSource dataSource;
-
-    public MySqlDataLayer(String dbUrl, String dbUsername, String dbPassword, String dbDriverClassName) throws Exception {
-        this.dbUrl = dbUrl;
-        this.dbUsername = dbUsername;
-        this.dbPassword = dbPassword;
-        this.dbDriverClassName = dbDriverClassName;
-
-        Class.forName(dbDriverClassName);
-
-        HikariDataSource hikariDataSource = new HikariDataSource();
-        hikariDataSource.setJdbcUrl(dbUrl);
-        hikariDataSource.setUsername(dbUsername);
-        hikariDataSource.setPassword(dbPassword);
-        hikariDataSource.setDriverClassName(dbDriverClassName);
-        hikariDataSource.setMaximumPoolSize(5);
-        hikariDataSource.setMinimumIdle(1);
-        hikariDataSource.setIdleTimeout(60000);
-        hikariDataSource.setPoolName("SFTPReaderDBConnectionPool");
-
-        this.dataSource = hikariDataSource;
-    }
+    public MySqlDataLayer() {}
 
     @Override
     public DbInstance getInstanceConfiguration(String instanceName, String hostname) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psSelectInstance = null;
         PreparedStatement psUpdateInstance = null;
         PreparedStatement psSelectInstanceConfiguration = null;
@@ -86,7 +62,7 @@ public class MySqlDataLayer implements DataLayerI {
             ret.setHttpManagementPort(httpPort);
 
             //select the configuration IDs that this instance checks
-            sql = "SELECT configuration_id FROM instance_configuration\tWHERE instance_name = ?;";
+            sql = "SELECT configuration_id FROM instance_configuration WHERE instance_name = ?;";
 
             psSelectInstanceConfiguration = connection.prepareStatement(sql);
             psSelectInstanceConfiguration.setString(1, instanceName);
@@ -152,7 +128,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public DbConfiguration getConfiguration(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psConfiguration = null;
         PreparedStatement psConfigurationSftp = null;
         PreparedStatement psConfigurationPgp = null;
@@ -297,7 +273,7 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     private int findInterfaceTypeId(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psSelectInterfaceType = null;
         try {
             //first we need to now the interface file type for our config
@@ -321,7 +297,7 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     private Map<Integer, Boolean> findBatches(String configurationId, String batchIdentifier) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psSelectBatch = null;
         try {
 
@@ -357,7 +333,7 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     private AddFileResult findExistingBatchFile(int batchId, String fileType, String fileName) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psSelectBatchFile = null;
         PreparedStatement psDeleteBatchFile = null;
         try {
@@ -412,7 +388,7 @@ public class MySqlDataLayer implements DataLayerI {
 
 
 
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psInsertBatch = null;
         PreparedStatement psLastId = null;
         try {
@@ -447,7 +423,7 @@ public class MySqlDataLayer implements DataLayerI {
     }
 
     private AddFileResult createBatchFile(int batchId, int interfaceTypeId, String fileType, String fileName, long fileSizeBytes, Date fileCreatedDate) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psInsertBatchFile = null;
         PreparedStatement psLastId = null;
         try {
@@ -538,7 +514,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void setFileAsDownloaded(SftpFile batchFile) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "UPDATE batch_file SET is_downloaded = ?, download_date = ? WHERE batch_file_id = ?;";
@@ -560,7 +536,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void setFileAsDeleted(BatchFile batchFile) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "UPDATE batch_file SET is_deleted = ? WHERE batch_file_id = ?;";
@@ -581,7 +557,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public boolean addUnknownFile(String configurationId, SftpFile batchFile) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psSelect = null;
         PreparedStatement psInsert = null;
         try {
@@ -625,7 +601,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public List<Batch> getIncompleteBatches(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT batch_id FROM batch WHERE configuration_id = ? AND is_complete = false;";
@@ -657,7 +633,7 @@ public class MySqlDataLayer implements DataLayerI {
             return new ArrayList<>();
         }
 
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT b.batch_id, b.batch_identifier, b.local_relative_path, b.insert_date, b.sequence_number, b.complete_date,"
@@ -745,7 +721,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public Batch getLastCompleteBatch(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT b.batch_id FROM batch b"
@@ -782,7 +758,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public List<Batch> getAllBatches(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT b.batch_id FROM batch b"
@@ -812,7 +788,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public List<BatchSplit> getUnnotifiedBatchSplits(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT bs.batch_split_id, bs.batch_id, bs.local_relative_path, bs.organisation_id"
@@ -872,7 +848,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public List<UnknownFile> getUnknownFiles(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT unknown_file_id, insert_date, filename, remote_created_date, remote_size_bytes FROM unknown_file WHERE configuration_id = ?;";
@@ -919,7 +895,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void setBatchAsComplete(Batch batch) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "UPDATE batch SET is_complete = ?, complete_date = ? WHERE batch_id = ?;";
@@ -941,7 +917,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void setBatchSequenceNumber(Batch batch, Integer sequenceNumber) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "UPDATE batch SET sequence_number = ? WHERE batch_id = ?;";
@@ -968,7 +944,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void addBatchNotification(int batchId, int batchSplitId, String configurationId, UUID messageId, String outboundMessage, String inboundMessage, boolean wasSuccess, String errorText) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement psInsert = null;
         PreparedStatement psUpdate = null;
         try {
@@ -1014,7 +990,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void addBatchSplit(BatchSplit batchSplit) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO batch_split (batch_id, configuration_id, local_relative_path, organisation_id) VALUES (?, ?, ?, ?);";
@@ -1037,7 +1013,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void deleteBatchSplits(Batch batch) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "DELETE FROM batch_split WHERE batch_id = ?;";
@@ -1058,7 +1034,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public List<BatchSplit> getBatchSplitsForBatch(int queryBatchId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * FROM batch_split WHERE batch_id = ?;";
@@ -1103,7 +1079,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void addEmisOrganisationMap(EmisOrganisationMap mapping) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO emis_organisation_map (guid, name, ods_code) VALUES (?, ?, ?) "
@@ -1128,7 +1104,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public List<EmisOrganisationMap> getEmisOrganisationMapsForOdsCode(String queryOdsCode) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * FROM emis_organisation_map WHERE ods_code = ?";
@@ -1168,7 +1144,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public EmisOrganisationMap getEmisOrganisationMap(String guid) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * FROM emis_organisation_map WHERE guid = ?";
@@ -1197,7 +1173,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO tpp_organisation_map (ods_code, name) VALUES (?, ?) "
@@ -1221,7 +1197,7 @@ public class MySqlDataLayer implements DataLayerI {
     @Override
     public TppOrganisationMap getTppOrgNameFromOdsCode(String queryOdsCode) throws Exception {
 
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * FROM tpp_organisation_map WHERE ods_code = ?";
@@ -1249,7 +1225,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void addTppOrganisationGmsRegistrationMap(TppOrganisationGmsRegistrationMap map) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO tpp_organisation_gms_registration_map (organisation_id, patient_id, gms_organisation_id) VALUES (?, ?, ?) "
@@ -1276,7 +1252,7 @@ public class MySqlDataLayer implements DataLayerI {
     @Override
     public List<TppOrganisationGmsRegistrationMap> getTppOrganisationGmsRegistrationMapsFromOrgId(String orgId) throws Exception {
 
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT * FROM tpp_organisation_gms_registration_map WHERE organisation_id = ?";
@@ -1315,20 +1291,14 @@ public class MySqlDataLayer implements DataLayerI {
 
         //the lock uses a single connection over a long period of time, so we want a connection
         //that's not managed by the connection pool
-        MysqlDataSource nonPooledDataSource = new MysqlDataSource();
-        nonPooledDataSource.setURL(dbUrl);
-        nonPooledDataSource.setUser(dbUsername);
-        nonPooledDataSource.setPassword(dbPassword);
-
-        Connection connection = nonPooledDataSource.getConnection();
-
+        Connection connection = ConnectionManager.getSftpReaderNonPooledConnection();
         return new MySqlConfigurationLock(lockName, connection);
     }
 
     @Override
     public List<String> getNotifiedMessages(BatchSplit batchSplit) throws Exception {
 
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "select m.outbound "
@@ -1370,7 +1340,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public ConfigurationPollingAttempt getLastPollingAttempt(String configurationId) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT configuration_id, attempt_started, attempt_finished, exception_text, files_downloaded,"
@@ -1414,7 +1384,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void savePollingAttempt(ConfigurationPollingAttempt attempt) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO configuration_polling_attempt"
@@ -1451,7 +1421,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public Set<String> getAdastraOdsCodes(String configurationId, String fileNameOrgCode) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "SELECT ods_code"
@@ -1485,7 +1455,7 @@ public class MySqlDataLayer implements DataLayerI {
 
     @Override
     public void saveAdastraOdsCode(String configurationId, String fileNameOrgCode, String odsCode) throws Exception {
-        Connection connection = dataSource.getConnection();
+        Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "INSERT INTO adastra_organisation_map"
@@ -1507,5 +1477,11 @@ public class MySqlDataLayer implements DataLayerI {
             }
             connection.close();
         }
+    }
+    
+    private Connection getConnection() throws Exception {
+        Connection conn = ConnectionManager.getSftpReaderConnection();
+        conn.setAutoCommit(true);
+        return conn;
     }
 }
