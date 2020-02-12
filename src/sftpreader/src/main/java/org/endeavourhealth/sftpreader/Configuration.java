@@ -24,9 +24,6 @@ import java.util.stream.Collectors;
 public final class Configuration {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
 
-
-    public static final String INSTANCE_NAME_JAVA_PROPERTY = "INSTANCE_NAME";
-
     private static Configuration instance = null;
 
     public static Configuration getInstance() throws Exception {
@@ -80,26 +77,13 @@ public final class Configuration {
     }
 
     private void retrieveInstanceName() throws SftpReaderException {
-        try {
-            this.instanceName = System.getProperty(INSTANCE_NAME_JAVA_PROPERTY);
 
-            if (StringUtils.isEmpty(this.instanceName))
-                throw new SftpReaderException("Could not find " + INSTANCE_NAME_JAVA_PROPERTY + " Java -D property");
+        this.instanceName = ConfigManager.getAppSubId();
 
-        } catch (SftpReaderException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new SftpReaderException("Could not read " + INSTANCE_NAME_JAVA_PROPERTY + " Java -D property");
+        if (StringUtils.isEmpty(this.instanceName)) {
+            throw new SftpReaderException("Applicaiton instance name not set (should be passed in as application argument)");
         }
     }
-
-    /*private void addHL7LogAppender() throws SftpReaderException {
-        try {
-            LogDigestAppender.addLogAppender(new PostgresDataLayer(getDatabaseConnection()));
-        } catch (Exception e) {
-            throw new SftpReaderException("Error adding SFTP Reader log appender", e);
-        }
-    }*/
 
     private void loadDbConfiguration() throws Exception {
 

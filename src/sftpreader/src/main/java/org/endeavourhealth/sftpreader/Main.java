@@ -31,7 +31,6 @@ import java.util.*;
 
 public class Main {
 
-	public static final String PROGRAM_DISPLAY_NAME = "SFTP Reader";
 	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static Configuration configuration;
     private static SftpReaderTaskScheduler sftpReaderTaskScheduler;
@@ -40,8 +39,14 @@ public class Main {
 
 	public static void main(String[] args) {
 		try {
-
-            String instanceName = System.getProperty(Configuration.INSTANCE_NAME_JAVA_PROPERTY);
+            String instanceName = null;
+            if (args.length > 0) {
+                instanceName = args[0];
+            } else {
+                //instance name should be passed as application argument for consistency with other apps,
+                //but support getting it via VM property for legacy support
+                instanceName = System.getProperty("INSTANCE_NAME");
+            }
             ConfigManager.initialize("sftpreader", instanceName);
 
             configuration = Configuration.getInstance();
@@ -156,7 +161,7 @@ public class Main {
             }*/
 
             LOG.info("--------------------------------------------------");
-            LOG.info(PROGRAM_DISPLAY_NAME);
+            LOG.info("SFTP Reader " + instanceName);
             LOG.info("--------------------------------------------------");
 
             LOG.info("Instance " + configuration.getInstanceName() + " on host " + configuration.getMachineName());
