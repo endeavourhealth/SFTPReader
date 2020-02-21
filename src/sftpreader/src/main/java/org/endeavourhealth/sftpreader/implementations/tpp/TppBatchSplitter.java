@@ -29,10 +29,13 @@ public class TppBatchSplitter extends SftpBatchSplitter {
     private static final String REMOVED_DATA_COLUMN = "RemovedData";
     private static final String SPLIT_FOLDER = "Split";
     private static final String ORGANISATION_FILE = "SROrganisation.csv";
+    private static final String MANIFEST_FILE = "SRManifest.csv";
+    private static final String MAPPING_FILE = "SRMapping.csv";
+    private static final String MAPPING_GROUP_FILE = "SRMappingGroup.csv";
     private static final String PATIENT_REGISTRATION_FILE = "SRPatientRegistration.csv";
     private static final String REQUIRED_CHARSET = "Cp1252";
 
-    private static Set<String> cachedFilesToIgnore = null;
+    //private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
 
     /**
@@ -82,10 +85,15 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             orgDirs.add(orgDir);
         }
 
-        //before we copy the non-split files into the org directories, we need to make sure
-        //to account for any organisations that ARE extracted but just so happen to have no data in this instance
+        //Before we copy the non-split files into the org directories, we need to make sure
+        //to account for any organisations that ARE normally extracted but just so happen to have no data in this batch
         //by making sure we have an org directory for every org we had in our previous batch
-        if (lastCompleteBatch != null) {
+        //But ONLY do this if the non-split files are deltas. When a new service is added to a TPP feed, we get a
+        //separate zip with the bulk data for that service, separate to the regular deltas, so don't copy
+        //the non-split files from that bulk over for all the other servies happily receiving deltas
+        if (areNonSplitFilesDeltas(sourceTempDir, filesToNotSplit)
+                && lastCompleteBatch != null) {
+
             List<BatchSplit> lastCompleteBatchSplits = db.getBatchSplitsForBatch(lastCompleteBatch.getBatchId());
             for (BatchSplit previousBatchSplit : lastCompleteBatchSplits) {
                 String localRelativePath = previousBatchSplit.getLocalRelativePath();
@@ -112,12 +120,17 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         }
 
         //we need to parse the organisation file, to store the mappings for later
-        saveAllOdsCodes(sourceTempDir, db, instanceConfiguration, dbConfiguration, batch);
+        LOG.trace("Saving TPP organisation map");
+        saveAllOdsCodes(sourceTempDir, db);
 
         LOG.trace("Completed CSV file splitting to " + dstDir);
 
         //copy all our files to permanent storage and create the batch split objects
         //build a list of the folders containing file sets, to return
+        return copyToPermanentStorageAndCreateBatchSplits(orgDirs, batch, sourcePermDir, db);
+    }
+
+    private static List<BatchSplit> copyToPermanentStorageAndCreateBatchSplits(List<File> orgDirs, Batch batch, String sourcePermDir, DataLayerI db) throws Exception {
         List<BatchSplit> ret = new ArrayList<>();
 
         for (File orgDir : orgDirs) {
@@ -137,7 +150,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
             //filter each split file to include organisation and GMS registration data only
             LOG.trace("Filtering " + splitFiles.length + " files in " + orgDir);
-            filterFiles (orgId, splitFiles, db);
+            filterFiles(orgId, splitFiles, db);
 
             //copy everything to storage
             LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
@@ -154,6 +167,98 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         }
 
         return ret;
+    }
+
+    /**
+     * checks the SRManifest file to work out if the non-patient files (i.e. those that don't get split
+     * by organisation) are deltas or bulks. The expectation is that they will either
+     * all be deltas or bulks. If there's a mix it will throw an exception.
+     */
+    private boolean areNonSplitFilesDeltas(String sourceTempDir, List<File> filesToNotSplit) throws Exception {
+
+        //first, read in the SRManifest file and find which files are deltas
+        Map<String, Boolean> hmManifestContents = new HashMap<>();
+
+        String orgFilePath = FilenameUtils.concat(sourceTempDir, MANIFEST_FILE);
+        File f = new File(orgFilePath);
+        if (!f.exists()) {
+            throw new Exception("Failed to find " + MANIFEST_FILE + " in " + sourceTempDir);
+        }
+
+        FileInputStream fis = new FileInputStream(f);
+        BufferedInputStream bis = new BufferedInputStream(fis);
+        InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
+        CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+
+        try {
+            Iterator<CSVRecord> csvIterator = csvParser.iterator();
+
+            while (csvIterator.hasNext()) {
+                CSVRecord csvRecord = csvIterator.next();
+                String fileName = csvRecord.get("FileName");
+                String isDeltaStr = csvRecord.get("IsDelta");
+
+                if (isDeltaStr.equalsIgnoreCase("Y")) {
+                    hmManifestContents.put(fileName, Boolean.TRUE);
+
+                } else if (isDeltaStr.equalsIgnoreCase("N")) {
+                    hmManifestContents.put(fileName, Boolean.FALSE);
+
+                } else {
+                    //something wrong
+                    throw new Exception("Unexpected value [" + isDeltaStr + "] in " + MANIFEST_FILE + " in " + sourceTempDir);
+                }
+
+
+            }
+        } finally {
+            csvParser.close();
+        }
+
+        //now check the files are all deltas
+        Boolean firstIsDelta = null;
+        String firstFileName = null;
+
+        for (File fileToNotSplit: filesToNotSplit) {
+            String fileName = fileToNotSplit.getName();
+
+            //the Manifest file doesn't contain itself or the SRMapping files
+            //and the Mapping file is processed into publisher_common so we don't need to worry about copying
+            //that to every split directory
+            if (fileName.equals(MANIFEST_FILE)
+                    || fileName.equals(MAPPING_FILE)
+                    || fileName.equals(MAPPING_GROUP_FILE)) {
+                continue;
+            }
+
+            //the map doesn't contain file extensions
+            String baseName = FilenameUtils.getBaseName(fileName);
+            Boolean isDelta = hmManifestContents.get(baseName);
+            if (isDelta == null) {
+                throw new Exception("Failed to find file " + fileToNotSplit + " in SRManifest in " + sourceTempDir);
+            }
+
+            if (firstIsDelta == null) {
+                firstIsDelta = isDelta;
+                firstFileName = fileName;
+
+            } else if (firstIsDelta.booleanValue() != isDelta.booleanValue()) {
+                //if this file is different to a previous one, we don't have a way to handle this
+                throw new Exception("Mis-match in delta state for non-patient files in " + sourceTempDir
+                        + " " + fileName + " isDelta = " + isDelta + " but "
+                        + firstFileName + " isDelta = " + firstIsDelta);
+            }
+        }
+
+        //if this is null then there were no non-patient files that were in the manifest,
+        //so just state there are no deltas
+        if (firstIsDelta == null) {
+            LOG.trace("Non-split files in " + sourceTempDir + " aren't in manifest so treat as deltas");
+            return true;
+        }
+
+        LOG.trace("Non-split files in " + sourceTempDir + " are deltas = " + firstIsDelta);
+        return firstIsDelta.booleanValue();
     }
 
     private static void filterFiles (String orgId, File[] splitFiles, DataLayerI db) throws Exception  {
@@ -419,27 +524,29 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
             //NOTE - there are some files that DO contain an organisation ID column but shouldn't be split (e.g. SRCtv3Hierarchy),
             //so we need these explicit lists of how to handle each file, rather than being able to work it out dynamically
-            if (getFilesToIgnore().contains(name)) {
+            /*if (getFilesToIgnore().contains(name)) {
                 //ignore it
 
-            } else if (getFilesToNotSplit().contains(name)) {
+            } else*/
+
+            if (getFilesToNotSplit().contains(name)) {
                 filesToNotSplit.add(tempFile);
 
             } else {
                 //if we're not sure, check for the presence of the column that we split by
                 String firstChars = FileHelper.readFirstCharactersFromSharedStorage(tempFile.getAbsolutePath(), 10000);
                 if (firstChars.contains(SPLIT_COLUMN_ORG)) {
-                    LOG.debug("Will split " + tempFile);
+                    //LOG.debug("Will split " + tempFile);
                     filesToSplit.add(tempFile);
                 } else {
-                    LOG.debug("Will not split " + tempFile);
+                    //LOG.debug("Will not split " + tempFile);
                     filesToNotSplit.add(tempFile);
                 }
             }
         }
     }
 
-    private static Set<String> getFilesToIgnore() {
+    /*private static Set<String> getFilesToIgnore() {
         if (cachedFilesToIgnore == null) {
             Set<String> set = new HashSet<>();
 
@@ -448,7 +555,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             cachedFilesToIgnore = set;
         }
         return cachedFilesToIgnore;
-    }
+    }*/
 
     private static Set<String> getFilesToNotSplit() {
         if (cachedFilesToNotSplit == null) {
@@ -475,6 +582,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             //we don't transform these although we will retain them in the primary practice(s) file list
             set.add("SRQuestionnaire");
             set.add("SRTemplate");
+            set.add("SRManifest");
 
             cachedFilesToNotSplit = set;
         }
@@ -482,7 +590,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
     }
 
 
-    private static void saveAllOdsCodes(String sourceTempDir, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
+    private static void saveAllOdsCodes(String sourceTempDir, DataLayerI db) throws Exception {
 
         String orgFilePath = FilenameUtils.concat(sourceTempDir, ORGANISATION_FILE);
         File f = new File(orgFilePath);
