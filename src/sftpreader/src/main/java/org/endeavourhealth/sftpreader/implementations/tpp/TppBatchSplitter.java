@@ -42,7 +42,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
      * splits the TPP extract files org ID, storing the results in sub-directories using that org ID as the name
      */
     @Override
-    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+    public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db,
+                                       DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
@@ -60,9 +61,9 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         splitTempDir = FilenameUtils.concat(splitTempDir, batchDir);
         splitTempDir = FilenameUtils.concat(splitTempDir, SPLIT_FOLDER);
 
-        LOG.trace("Splitting CSV files to " + splitTempDir);
-
         File dstDir = new File(splitTempDir);
+
+        LOG.trace("Splitting CSV files to " + splitTempDir);
 
         //if the folder does exist, delete all content within it, since if we're re-splitting a file
         //we want to make sure that all previous content is deleted
@@ -76,39 +77,18 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
         //split the files we can
         for (File f : filesToSplit) {
-
             splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT.withHeader(), SPLIT_COLUMN_ORG);
         }
 
+        //the splitting will have created a directory for each organisation in the files, so use
+        //the directory listing to tell us what orgs there are
         List<File> orgDirs = new ArrayList<>();
         for (File orgDir : dstDir.listFiles()) {
             orgDirs.add(orgDir);
         }
 
-        //Before we copy the non-split files into the org directories, we need to make sure
-        //to account for any organisations that ARE normally extracted but just so happen to have no data in this batch
-        //by making sure we have an org directory for every org we had in our previous batch
-        //But ONLY do this if the non-split files are deltas. When a new service is added to a TPP feed, we get a
-        //separate zip with the bulk data for that service, separate to the regular deltas, so don't copy
-        //the non-split files from that bulk over for all the other servies happily receiving deltas
-        if (areNonSplitFilesDeltas(sourceTempDir, filesToNotSplit)
-                && lastCompleteBatch != null) {
-
-            List<BatchSplit> lastCompleteBatchSplits = db.getBatchSplitsForBatch(lastCompleteBatch.getBatchId());
-            for (BatchSplit previousBatchSplit : lastCompleteBatchSplits) {
-                String localRelativePath = previousBatchSplit.getLocalRelativePath();
-                String orgId = new File(localRelativePath).getName();
-
-                String orgDir = FilenameUtils.concat(splitTempDir, orgId);
-                FileHelper.createDirectoryIfNotExists(orgDir);
-
-                File orgDirFile = new File(orgDir);
-
-                if (!orgDirs.contains(orgDirFile)) {
-                    orgDirs.add(orgDirFile);
-                }
-            }
-        }
+        //create any org dirs for services we normally expect in the extract but haven't got today
+        createMissingOrgDirs(orgDirs, filesToNotSplit, sourceTempDir, splitTempDir, dbConfiguration.getConfigurationId(), db);
 
         //copy the non-splitting files into each of the org directories
         for (File f : filesToNotSplit) {
@@ -128,6 +108,73 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         //copy all our files to permanent storage and create the batch split objects
         //build a list of the folders containing file sets, to return
         return copyToPermanentStorageAndCreateBatchSplits(orgDirs, batch, sourcePermDir, db);
+    }
+
+    /**
+     * Before we copy the non-split files into the org directories, we need to make sure
+     * to account for any organisations that ARE normally extracted but just so happen to have no data in this batch
+     * by making sure we have an org directory for every org we had in our previous batch
+     *
+     * But ONLY do this if the non-split files are deltas. When a new service is added to a TPP feed, we get a
+     * separate zip with the bulk data for that service, separate to the regular deltas, so don't copy
+     * the non-split files from that bulk over for all the other services happily receiving deltas
+     */
+    private void createMissingOrgDirs(List<File> orgDirs, List<File> filesToNotSplit, String sourceTempDir,
+                                      String splitTempDir, String configurationId, DataLayerI db) throws Exception {
+
+        //if the non-patient files in this extract are bulks then we shouldn't apply to any
+        //service not actually in this extract
+        if (!areNonSplitFilesDeltas(sourceTempDir, filesToNotSplit)) {
+            return;
+        }
+
+        //because the above check means that we don't always create org directories (and thus batchSplits) for all
+        //orgs in our feed, we can't use the lastCompleteBatch to find the full set of orgs. So we need to get multiple
+        //batches and use them all to find the distinct orgs our extract feed has
+        List<Batch> batches = db.getAllBatches(configurationId); //ideally want just last X but this is fast enough
+        batches.sort((o1, o2) -> {
+            Integer i1 = o1.getSequenceNumber();
+            Integer i2 = o2.getSequenceNumber();
+            return i1.compareTo(i2);
+        });
+
+        int toCheck = 30; //limit to checking the last 30 batches
+
+        for (int i=batches.size()-1; i>=0; i--) {
+            Batch b = batches.get(i);
+
+            List<BatchSplit> batchSplits = db.getBatchSplitsForBatch(b.getBatchId());
+            for (BatchSplit batchSplit : batchSplits) {
+
+                String orgId = batchSplit.getOrganisationId();
+                String orgDir = FilenameUtils.concat(splitTempDir, orgId);
+                File orgDirFile = new File(orgDir);
+
+                if (!orgDirs.contains(orgDirFile)) {
+                    FileHelper.createDirectoryIfNotExists(orgDir);
+                    orgDirs.add(orgDirFile);
+                }
+            }
+
+            toCheck --;
+            if (toCheck <= 0) {
+                break;
+            }
+        }
+
+        /*List<BatchSplit> lastCompleteBatchSplits = db.getBatchSplitsForBatch(lastCompleteBatch.getBatchId());
+        for (BatchSplit previousBatchSplit : lastCompleteBatchSplits) {
+
+            String orgId = previousBatchSplit.getOrganisationId();
+            String orgDir = FilenameUtils.concat(splitTempDir, orgId);
+            File orgDirFile = new File(orgDir);
+
+            if (!orgDirs.contains(orgDirFile)) {
+                FileHelper.createDirectoryIfNotExists(orgDir);
+                orgDirs.add(orgDirFile);
+            }
+        }*/
+
     }
 
     private static List<BatchSplit> copyToPermanentStorageAndCreateBatchSplits(List<File> orgDirs, Batch batch, String sourcePermDir, DataLayerI db) throws Exception {
