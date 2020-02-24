@@ -218,8 +218,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     /**
      * checks the SRManifest file to work out if the non-patient files (i.e. those that don't get split
-     * by organisation) are deltas or bulks. The expectation is that they will either
-     * all be deltas or bulks. If there's a mix it will throw an exception.
+     * by organisation) are deltas or bulks. If there's a mix it will return true.
      */
     private boolean areNonSplitFilesDeltas(String sourceTempDir, List<File> filesToNotSplit) throws Exception {
 
@@ -263,8 +262,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         }
 
         //now check the files are all deltas
-        Boolean firstIsDelta = null;
-        String firstFileName = null;
+        boolean containsDelta = false;
 
         for (File fileToNotSplit: filesToNotSplit) {
             String fileName = fileToNotSplit.getName();
@@ -285,27 +283,13 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 throw new Exception("Failed to find file " + fileToNotSplit + " in SRManifest in " + sourceTempDir);
             }
 
-            if (firstIsDelta == null) {
-                firstIsDelta = isDelta;
-                firstFileName = fileName;
-
-            } else if (firstIsDelta.booleanValue() != isDelta.booleanValue()) {
-                //if this file is different to a previous one, we don't have a way to handle this
-                throw new Exception("Mis-match in delta state for non-patient files in " + sourceTempDir
-                        + " " + fileName + " isDelta = " + isDelta + " but "
-                        + firstFileName + " isDelta = " + firstIsDelta);
+            if (isDelta.booleanValue()) {
+                containsDelta = true;
+                break;
             }
         }
 
-        //if this is null then there were no non-patient files that were in the manifest,
-        //so just state there are no deltas
-        if (firstIsDelta == null) {
-            LOG.trace("Non-split files in " + sourceTempDir + " aren't in manifest so treat as deltas");
-            return true;
-        }
-
-        LOG.trace("Non-split files in " + sourceTempDir + " are deltas = " + firstIsDelta);
-        return firstIsDelta.booleanValue();
+        return containsDelta;
     }
 
     private static void filterFiles (String orgId, File[] splitFiles, DataLayerI db) throws Exception  {
