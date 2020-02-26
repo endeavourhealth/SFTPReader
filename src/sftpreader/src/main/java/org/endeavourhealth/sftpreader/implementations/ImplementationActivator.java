@@ -120,4 +120,12 @@ public class ImplementationActivator {
         Constructor<SftpHouseKeeper> constructor = cls.getConstructor();
         return constructor.newInstance();
     }
+
+    public static SftpBulkDetector createSftpBulkDetector(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "BulkDetector";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpBulkDetector> constructor = cls.getConstructor();
+        return constructor.newInstance();
+    }
 }

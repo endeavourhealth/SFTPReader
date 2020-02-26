@@ -8,6 +8,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 
@@ -28,10 +29,6 @@ import java.util.*;
 public class EmisBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmisBatchSplitter.class);
-
-
-
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
 
     private static final String SPLIT_COLUMN_ORG = "OrganisationGuid";
     private static final String SPLIT_COLUMN_PROCESSING_ID = "ProcessingId";
@@ -87,7 +84,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         //split the org ID-only files (i.e. sharing agreements file) so we have a directory per organisation ID
         for (String fileName: orgIdFiles) {
             LOG.trace("Splitting " + fileName + " into " +  dstDir);
-            List<File> splitFiles = splitFile(fileName, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG);
+            List<File> splitFiles = splitFile(fileName, dstDir, EmisConstants.CSV_FORMAT, SPLIT_COLUMN_ORG);
             appendOrgIdsToSet(splitFiles, orgIdDirs);
         }
 
@@ -105,7 +102,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
         //split the clinical files by org and processing ID, which creates the org ID -> processing ID folder structure
         for (String sourceFilePath: orgAndProcessingIdFiles) {
             LOG.trace("Splitting " + sourceFilePath + " into " + dstDir);
-            List<File> splitFiles = splitFile(sourceFilePath, dstDir, CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
+            List<File> splitFiles = splitFile(sourceFilePath, dstDir, EmisConstants.CSV_FORMAT, SPLIT_COLUMN_ORG, SPLIT_COLUMN_PROCESSING_ID);
 
             String fileName = FilenameUtils.getName(sourceFilePath);
 
@@ -134,7 +131,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                 //if we've not split and re-ordered the file, do it now into this org dir
                 if (reorderedFile == null) {
                     LOG.trace("Splitting processing ID file " + sourceFilePath + " into " + orgDir);
-                    List<File> splitFiles = splitFile(sourceFilePath, orgDir, CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
+                    List<File> splitFiles = splitFile(sourceFilePath, orgDir, EmisConstants.CSV_FORMAT, SPLIT_COLUMN_PROCESSING_ID);
                     LOG.trace("Splitting into " + splitFiles.size() + " files");
 
                     //join them back together
@@ -352,7 +349,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
 
         List<File> separateFiles = orderFilesByProcessingId(splitFiles);
 
-        CsvJoiner joiner = new CsvJoiner(separateFiles, joinedFile, CSV_FORMAT.withHeader());
+        CsvJoiner joiner = new CsvJoiner(separateFiles, joinedFile, EmisConstants.CSV_FORMAT.withHeader());
         boolean joined = joiner.go();
 
         //delete all the separate files
@@ -444,12 +441,12 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                                              Batch batch,
                                              File splitTempDir) throws Exception {
 
-        String sharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
+        String sharingAgreementFile = EmisHelper.findPreSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, EmisConstants.SHARING_AGREEMENTS_FILE_TYPE);
 
         Set<File> ret = new HashSet<>();
 
         InputStreamReader isr = FileHelper.readFileReaderFromSharedStorage(sharingAgreementFile);
-        CSVParser csvParser = new CSVParser(isr, CSV_FORMAT.withHeader());
+        CSVParser csvParser = new CSVParser(isr, EmisConstants.CSV_FORMAT.withHeader());
 
         try {
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
@@ -476,10 +473,10 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
     private static void saveAllOdsCodes(DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch batch) throws Exception {
 
         //go through our Admin_Organisation file, saving all new org details to our PostgreSQL DB
-        String adminFilePath = EmisHelper.findOrganisationFileInTempDir(instanceConfiguration, dbConfiguration, batch);
+        String adminFilePath = EmisHelper.findPreSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, EmisConstants.ADMIN_ORGANISATION_FILE_TYPE);
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(adminFilePath);
-        CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+        CSVParser csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
 
         try {
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
@@ -568,7 +565,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
             String fileStart = FileHelper.readFirstCharactersFromSharedStorage(filePath, 1024);
             StringReader reader = new StringReader(fileStart);
             //InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
-            CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+            CSVParser csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
             try {
                 Map<String, Integer> headers = csvParser.getHeaderMap();
 

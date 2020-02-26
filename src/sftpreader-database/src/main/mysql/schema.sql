@@ -213,6 +213,7 @@ CREATE TABLE batch_split
   organisation_id varchar(100) NOT NULL,
   have_notified boolean NOT NULL DEFAULT false,
   notification_date datetime null,
+  is_bulk boolean null COMMENT 'whether this extract is known to contain a bulk extract',
   CONSTRAINT batchsplit_batchsplitid_pk PRIMARY KEY (batch_split_id),
   CONSTRAINT batchsplit_configurationid_batchid_fk FOREIGN KEY (configuration_id, batch_id)
       REFERENCES batch (configuration_id, batch_id) MATCH SIMPLE

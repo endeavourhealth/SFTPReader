@@ -5,6 +5,8 @@ import org.apache.commons.csv.*;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.ManifestRecord;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
@@ -21,19 +23,12 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TppBatchSplitter.class);
 
-    private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.ALL);
     private static final String SPLIT_COLUMN_ORG = "IDOrganisationVisibleTo";
     private static final String FILTER_ORG_REG_AT_COLUMN = "IDOrganisationRegisteredAt";
     private static final String ORG_COLUMN = "IDOrganisation";
     private static final String PATIENT_ID_COLUMN = "IDPatient";
     private static final String REMOVED_DATA_COLUMN = "RemovedData";
     private static final String SPLIT_FOLDER = "Split";
-    private static final String ORGANISATION_FILE = "SROrganisation.csv";
-    private static final String MANIFEST_FILE = "SRManifest.csv";
-    private static final String MAPPING_FILE = "SRMapping.csv";
-    private static final String MAPPING_GROUP_FILE = "SRMappingGroup.csv";
-    private static final String PATIENT_REGISTRATION_FILE = "SRPatientRegistration.csv";
-    private static final String REQUIRED_CHARSET = "Cp1252";
 
     //private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
@@ -77,7 +72,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
         //split the files we can
         for (File f : filesToSplit) {
-            splitFile(f.getAbsolutePath(), dstDir, CSV_FORMAT.withHeader(), SPLIT_COLUMN_ORG);
+            splitFile(f.getAbsolutePath(), dstDir, TppConstants.CSV_FORMAT.withHeader(), SPLIT_COLUMN_ORG);
         }
 
         //the splitting will have created a directory for each organisation in the files, so use
@@ -225,40 +220,15 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         //first, read in the SRManifest file and find which files are deltas
         Map<String, Boolean> hmManifestContents = new HashMap<>();
 
-        String orgFilePath = FilenameUtils.concat(sourceTempDir, MANIFEST_FILE);
+        String orgFilePath = FilenameUtils.concat(sourceTempDir, TppConstants.MANIFEST_FILE);
         File f = new File(orgFilePath);
         if (!f.exists()) {
-            throw new Exception("Failed to find " + MANIFEST_FILE + " in " + sourceTempDir);
+            throw new Exception("Failed to find " + TppConstants.MANIFEST_FILE + " in " + sourceTempDir);
         }
 
-        FileInputStream fis = new FileInputStream(f);
-        BufferedInputStream bis = new BufferedInputStream(fis);
-        InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
-        CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
-
-        try {
-            Iterator<CSVRecord> csvIterator = csvParser.iterator();
-
-            while (csvIterator.hasNext()) {
-                CSVRecord csvRecord = csvIterator.next();
-                String fileName = csvRecord.get("FileName");
-                String isDeltaStr = csvRecord.get("IsDelta");
-
-                if (isDeltaStr.equalsIgnoreCase("Y")) {
-                    hmManifestContents.put(fileName, Boolean.TRUE);
-
-                } else if (isDeltaStr.equalsIgnoreCase("N")) {
-                    hmManifestContents.put(fileName, Boolean.FALSE);
-
-                } else {
-                    //something wrong
-                    throw new Exception("Unexpected value [" + isDeltaStr + "] in " + MANIFEST_FILE + " in " + sourceTempDir);
-                }
-
-
-            }
-        } finally {
-            csvParser.close();
+        List<ManifestRecord> records = ManifestRecord.readManifestFile(f);
+        for (ManifestRecord record: records) {
+            hmManifestContents.put(record.getFileNameWithExtension(), new Boolean(record.isDelta()));
         }
 
         //now check the files are all deltas
@@ -270,15 +240,14 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             //the Manifest file doesn't contain itself or the SRMapping files
             //and the Mapping file is processed into publisher_common so we don't need to worry about copying
             //that to every split directory
-            if (fileName.equals(MANIFEST_FILE)
-                    || fileName.equals(MAPPING_FILE)
-                    || fileName.equals(MAPPING_GROUP_FILE)) {
+            if (fileName.equals(TppConstants.MANIFEST_FILE)
+                    || fileName.equals(TppConstants.MAPPING_FILE)
+                    || fileName.equals(TppConstants.MAPPING_GROUP_FILE)) {
                 continue;
             }
 
             //the map doesn't contain file extensions
-            String baseName = FilenameUtils.getBaseName(fileName);
-            Boolean isDelta = hmManifestContents.get(baseName);
+            Boolean isDelta = hmManifestContents.get(fileName);
             if (isDelta == null) {
                 throw new Exception("Failed to find file " + fileToNotSplit + " in SRManifest in " + sourceTempDir);
             }
@@ -296,13 +265,13 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
         //save/update the split SRPatientRegistrationFile GMS orgs to the db
         for (File splitFile : splitFiles) {
-            if (splitFile.getName().equalsIgnoreCase(PATIENT_REGISTRATION_FILE)) {
+            if (splitFile.getName().equalsIgnoreCase(TppConstants.PATIENT_REGISTRATION_FILE)) {
 
-                LOG.debug("Found "+PATIENT_REGISTRATION_FILE+" file to save into db");
+                LOG.debug("Found " + TppConstants.PATIENT_REGISTRATION_FILE+" file to save into db");
                 FileInputStream fis = new FileInputStream(splitFile);
                 BufferedInputStream bis = new BufferedInputStream(fis);
-                InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
-                CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+                InputStreamReader reader = new InputStreamReader(bis, Charset.forName(TppConstants.REQUIRED_CHARSET));
+                CSVParser csvParser = new CSVParser(reader, TppConstants.CSV_FORMAT.withHeader());
 
                 int count = 0;
 
@@ -429,8 +398,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             //create the csv parser input
             FileInputStream fis = new FileInputStream(splitFile);
             BufferedInputStream bis = new BufferedInputStream(fis);
-            InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
-            CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+            InputStreamReader reader = new InputStreamReader(bis, Charset.forName(TppConstants.REQUIRED_CHARSET));
+            CSVParser csvParser = new CSVParser(reader, TppConstants.CSV_FORMAT.withHeader());
 
             CSVPrinter csvPrinter = null;
 
@@ -463,11 +432,11 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 }
 
                 //create a new temp file output from the splitFile to write the filtered records
-                File splitFileTmp = new File (splitFile+".tmp");
+                File splitFileTmp = new File (splitFile + ".tmp");
                 FileOutputStream fos = new FileOutputStream(splitFileTmp);
-                OutputStreamWriter osw = new OutputStreamWriter(fos, Charset.forName(REQUIRED_CHARSET));
+                OutputStreamWriter osw = new OutputStreamWriter(fos, Charset.forName(TppConstants.REQUIRED_CHARSET));
                 BufferedWriter bufferedWriter = new BufferedWriter(osw);
-                csvPrinter = new CSVPrinter(bufferedWriter, CSV_FORMAT.withHeader(columnHeaders));
+                csvPrinter = new CSVPrinter(bufferedWriter, TppConstants.CSV_FORMAT.withHeader(columnHeaders));
 
                 //create a new list of records based on the filtering process
                 LOG.debug("Filtering file: "+splitFile);
@@ -623,18 +592,18 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     private static void saveAllOdsCodes(String sourceTempDir, DataLayerI db) throws Exception {
 
-        String orgFilePath = FilenameUtils.concat(sourceTempDir, ORGANISATION_FILE);
+        String orgFilePath = FilenameUtils.concat(sourceTempDir, TppConstants.ORGANISATION_FILE);
         File f = new File(orgFilePath);
 
         //added to get around some issues when testing - this won't happen on Live
         if (!f.exists()) {
-            LOG.warn(ORGANISATION_FILE + " not found in " + sourceTempDir);
+            LOG.warn(TppConstants.ORGANISATION_FILE + " not found in " + sourceTempDir);
             return;
         }
         FileInputStream fis = new FileInputStream(f);
         BufferedInputStream bis = new BufferedInputStream(fis);
-        InputStreamReader reader = new InputStreamReader(bis, Charset.forName(REQUIRED_CHARSET));
-        CSVParser csvParser = new CSVParser(reader, CSV_FORMAT.withHeader());
+        InputStreamReader reader = new InputStreamReader(bis, Charset.forName(TppConstants.REQUIRED_CHARSET));
+        CSVParser csvParser = new CSVParser(reader, TppConstants.CSV_FORMAT.withHeader());
 
         try {
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
@@ -659,7 +628,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
 
     private static List<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColmumns) throws Exception {
-        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, false, csvFormat, Charset.forName(REQUIRED_CHARSET), splitColmumns);
+        CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, false, csvFormat, Charset.forName(TppConstants.REQUIRED_CHARSET), splitColmumns);
         return csvSplitter.go();
     }
 }

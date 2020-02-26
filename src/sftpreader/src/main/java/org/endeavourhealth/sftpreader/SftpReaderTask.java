@@ -594,11 +594,16 @@ public class SftpReaderTask implements Runnable {
         db.deleteBatchSplits(batch);
 
         SftpBatchSplitter sftpBatchSplitter = ImplementationActivator.createSftpBatchSplitter(dbConfiguration);
+        SftpBulkDetector sftpBulkDetector = ImplementationActivator.createSftpBulkDetector(dbConfiguration);
 
         List<BatchSplit> splitBatches = sftpBatchSplitter.splitBatch(batch, lastCompleteBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
 
         for (BatchSplit splitBatch: splitBatches) {
             splitBatch.setConfigurationId(dbConfiguration.getConfigurationId());
+
+            boolean isBulk = sftpBulkDetector.isBulkExtract(batch, splitBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
+            splitBatch.setBulk(isBulk);
+
             db.addBatchSplit(splitBatch);
         }
     }
@@ -743,8 +748,9 @@ public class SftpReaderTask implements Runnable {
 
                 String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
                 boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
+                boolean isBulk = unnotifiedBatchSplit.isBulk();
 
-                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage);
+                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage, isBulk);
             }
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),

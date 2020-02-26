@@ -2,6 +2,7 @@ package org.endeavourhealth.sftpreader.implementations.emis;
 
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpPostSplitBatchValidator;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.SharingAgreementRecord;
@@ -43,8 +44,8 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
 
         try {
             //the new sharing agreement file will exist in temp dir, so read from there
-            String newSharingAgreementFile = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, batch);
-            Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(newSharingAgreementFile);
+            String newSharingAgreementFile = EmisHelper.findPreSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, EmisConstants.SHARING_AGREEMENTS_FILE_TYPE);
+            Map<String, SharingAgreementRecord> hmNew = SharingAgreementRecord.readSharingAgreementsFile(newSharingAgreementFile);
 
             //find the new sharing state, handling the fact we may have multiple records for the org ODS code in our mapping table
             EmisOrganisationMap org = null;
@@ -78,8 +79,8 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
 
             //the previous sharing agreement file will no longer exist in temp, so we need to read it from permanent storage
             try {
-                String lastSharingAgreementFile = EmisHelper.findSharingAgreementsFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode);
-                Map<String, SharingAgreementRecord> hmOld = EmisHelper.readSharingAgreementsFile(lastSharingAgreementFile);
+                String lastSharingAgreementFile = EmisHelper.findPostSplitFileInPermanentDir(db, instanceConfiguration, dbConfiguration, lastCompleteBatch, odsCode, EmisConstants.SHARING_AGREEMENTS_FILE_TYPE);
+                Map<String, SharingAgreementRecord> hmOld = SharingAgreementRecord.readSharingAgreementsFile(lastSharingAgreementFile);
                 SharingAgreementRecord oldSharingState = hmOld.get(orgGuid);
                 if (!oldSharingState.isDisabled()) {
                     //if not previously disabled, return out

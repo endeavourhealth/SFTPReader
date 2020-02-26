@@ -791,7 +791,7 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "SELECT bs.batch_split_id, bs.batch_id, bs.local_relative_path, bs.organisation_id"
+            String sql = "SELECT bs.batch_split_id, bs.batch_id, bs.local_relative_path, bs.organisation_id, bs.is_bulk"
                     + " FROM batch_split bs"
                     + " INNER JOIN batch b"
                     + " ON b.batch_id = bs.batch_id"
@@ -811,11 +811,13 @@ public class MySqlDataLayer implements DataLayerI {
                 int col = 1;
 
                 BatchSplit batchSplit = new BatchSplit();
+                batchSplit.setConfigurationId(configurationId);
+
                 batchSplit.setBatchSplitId(rs.getInt(col++));
                 batchSplit.setBatchId(rs.getInt(col++));
                 batchSplit.setLocalRelativePath(rs.getString(col++));
                 batchSplit.setOrganisationId(rs.getString(col++));
-                batchSplit.setConfigurationId(configurationId);
+                batchSplit.setBulk(rs.getBoolean(col++));
 
                 ret.add(batchSplit);
                 batchIds.add(new Integer(batchSplit.getBatchId()));
@@ -993,13 +995,16 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "INSERT INTO batch_split (batch_id, configuration_id, local_relative_path, organisation_id) VALUES (?, ?, ?, ?);";
+            String sql = "INSERT INTO batch_split (batch_id, configuration_id, local_relative_path, organisation_id, is_bulk) VALUES (?, ?, ?, ?, ?)";
 
             ps = connection.prepareStatement(sql);
-            ps.setInt(1, batchSplit.getBatchId());
-            ps.setString(2, batchSplit.getConfigurationId());
-            ps.setString(3, batchSplit.getLocalRelativePath());
-            ps.setString(4, batchSplit.getOrganisationId());
+
+            int col = 1;
+            ps.setInt(col++, batchSplit.getBatchId());
+            ps.setString(col++, batchSplit.getConfigurationId());
+            ps.setString(col++, batchSplit.getLocalRelativePath());
+            ps.setString(col++, batchSplit.getOrganisationId());
+            ps.setBoolean(col++, batchSplit.isBulk());
 
             ps.executeUpdate();
 
@@ -1037,7 +1042,9 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "SELECT * FROM batch_split WHERE batch_id = ?;";
+            String sql = "SELECT batch_split_id, batch_id, configuration_id, local_relative_path, organisation_id, have_notified, notification_date, is_bulk"
+                        + " FROM batch_split"
+                        + " WHERE batch_id = ?";
             ps = connection.prepareStatement(sql);
             ps.setInt(1, queryBatchId);
 
@@ -1054,6 +1061,7 @@ public class MySqlDataLayer implements DataLayerI {
                 String organisationId = rs.getString(col++);
                 boolean haveNotified = rs.getBoolean(col++);
                 Date notificationDate = rs.getDate(col++);
+                boolean isBulk = rs.getBoolean(col++);
 
                 BatchSplit batchSplit = new BatchSplit();
                 batchSplit.setBatchSplitId(batchSplitId);
@@ -1063,6 +1071,7 @@ public class MySqlDataLayer implements DataLayerI {
                 batchSplit.setOrganisationId(organisationId);
                 batchSplit.setHaveNotified(haveNotified);
                 batchSplit.setNotificationDate(notificationDate);
+                batchSplit.setBulk(isBulk);
 
                 ret.add(batchSplit);
             }

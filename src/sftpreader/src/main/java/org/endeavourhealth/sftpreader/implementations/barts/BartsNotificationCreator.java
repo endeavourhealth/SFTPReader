@@ -124,7 +124,7 @@ public class BartsNotificationCreator extends SftpNotificationCreator {
 
         files = new ArrayList<>();
         for (FileWrapper fileWrapper: fileWrappers) {
-            files.add(fileWrapper.getFileName());
+            files.add(fileWrapper.getFileNameWithoutExtension());
         }
 
         return super.combineFilesForNotificationMessage(files);
@@ -156,7 +156,7 @@ public class BartsNotificationCreator extends SftpNotificationCreator {
 
 
 
-        public String getFileName() {
+        public String getFileNameWithoutExtension() {
             return fileName;
         }
 

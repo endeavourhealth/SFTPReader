@@ -4,6 +4,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.SharingAgreementRecord;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -90,10 +91,10 @@ public class EmisBatchValidator extends SftpBatchValidator {
 
         Map<String, SharingAgreementRecord> hmOld = readOldSharingAgreementFiles(instanceConfiguration, dbConfiguration, lastCompleteBatch);
 
-        String sharingAgreementFileNew = EmisHelper.findSharingAgreementsFileInTempDir(instanceConfiguration, dbConfiguration, incompleteBatch);
+        String sharingAgreementFileNew = EmisHelper.findPreSplitFileInTempDir(instanceConfiguration, dbConfiguration, incompleteBatch, EmisConstants.SHARING_AGREEMENTS_FILE_TYPE);
         //LOG.debug("Reading NEW sharing agreement file " + sharingAgreementFileNew);
         
-        Map<String, SharingAgreementRecord> hmNew = EmisHelper.readSharingAgreementsFile(sharingAgreementFileNew);
+        Map<String, SharingAgreementRecord> hmNew = SharingAgreementRecord.readSharingAgreementsFile(sharingAgreementFileNew);
 
         //check for changes in orgs that are in the file now, compared to before
         for (String orgGuid: hmNew.keySet()) {
@@ -140,7 +141,7 @@ public class EmisBatchValidator extends SftpBatchValidator {
         //all the split files will have the same file name, which we can find from the batch file list
         String fileName = null;
         for (BatchFile batchFile: lastCompleteBatch.getBatchFiles()) {
-            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(EmisHelper.EMIS_AGREEMENTS_FILE_ID)) {
+            if (batchFile.getFileTypeIdentifier().equalsIgnoreCase(EmisConstants.SHARING_AGREEMENTS_FILE_TYPE)) {
                 fileName = EmisFilenameParser.getDecryptedFileName(batchFile, dbConfiguration);
             }
         }
@@ -168,7 +169,7 @@ public class EmisBatchValidator extends SftpBatchValidator {
             if (splitFileName.equalsIgnoreCase(fileName)) {
                 //LOG.debug("Reading OLD sharing agreement file " + filePath);
 
-                Map<String, SharingAgreementRecord> splitFileContents = EmisHelper.readSharingAgreementsFile(filePath);
+                Map<String, SharingAgreementRecord> splitFileContents = SharingAgreementRecord.readSharingAgreementsFile(filePath);
                 for (String orgGuid: splitFileContents.keySet()) {
                     if (ret.containsKey(orgGuid)) {
                         throw new SftpValidationException("Found org GUID " + orgGuid + " in multiple split sub-dirs");

@@ -84,7 +84,7 @@ public class EmisFixDisabledService {
         LOG.debug("Checking if patient deletes were received in " + filePath);
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
-        CSVParser csvParser = new CSVParser(reader, EmisBatchSplitter.CSV_FORMAT.withHeader());
+        CSVParser csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
         Iterator<CSVRecord> iterator = csvParser.iterator();
 
         int countRecords = 0;
@@ -256,7 +256,7 @@ public class EmisFixDisabledService {
             String filePath = createStorageFilePath(batchSplit, batchFile);
 
             InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath);
-            CSVParser csvParser = new CSVParser(reader, EmisBatchSplitter.CSV_FORMAT.withHeader());
+            CSVParser csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
             Iterator<CSVRecord> iterator = csvParser.iterator();
 
             while (iterator.hasNext()) {
@@ -293,7 +293,7 @@ public class EmisFixDisabledService {
         BatchFile batchFileRebulked = findBatchFile(batchRebulked, fileType);
         String rebulkFilePath = createStorageFilePath(batchSplitRebulked, batchFileRebulked);
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(rebulkFilePath);
-        CSVParser csvParser = new CSVParser(reader, EmisBatchSplitter.CSV_FORMAT.withHeader());
+        CSVParser csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
 
         try {
             //we'll need the headers for later, so get them now, while we've got the file open
@@ -336,7 +336,7 @@ public class EmisFixDisabledService {
         //open the CSV printer to the file
         FileWriter fileWriter = new FileWriter(replacementDisabledFile);
         BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-        CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, EmisBatchSplitter.CSV_FORMAT.withHeader(headers));
+        CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, EmisConstants.CSV_FORMAT.withHeader(headers));
         csvPrinter.flush();
 
         Set<StringMemorySaver> pastIdsProcessed = new HashSet<>();
@@ -355,7 +355,7 @@ public class EmisFixDisabledService {
 
             LOG.info("    Reading " + originalFile);
             InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(originalFile);
-            CSVParser csvParser = new CSVParser(reader, EmisBatchSplitter.CSV_FORMAT.withHeader());
+            CSVParser csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
             try {
                 Iterator<CSVRecord> iterator = csvParser.iterator();
 
@@ -457,7 +457,7 @@ public class EmisFixDisabledService {
 
             FileWriter fileWriter = new FileWriter(emptyTempFile);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, EmisBatchSplitter.CSV_FORMAT.withHeader(headers));
+            CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, EmisConstants.CSV_FORMAT.withHeader(headers));
             csvPrinter.flush();
             csvPrinter.close();
 
@@ -588,7 +588,7 @@ public class EmisFixDisabledService {
     }
 
     private BatchFile findSharingAgreementFile(Batch batch) throws Exception {
-        return findBatchFile(batch, EmisHelper.EMIS_AGREEMENTS_FILE_ID);
+        return findBatchFile(batch, EmisConstants.SHARING_AGREEMENTS_FILE_TYPE);
     }
 
     private BatchFile findBatchFile(Batch batch, String fileTypeToFind) throws Exception {
@@ -666,7 +666,7 @@ public class EmisFixDisabledService {
             throw new Exception("Failed to read " + file, ex);
         }
 
-        CSVFormat format = EmisBatchSplitter.CSV_FORMAT.withHeader();
+        CSVFormat format = EmisConstants.CSV_FORMAT.withHeader();
         CSVParser csvParser = new CSVParser(reader, format);
         try {
             Iterator<CSVRecord> iterator = csvParser.iterator();

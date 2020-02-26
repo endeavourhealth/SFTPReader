@@ -11,6 +11,7 @@ public class BatchSplit {
     private String organisationId;
     private boolean isHaveNotified;
     private Date notificationDate;
+    private boolean isBulk;
 
     private Batch batch;
 
@@ -84,5 +85,13 @@ public class BatchSplit {
     public BatchSplit setBatch(Batch batch) {
         this.batch = batch;
         return this;
+    }
+
+    public boolean isBulk() {
+        return isBulk;
+    }
+
+    public void setBulk(boolean bulk) {
+        isBulk = bulk;
     }
 }

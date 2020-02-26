@@ -374,7 +374,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 .addParameter("_batch_id", batchSplit.getBatchId())
                 .addParameter("_configuration_id", batchSplit.getConfigurationId())
                 .addParameter("_local_relative_path", batchSplit.getLocalRelativePath())
-                .addParameter("_organisation_id", batchSplit.getOrganisationId());
+                .addParameter("_organisation_id", batchSplit.getOrganisationId())
+                .addParameter("_is_bulk", batchSplit.isBulk());
 
         pgStoredProc.execute();
     }
@@ -457,7 +458,10 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             connection = getConnection();
 
             Statement statement = connection.createStatement();
-            ResultSet rs = statement.executeQuery("select * from log.batch_split where batch_id = " + queryBatchId + ";");
+            String sql = "SELECT batch_split_id, batch_id, configuration_id, local_relative_path, organisation_id, have_notified, notification_date, is_bulk"
+                    + " FROM log.batch_split"
+                    + " WHERE batch_id = " + queryBatchId;
+            ResultSet rs = statement.executeQuery(sql);
 
             List<BatchSplit> ret = new ArrayList<>();
 
@@ -470,6 +474,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 String organisationId = rs.getString(col++);
                 boolean haveNotified = rs.getBoolean(col++);
                 Date notificationDate = rs.getDate(col++);
+                boolean isBulk = rs.getBoolean(col++);
 
                 BatchSplit batchSplit = new BatchSplit();
                 batchSplit.setBatchSplitId(batchSplitId);
@@ -479,6 +484,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 batchSplit.setOrganisationId(organisationId);
                 batchSplit.setHaveNotified(haveNotified);
                 batchSplit.setNotificationDate(notificationDate);
+                batchSplit.setBulk(isBulk);
 
                 ret.add(batchSplit);
             }

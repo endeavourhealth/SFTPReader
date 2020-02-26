@@ -53,7 +53,7 @@ public class EdsSender {
         return edsEnvelope;
     }
 
-    public static EdsSenderResponse notifyEds(String edsUrl, boolean useKeycloak, String outboundMessage) throws EdsSenderHttpErrorResponseException, IOException
+    public static EdsSenderResponse notifyEds(String edsUrl, boolean useKeycloak, String outboundMessage, boolean isBulk) throws EdsSenderHttpErrorResponseException, IOException
     {
         RequestConfig requestConfig = RequestConfig
                 .custom()
@@ -65,8 +65,13 @@ public class EdsSender {
         try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
             HttpPost httpPost = new HttpPost(edsUrl);
 
-            if (useKeycloak)
+            if (useKeycloak) {
                 httpPost.addHeader(KeycloakClient.instance().getAuthorizationHeader());
+            }
+
+            if (isBulk) {
+                httpPost.addHeader("IsBulk", "true");
+            }
 
             httpPost.addHeader("Content-Type", "text/xml");
             httpPost.setEntity(new ByteArrayEntity(outboundMessage.getBytes()));
