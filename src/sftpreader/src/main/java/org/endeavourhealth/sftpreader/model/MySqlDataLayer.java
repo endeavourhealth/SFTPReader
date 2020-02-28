@@ -767,11 +767,15 @@ public class MySqlDataLayer implements DataLayerI {
             ps = connection.prepareStatement(sql);
             ps.setString(1, configurationId);
 
+            List<Integer> batchIds = new ArrayList<>();
+
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
+            while (rs.next()) {
                 int batchId = rs.getInt(1);
-                List<Integer> batchIds = new ArrayList<>();
                 batchIds.add(new Integer(batchId));
+            }
+
+            if (!batchIds.isEmpty()) {
                 return selectBatches(batchIds);
 
             } else {

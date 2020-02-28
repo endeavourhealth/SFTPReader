@@ -15,7 +15,12 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
 import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
+import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
+import org.endeavourhealth.sftpreader.implementations.tpp.TppBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
@@ -26,6 +31,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.*;
 
 
@@ -104,14 +113,14 @@ public class Main {
                     System.exit(0);
                 }*/
 
-                if (args[0].equalsIgnoreCase("TestDisabledFix")) {
+                /*if (args[0].equalsIgnoreCase("TestDisabledFix")) {
                     String odsCode = args[1];
                     String configurationId = args[2];
                     testDisabledFix(odsCode, configurationId);
                     System.exit(0);
-                }
+                }*/
 
-                if (args[0].equalsIgnoreCase("TestS3Tags")) {
+                /*if (args[0].equalsIgnoreCase("TestS3Tags")) {
                     String s3Path = args[1];
                     String tag = args[2];
                     String tagValue = null;
@@ -127,7 +136,7 @@ public class Main {
                     String configurationId = args[1];
                     fixEmisS3Tags(configurationId);
                     System.exit(0);
-                }
+                }*/
 
                 if (args[0].equalsIgnoreCase("CheckS3")) {
                     String path = args[1];
@@ -143,9 +152,15 @@ public class Main {
                     System.exit(0);
                 }
 
-                if (args[0].equalsIgnoreCase("TestSplitting")) {
+                /*if (args[0].equalsIgnoreCase("TestSplitting")) {
                     String path = args[1];
                     testSplitting(path);
+                    System.exit(0);
+                }*/
+
+                if (args[1].equalsIgnoreCase("CheckForBulks")) {
+                    String configurationId = args[2];
+                    checkForBulks(configurationId);
                     System.exit(0);
                 }
             }
@@ -189,6 +204,117 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void checkForBulks(String configurationId) throws Exception {
+        LOG.info("Checking for Bulks in " + configurationId);
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+
+        try {
+            conn = ConnectionManager.getSftpReaderConnection();
+
+            String sql = null;
+            if (ConnectionManager.isPostgreSQL(conn)) {
+                sql = "UPDATE log.batch_split SET is_bulk = ? WHERE batch_split_id = ?";
+            } else {
+                sql = "UPDATE batch_split SET is_bulk = ? WHERE batch_split_id = ?";
+            }
+            ps = conn.prepareStatement(sql);
+
+
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+            if (dbConfiguration == null) {
+                throw new Exception("Failed to find configuration " + configurationId);
+            }
+
+            DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+            SftpBulkDetector bulkDetector = ImplementationActivator.createSftpBulkDetector(dbConfiguration);
+
+            DataLayerI dataLayer = configuration.getDataLayer();
+            List<Batch> batches = dataLayer.getAllBatches(configurationId);
+            LOG.debug("Found " + batches.size() + " batches");
+
+            for (Batch b: batches) {
+                List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
+                LOG.debug("Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
+
+                for (BatchSplit split: splits) {
+                    if (split.isBulk()) {
+                        continue;
+                    }
+
+                    String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
+                    String tempDir = edsConfiguration.getTempDirectory(); //e.g. c:\temp
+                    String configurationDir = dbConfiguration.getLocalRootPath(); //e.g. TPP_TEST
+                    String batchRelativePath = b.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00
+                    String splitRelativePath = split.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00\Split\HSCIC6
+
+                    if (bulkDetector instanceof TppBulkDetector) {
+                        //for TPP, we have to copy the Manifest file to tmp
+                        String permFilePath = FilenameUtils.concat(permDir, configurationDir);
+                        permFilePath = FilenameUtils.concat(permFilePath, batchRelativePath);
+                        permFilePath = FilenameUtils.concat(permFilePath, TppConstants.MANIFEST_FILE);
+
+                        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
+                        sourceTempDir = FilenameUtils.concat(sourceTempDir, splitRelativePath);
+                        new File(sourceTempDir).mkdirs();
+
+                        String manifestPath = FilenameUtils.concat(sourceTempDir, TppConstants.MANIFEST_FILE);
+
+                        InputStream is = FileHelper.readFileFromSharedStorage(permFilePath);
+                        Files.copy(is, new File(manifestPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                        is.close();
+
+                    } else {
+                        throw new Exception("Not implemented this yet for " + bulkDetector.getClass().getSimpleName());
+                    }
+
+                    boolean isBulk = bulkDetector.isBulkExtract(b, split, dataLayer, edsConfiguration, dbConfiguration);
+                    if (isBulk) {
+                        LOG.debug("    Found bulk for " + split.getOrganisationId());
+                    }
+
+                    ps.setBoolean(1, isBulk);
+                    ps.setInt(2, split.getBatchSplitId());
+
+                    ps.executeUpdate();
+                    conn.commit();
+
+                    if (bulkDetector instanceof TppBulkDetector) {
+
+                        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
+                        sourceTempDir = FilenameUtils.concat(sourceTempDir, splitRelativePath);
+
+                        FileHelper.deleteRecursiveIfExists(sourceTempDir);
+
+                    } else {
+                        throw new Exception("Not implemented this yet for " + bulkDetector.getClass().getSimpleName());
+                    }
+                }
+            }
+
+            LOG.info("Finished checking for Bulks in " + configurationId);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }  finally {
+            if (ps != null) {
+                ps.close();
+            }
+            if (conn != null) {
+                conn.close();
+            }
+        }
+    }
 
     private static void testSplitting(String srcFilePath) {
         LOG.info("Testing splitting of " + srcFilePath);
