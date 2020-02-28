@@ -307,11 +307,17 @@ public class Main {
                             }
                         }
 
-                        if (permPatientPath == null) {
-                            throw new Exception("Failed to find Vision patient file in " + permPath);
-                        }
-                        if (permJournalPath == null) {
-                            throw new Exception("Failed to find Vision patient file in " + permPath);
+                        //got some Vision deltas which didn't contain all files
+                        if (permPatientPath == null || permJournalPath == null) {
+                            ps.setBoolean(1, false);
+                            ps.setInt(2, split.getBatchSplitId());
+
+                            ps.executeUpdate();
+                            conn.commit();
+
+                            //delete the tmp directory contents
+                            FileHelper.deleteRecursiveIfExists(tempPath);
+                            continue;
                         }
 
                         String patientFileName = FilenameUtils.getName(permPatientPath);
