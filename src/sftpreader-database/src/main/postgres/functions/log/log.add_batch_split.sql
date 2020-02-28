@@ -25,7 +25,7 @@ begin
 		_configuration_id,
 		_local_relative_path,
 		_organisation_id,
-		is_bulk
+		_is_bulk
 	);
 
 end;
