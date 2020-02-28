@@ -307,6 +307,13 @@ public class Main {
                             }
                         }
 
+                        if (permPatientPath == null) {
+                            throw new Exception("Failed to find Vision patient file in " + permPath);
+                        }
+                        if (permJournalPath == null) {
+                            throw new Exception("Failed to find Vision patient file in " + permPath);
+                        }
+
                         String patientFileName = FilenameUtils.getName(permPatientPath);
                         String journalFileName = FilenameUtils.getName(permJournalPath);
 
