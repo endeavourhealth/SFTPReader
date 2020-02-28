@@ -18,7 +18,10 @@ import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.emis.EmisBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionBulkDetector;
@@ -209,6 +212,10 @@ public class Main {
         }
 	}
 
+    /**
+     * one-off routine to populate the new is_bulk column on the batch_split table so we
+     * can work out if we've received bulk data for a service or not
+     */
     private static void checkForBulks(String configurationId) throws Exception {
         LOG.info("Checking for Bulks in " + configurationId);
 
@@ -312,6 +319,25 @@ public class Main {
 
                         is = FileHelper.readFileFromSharedStorage(permJournalPath);
                         Files.copy(is, new File(tmpJournalPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        is.close();
+
+                    } else if (bulkDetector instanceof EmisBulkDetector) {
+                        //for Emis, we need the patient and observation files
+                        String permPatientPath = EmisHelper.findPostSplitFileInPermanentDir(dataLayer, edsConfiguration, dbConfiguration, b, split.getOrganisationId(), EmisConstants.ADMIN_PATIENT_FILE_TYPE);
+                        String permObservationPath = EmisHelper.findPostSplitFileInPermanentDir(dataLayer, edsConfiguration, dbConfiguration, b, split.getOrganisationId(), EmisConstants.CARE_RECORD_OBSERVATION_FILE_TYPE);
+
+                        String patientFileName = FilenameUtils.getName(permPatientPath);
+                        String observationFileName = FilenameUtils.getName(permObservationPath);
+
+                        String tmpPatientPath = FilenameUtils.concat(tempPath, patientFileName);
+                        String tmpObservationPath = FilenameUtils.concat(tempPath, observationFileName);
+
+                        InputStream is = FileHelper.readFileFromSharedStorage(permPatientPath);
+                        Files.copy(is, new File(tmpPatientPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        is.close();
+
+                        is = FileHelper.readFileFromSharedStorage(permObservationPath);
+                        Files.copy(is, new File(tmpObservationPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
                         is.close();
 
                     } else {
