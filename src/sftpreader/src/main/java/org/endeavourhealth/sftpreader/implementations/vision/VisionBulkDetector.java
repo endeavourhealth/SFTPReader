@@ -29,8 +29,8 @@ public class VisionBulkDetector extends SftpBulkDetector {
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
-        String patientFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, VisionHelper.PATIENT_FILE_TYPE);
-        String journalFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, VisionHelper.JOURNAL_FILE_TYPE);
+        String patientFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionHelper.PATIENT_FILE_TYPE);
+        String journalFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionHelper.JOURNAL_FILE_TYPE);
 
         Set<String> patientIds = new HashSet<>();
 

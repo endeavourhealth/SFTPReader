@@ -21,11 +21,15 @@ import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
+import org.endeavourhealth.sftpreader.implementations.vision.VisionBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.endeavourhealth.sftpreader.utilities.PgpUtil;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -258,21 +262,56 @@ public class Main {
                     String batchRelativePath = b.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00
                     String splitRelativePath = split.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00\Split\HSCIC6
 
+                    String tempPath = FilenameUtils.concat(tempDir, configurationDir);
+                    tempPath = FilenameUtils.concat(tempPath, splitRelativePath);
+                    new File(tempPath).mkdirs();
+
+
                     if (bulkDetector instanceof TppBulkDetector) {
                         //for TPP, we have to copy the Manifest file to tmp
-                        String permFilePath = FilenameUtils.concat(permDir, configurationDir);
-                        permFilePath = FilenameUtils.concat(permFilePath, batchRelativePath);
-                        permFilePath = FilenameUtils.concat(permFilePath, TppConstants.MANIFEST_FILE);
+                        String permPath = FilenameUtils.concat(permDir, configurationDir);
+                        permPath = FilenameUtils.concat(permPath, batchRelativePath); //don't have this in the split path
+                        String perManifestPath = FilenameUtils.concat(permPath, TppConstants.MANIFEST_FILE);
 
-                        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
-                        sourceTempDir = FilenameUtils.concat(sourceTempDir, splitRelativePath);
-                        new File(sourceTempDir).mkdirs();
+                        String tempManifestPath = FilenameUtils.concat(tempPath, TppConstants.MANIFEST_FILE);
 
-                        String manifestPath = FilenameUtils.concat(sourceTempDir, TppConstants.MANIFEST_FILE);
+                        InputStream is = FileHelper.readFileFromSharedStorage(perManifestPath);
+                        Files.copy(is, new File(tempManifestPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        is.close();
 
-                        InputStream is = FileHelper.readFileFromSharedStorage(permFilePath);
-                        Files.copy(is, new File(manifestPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } else if (bulkDetector instanceof VisionBulkDetector) {
+                        //for Vision, we need the patient and journal files
+                        String permPatientPath = null;
+                        String permJournalPath = null;
 
+                        String permPath = FilenameUtils.concat(permDir, configurationDir);
+                        permPath = FilenameUtils.concat(permPath, batchRelativePath); //don't have this in the split path
+                        List<String> files = FileHelper.listFilesInSharedStorage(permPath);
+                        for (String file: files) {
+                            String ext = FilenameUtils.getExtension(file);
+                            boolean isRawFile = ext.equalsIgnoreCase("zip");
+                            RemoteFile r = new RemoteFile(file, -1, null);
+                            VisionFilenameParser p = new VisionFilenameParser(isRawFile, r, dbConfiguration);
+                            String fileType = p.generateFileTypeIdentifier();
+                            if (fileType.equals(VisionHelper.PATIENT_FILE_TYPE)) {
+                                permPatientPath = file;
+                            } else if (fileType.equals(VisionHelper.JOURNAL_FILE_TYPE)) {
+                                permJournalPath = file;
+                            }
+                        }
+
+                        String patientFileName = FilenameUtils.getName(permPatientPath);
+                        String journalFileName = FilenameUtils.getName(permJournalPath);
+
+                        String tmpPatientPath = FilenameUtils.concat(tempPath, patientFileName);
+                        String tmpJournalPath = FilenameUtils.concat(tempPath, journalFileName);
+
+                        InputStream is = FileHelper.readFileFromSharedStorage(permPatientPath);
+                        Files.copy(is, new File(tmpPatientPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        is.close();
+
+                        is = FileHelper.readFileFromSharedStorage(permJournalPath);
+                        Files.copy(is, new File(tmpJournalPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
                         is.close();
 
                     } else {
@@ -290,16 +329,8 @@ public class Main {
                     ps.executeUpdate();
                     conn.commit();
 
-                    if (bulkDetector instanceof TppBulkDetector) {
-
-                        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
-                        sourceTempDir = FilenameUtils.concat(sourceTempDir, splitRelativePath);
-
-                        FileHelper.deleteRecursiveIfExists(sourceTempDir);
-
-                    } else {
-                        throw new Exception("Not implemented this yet for " + bulkDetector.getClass().getSimpleName());
-                    }
+                    //delete the tmp directory contents
+                    FileHelper.deleteRecursiveIfExists(tempPath);
                 }
             }
 

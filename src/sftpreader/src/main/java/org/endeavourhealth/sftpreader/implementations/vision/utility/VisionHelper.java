@@ -5,11 +5,13 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
+import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.io.File;
+import java.util.List;
 
 public class VisionHelper {
 
@@ -25,15 +27,14 @@ public class VisionHelper {
     public static String findFileInTempDir(DbInstanceEds instanceConfiguration,
                                                     DbConfiguration dbConfiguration,
                                                     Batch batch,
-                                                    BatchSplit batchSplit,
                                                     String fileIdentifier) throws SftpValidationException {
 
         String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. s3://<bucket>/endeavour
         String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/VISION
-        String batchSplitPath = batchSplit.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35
+        String batchPath = batch.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35
 
         String tempPath = FilenameUtils.concat(tempStoragePath, configurationPath);
-        tempPath = FilenameUtils.concat(tempPath, batchSplitPath);
+        tempPath = FilenameUtils.concat(tempPath, batchPath);
 
         File tempDir = new File(tempPath);
         if (!tempDir.exists()) {
@@ -63,4 +64,6 @@ public class VisionHelper {
 
         return filePath;
     }
+
+
 }
