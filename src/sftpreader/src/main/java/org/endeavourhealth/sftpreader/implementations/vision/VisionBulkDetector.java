@@ -132,6 +132,11 @@ public class VisionBulkDetector extends SftpBulkDetector {
             csvParser.close();
         }
 
+        if (journalRecords < 10000) {
+            LOG.debug("Only " + journalRecords + " found so not a bulk");
+            return false;
+        }
+
         LOG.debug("Found " + patientIds.size() + " patients and " + journalRecords + " journal records so treating as bulk");
         return true;
     }
