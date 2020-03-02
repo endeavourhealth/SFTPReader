@@ -280,8 +280,8 @@ public class Main {
 
                     RemoteFile r = new RemoteFile(fileName, size, ldt);
 
-                    try {
-                        SftpFilenameParser parser = ImplementationActivator.createFilenameParser(true, r, dbConfiguration);
+                    SftpFilenameParser parser = ImplementationActivator.createFilenameParser(true, r, dbConfiguration);
+                    if (parser.isFilenameValid()) {
                         String fileType = parser.generateFileTypeIdentifier();
 
                         sql = "INSERT INTO log.batch_file (batch_id, interface_type_id, file_type_identifier,"
@@ -302,22 +302,11 @@ public class Main {
                         ps.setBoolean(col++, false); //is_deleted
 
                         ps.executeUpdate();
+                        conn.commit();
                         ps.close();
 
-                        /*
-                        //batch_id integer NOT NULL,									FROM BATCH
-                        //interface_type_id integer NOT NULL,							FROM configuration
-                        file_type_identifier varchar (1000) NOT NULL, FROM file name
-                        insert_date datetime, FROM batch ? or S3 mod date ?
-                                filename varchar(1000) NOT NULL, FROM file name
-                        remote_created_date datetime null, FROM file name?
-                        remote_size_bytes bigint NOT NULL, FROM S3
-                        is_downloaded boolean NOT NULL DEFAULT false, always TRUE
-                        download_date datetime null, same as insert date
-                        is_deleted boolean fefault false, can 't recover this
-                                */
-                    } catch (Exception ex) {
-                        LOG.debug("Skipping file " + filePath + ": " + ex.getMessage());
+                    } else {
+                        LOG.debug("Skipping file " + filePath);
                     }
 
                 }
