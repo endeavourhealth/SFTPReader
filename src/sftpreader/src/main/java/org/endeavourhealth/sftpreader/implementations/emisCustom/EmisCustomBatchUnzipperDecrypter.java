@@ -104,6 +104,12 @@ public class EmisCustomBatchUnzipperDecrypter extends SftpBatchUnzipperDecrypter
                 sevenZFile.close();
 
             } catch (Exception ex) {
+
+                //A number of times, we've tried decrypting the file before Emis have fully uploaded it, so
+                //set the downloaded flag on the batch_file back to false so it'll try copying the file from S3 again
+                //next time around
+                db.setFileAsDownloaded(batchFile.getBatchFileId(), false);
+
                 throw new Exception("Failed to decrypt " + sourceFile, ex);
             }
         }

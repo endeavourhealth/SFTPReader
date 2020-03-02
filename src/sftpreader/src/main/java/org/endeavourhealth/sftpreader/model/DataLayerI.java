@@ -16,7 +16,7 @@ public interface DataLayerI {
 
     AddFileResult addFile(String configurationId, SftpFile sftpFile) throws Exception;
 
-    void setFileAsDownloaded(SftpFile batchFile) throws Exception;
+    void setFileAsDownloaded(int batchFileId, boolean downloaded) throws Exception;
     void setFileAsDeleted(BatchFile batchFile) throws Exception;
 
     boolean addUnknownFile(String configurationId, SftpFile batchFile) throws Exception;

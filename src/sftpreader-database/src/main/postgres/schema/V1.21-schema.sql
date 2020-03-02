@@ -1,0 +1,1 @@
+drop function log.set_file_as_downloaded

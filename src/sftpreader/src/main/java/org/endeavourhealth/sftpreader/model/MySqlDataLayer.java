@@ -510,19 +510,23 @@ public class MySqlDataLayer implements DataLayerI {
         return createBatchFile(batchIdToUse, interfaceTypeId, fileType, fileName, fileSizeBytes, fileCreatedDate);
     }
 
-
-
     @Override
-    public void setFileAsDownloaded(SftpFile batchFile) throws Exception {
+    public void setFileAsDownloaded(int batchFileId, boolean downloaded) throws Exception {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
             String sql = "UPDATE batch_file SET is_downloaded = ?, download_date = ? WHERE batch_file_id = ?;";
 
             ps = connection.prepareStatement(sql);
-            ps.setBoolean(1, true);
-            ps.setTimestamp(2, new java.sql.Timestamp(new Date().getTime()));
-            ps.setInt(3, batchFile.getBatchFileId());
+
+            int col = 1;
+            ps.setBoolean(col++, downloaded);
+            if (downloaded) {
+                ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+            } else {
+                ps.setNull(col++, Types.DATE);
+            }
+            ps.setInt(col++, batchFileId);
 
             ps.executeUpdate();
 

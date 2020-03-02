@@ -173,13 +173,32 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                     .setBatchFileId(resultSet.getInt("batch_file_id")));
     }
 
-    public void setFileAsDownloaded(SftpFile batchFile) throws Exception {
-        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
-                .setName("log.set_file_as_downloaded")
-                .addParameter("_batch_file_id", batchFile.getBatchFileId());
-                //.addParameter("_local_size_bytes", batchFile.getLocalFileSizeBytes());
+    @Override
+    public void setFileAsDownloaded(int batchFileId, boolean downloaded) throws Exception {
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "UPDATE log.batch_file SET is_downloaded = ?, download_date = ? WHERE batch_file_id = ?;";
 
-        pgStoredProc.execute();
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setBoolean(col++, downloaded);
+            if (downloaded) {
+                ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+            } else {
+                ps.setNull(col++, Types.DATE);
+            }
+            ps.setInt(col++, batchFileId);
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
     }
 
     @Override

@@ -416,7 +416,7 @@ public class SftpReaderTask implements Runnable {
 
         //update the DB to confirm we've downloaded it
         sftpFile.setLocalFileSizeBytes(fileLen);
-        db.setFileAsDownloaded(sftpFile);
+        db.setFileAsDownloaded(sftpFile.getBatchFileId(), true);
 
         MetricsHelper.recordEvent(configurationId + ".file-downloaded");
     }
