@@ -18,6 +18,7 @@ import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
@@ -42,6 +43,9 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 
@@ -169,6 +173,12 @@ public class Main {
                     checkForBulks(configurationId);
                     System.exit(0);
                 }
+
+                if (args[1].equalsIgnoreCase("RecreateBatchFile")) {
+                    String configurationId = args[2];
+                    recreateBatchFile(configurationId);
+                    System.exit(0);
+                }
             }
 
             /*if (args.length > 0) {
@@ -210,6 +220,120 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void recreateBatchFile(String configurationId) {
+        LOG.info("Recreating batch file for " + configurationId);
+        try {
+            Connection conn = ConnectionManager.getSftpReaderNonPooledConnection();
+
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+            if (dbConfiguration == null) {
+                throw new Exception("Failed to find configuration " + configurationId);
+            }
+
+            DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+            List<Batch> batches = configuration.getDataLayer().getAllBatches(configurationId);
+            LOG.debug("Found " + batches.size() + " batches");
+
+            String sql = "SELECT interface_type_id FROM configuration.configuration WHERE configuration_id = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, configurationId);
+
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            int interfaceTypeId = rs.getInt(1);
+
+            ps.close();
+
+            String localPath = dbConfiguration.getLocalRootPath();
+
+            for (int i=0; i<batches.size(); i++) {
+                Batch batch = batches.get(i);
+
+                //work out S3 path
+                String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
+                String configurationDir = localPath; //e.g. TPP_TEST
+                String batchRelativePath = batch.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00
+
+                String path = FilenameUtils.concat(permDir, configurationDir);
+                path = FilenameUtils.concat(path, batchRelativePath);
+
+                Date batchCreateDate = batch.getInsertDate();
+
+                List<FileInfo> files = FileHelper.listFilesInSharedStorageWithInfo(path);
+                for (FileInfo fileInfo: files) {
+
+                    String filePath = fileInfo.getFilePath();
+                    Date lastModified = fileInfo.getLastModified();
+                    long size = fileInfo.getSize();
+
+                    String fileName = FilenameUtils.getName(filePath);
+                    LocalDateTime ldt = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
+
+                    RemoteFile r = new RemoteFile(fileName, size, ldt);
+
+                    try {
+                        SftpFilenameParser parser = ImplementationActivator.createFilenameParser(true, r, dbConfiguration);
+                        String fileType = parser.generateFileTypeIdentifier();
+
+                        sql = "INSERT INTO log.batch_file (batch_id, interface_type_id, file_type_identifier,"
+                                + " insert_date, filename, remote_created_date, remote_size_bytes, is_downloaded, download_date, is_deleted)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        ps = conn.prepareStatement(sql);
+
+                        int col = 1;
+                        ps.setInt(col++, batch.getBatchId()); //batch_id
+                        ps.setInt(col++, interfaceTypeId); //interface_type_id
+                        ps.setString(col++, fileType); //file_type_identifier
+                        ps.setDate(col++, new java.sql.Date(batchCreateDate.getTime())); //insert_date
+                        ps.setString(col++, fileName); //filename
+                        ps.setDate(col++, new java.sql.Date(lastModified.getTime())); //remote_created_date
+                        ps.setLong(col++, size); //remote_size_bytes
+                        ps.setBoolean(col++, true); //is_downloaded
+                        ps.setDate(col++, new java.sql.Date(batchCreateDate.getTime())); //download_date
+                        ps.setBoolean(col++, false); //is_deleted
+
+                        ps.executeUpdate();
+                        ps.close();
+
+                        /*
+                        //batch_id integer NOT NULL,									FROM BATCH
+                        //interface_type_id integer NOT NULL,							FROM configuration
+                        file_type_identifier varchar (1000) NOT NULL, FROM file name
+                        insert_date datetime, FROM batch ? or S3 mod date ?
+                                filename varchar(1000) NOT NULL, FROM file name
+                        remote_created_date datetime null, FROM file name?
+                        remote_size_bytes bigint NOT NULL, FROM S3
+                        is_downloaded boolean NOT NULL DEFAULT false, always TRUE
+                        download_date datetime null, same as insert date
+                        is_deleted boolean fefault false, can 't recover this
+                                */
+                    } catch (Exception ex) {
+                        LOG.debug("Skipping file " + filePath + ": " + ex.getMessage());
+                    }
+
+                }
+
+                if (i % 100 == 0) {
+                    LOG.debug("Done " + i + " of " + batches.size());
+                }
+            }
+
+            conn.close();
+
+            LOG.info("Finished recreating batch file");
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     /**
      * one-off routine to populate the new is_bulk column on the batch_split table so we
