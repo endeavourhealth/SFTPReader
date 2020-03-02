@@ -11,6 +11,8 @@ import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStreamReader;
 import java.util.HashSet;
@@ -18,6 +20,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class VisionBulkDetector extends SftpBulkDetector {
+    private static final Logger LOG = LoggerFactory.getLogger(VisionBulkDetector.class);
 
     /**
      * the Vision extract doesn't have any "bulk" flag, so infer whether a bulk or not by:
@@ -35,6 +38,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
         //Vision extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null
                 || journalFilePath == null) {
+            LOG.debug("Null patient or journal file so not a bulk");
             return false;
         }
 
@@ -73,9 +77,11 @@ public class VisionBulkDetector extends SftpBulkDetector {
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 100) {
+            LOG.debug("Only " + patientIds.size() + " patient IDs, so not a bulk");
             return false;
         }
 
+        int journalRecords = 0;
         reader = FileHelper.readFileReaderFromSharedStorage(journalFilePath);
         csvParser = new CSVParser(reader, VisionHelper.CSV_FORMAT); //no headers in file
         try {
@@ -91,7 +97,9 @@ public class VisionBulkDetector extends SftpBulkDetector {
 
                 //patient ID is always first column
                 String patientId = record.get(0);
+                String journalId = record.get(1);
 
+                //action column is in different places depending on number of cols
                 String actionStr = null;
                 if (columnCount.intValue() == 23) {
                     actionStr = record.get(22);
@@ -100,11 +108,12 @@ public class VisionBulkDetector extends SftpBulkDetector {
                     actionStr = record.get(39);
 
                 } else {
-                    throw new Exception("");
+                    throw new Exception("Unexpected number of columns " + columnCount);
                 }
 
-                //if our observtion file contains a record for a patient not in the patient file it can't be a bulk
+                //if our observation file contains a record for a patient not in the patient file it can't be a bulk
                 if (!patientIds.contains(patientId)) {
+                    LOG.debug("Patient ID " + patientId + " in journal but not in patient file, so not a bulk");
                     return false;
                 }
 
@@ -112,13 +121,17 @@ public class VisionBulkDetector extends SftpBulkDetector {
 
                 //if we find a deleted observation record, this can't be a bulk, so return out
                 if (actionStr.equalsIgnoreCase("D")) {
+                    LOG.debug("Action is D for journal ID " + journalId + " so not a bulk");
                     return false;
                 }
+
+                journalRecords ++;
             }
         } finally {
             csvParser.close();
         }
 
+        LOG.debug("Found " + journalRecords + " and treating as bulk");
         return true;
     }
 

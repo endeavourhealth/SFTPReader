@@ -46,7 +46,6 @@ import java.util.*;
 
 
 public class Main {
-
 	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
     private static Configuration configuration;
     private static SftpReaderTaskScheduler sftpReaderTaskScheduler;
@@ -253,6 +252,13 @@ public class Main {
             DataLayerI dataLayer = configuration.getDataLayer();
             List<Batch> batches = dataLayer.getAllBatches(configurationId);
             LOG.debug("Found " + batches.size() + " batches");
+
+            //ensure batches are sorted properly
+            batches.sort((o1, o2) -> {
+                Integer i1 = o1.getSequenceNumber();
+                Integer i2 = o2.getSequenceNumber();
+                return i1.compareTo(i2);
+            });
 
             for (Batch b: batches) {
                 List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
