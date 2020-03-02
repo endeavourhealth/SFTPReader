@@ -120,10 +120,11 @@ public class VisionBulkDetector extends SftpBulkDetector {
                 validateActionStrValue(actionStr);
 
                 //if we find a deleted observation record, this can't be a bulk, so return out
-                if (actionStr.equalsIgnoreCase("D")) {
+                //we do get deleted Journal records in the bulk, so can't use this
+                /*if (actionStr.equalsIgnoreCase("D")) {
                     LOG.debug("Action is D for journal ID " + journalId + " so not a bulk");
                     return false;
-                }
+                }*/
 
                 journalRecords ++;
             }
@@ -131,7 +132,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
             csvParser.close();
         }
 
-        LOG.debug("Found " + journalRecords + " and treating as bulk");
+        LOG.debug("Found " + patientIds.size() + " patients and " + journalRecords + " journal records so treating as bulk");
         return true;
     }
 
