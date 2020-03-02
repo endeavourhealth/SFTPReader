@@ -10,7 +10,9 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseExceptio
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class EmisFilenameParser extends SftpFilenameParser {
                                                                         // same as ISO pattern but switch : for . so can be used as filename and sorted
@@ -119,5 +121,12 @@ public class EmisFilenameParser extends SftpFilenameParser {
         }
 
         return StringUtils.removeEnd(encryptedFilename, extension);
+    }
+
+    @Override
+    public Date getExtractDate() {
+        return java.util.Date.from(extractDateTime
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
     }
 }

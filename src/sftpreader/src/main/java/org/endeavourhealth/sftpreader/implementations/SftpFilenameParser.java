@@ -7,6 +7,7 @@ import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 public abstract class SftpFilenameParser {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpFilenameParser.class);
@@ -48,6 +49,7 @@ public abstract class SftpFilenameParser {
     public abstract String generateFileTypeIdentifier();
     public abstract boolean isFileNeeded();
     public abstract boolean ignoreUnknownFileTypes();
+    public abstract Date getExtractDate();
     //public abstract boolean requiresDecryption();
 
     public boolean isFilenameValid() {

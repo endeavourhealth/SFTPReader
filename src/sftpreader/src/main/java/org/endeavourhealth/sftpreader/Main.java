@@ -277,7 +277,7 @@ public class Main {
                     String fileName = FilenameUtils.getName(filePath);
 
                     //ignore anything not in the directory itself
-LOG.debug("Split file = " + filePath.contains("/Split/") + " for " + filePath);
+                    //LOG.debug("Split file = " + filePath.contains("/Split/") + " for " + filePath);
                     if (filePath.contains("/Split/")) {
                         continue;
                     }
@@ -288,6 +288,7 @@ LOG.debug("Split file = " + filePath.contains("/Split/") + " for " + filePath);
                     SftpFilenameParser parser = ImplementationActivator.createFilenameParser(true, r, dbConfiguration);
                     if (parser.isFilenameValid()) {
                         String fileType = parser.generateFileTypeIdentifier();
+                        Date extractDate = parser.getExtractDate();
 
                         sql = "INSERT INTO log.batch_file (batch_id, interface_type_id, file_type_identifier,"
                                 + " insert_date, filename, remote_created_date, remote_size_bytes, is_downloaded, download_date, is_deleted)"
@@ -300,7 +301,7 @@ LOG.debug("Split file = " + filePath.contains("/Split/") + " for " + filePath);
                         ps.setString(col++, fileType); //file_type_identifier
                         ps.setDate(col++, new java.sql.Date(batchCreateDate.getTime())); //insert_date
                         ps.setString(col++, fileName); //filename
-                        ps.setDate(col++, new java.sql.Date(lastModified.getTime())); //remote_created_date
+                        ps.setDate(col++, new java.sql.Date(extractDate.getTime())); //remote_created_date
                         ps.setLong(col++, size); //remote_size_bytes
                         ps.setBoolean(col++, true); //is_downloaded
                         ps.setDate(col++, new java.sql.Date(batchCreateDate.getTime())); //download_date

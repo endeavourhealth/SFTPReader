@@ -7,7 +7,9 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseExceptio
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class HomertonFilenameParser extends SftpFilenameParser {
 
@@ -126,4 +128,10 @@ public class HomertonFilenameParser extends SftpFilenameParser {
     }
 
 
+    @Override
+    public Date getExtractDate() {
+        return java.util.Date.from(extractDate.atStartOfDay()
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
+    }
 }

@@ -7,6 +7,8 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseExceptio
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.regex.Pattern;
 
 public class EmisCustomFilenameParser extends SftpFilenameParser {
@@ -88,5 +90,12 @@ public class EmisCustomFilenameParser extends SftpFilenameParser {
     @Override
     public boolean ignoreUnknownFileTypes() {
         return false;
+    }
+
+    @Override
+    public Date getExtractDate() {
+        return java.util.Date.from(extractDate.atStartOfDay()
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
     }
 }

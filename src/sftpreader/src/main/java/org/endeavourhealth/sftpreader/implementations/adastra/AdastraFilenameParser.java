@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 public class AdastraFilenameParser extends SftpFilenameParser {
                                                                         // same as ISO pattern but switch : for . so can be used as filename
@@ -106,5 +108,12 @@ public class AdastraFilenameParser extends SftpFilenameParser {
 //                this.isFileNeeded = false;
 //            }
 //        }
+    }
+
+    @Override
+    public Date getExtractDate() {
+        return java.util.Date.from(extractDateTime
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
     }
 }

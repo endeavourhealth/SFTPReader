@@ -10,6 +10,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
@@ -371,5 +372,10 @@ public class BartsFilenameParser extends SftpFilenameParser {
         }
     }
 
-
+    @Override
+    public Date getExtractDate() {
+        return java.util.Date.from(extractDate.atStartOfDay()
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
+    }
 }

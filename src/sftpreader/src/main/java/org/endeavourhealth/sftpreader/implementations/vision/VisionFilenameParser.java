@@ -10,8 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class VisionFilenameParser extends SftpFilenameParser {
@@ -177,5 +179,13 @@ public class VisionFilenameParser extends SftpFilenameParser {
 
         extractDateTimeStr = extractDateTimeStr.replace("-","");
         this.extractDateTime = LocalDateTime.parse(extractDateTimeStr, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+    }
+
+
+    @Override
+    public Date getExtractDate() {
+        return java.util.Date.from(extractDateTime
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
     }
 }

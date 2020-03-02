@@ -12,8 +12,10 @@ import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Date;
 import java.util.UUID;
 
 public class TppFilenameParser extends SftpFilenameParser {
@@ -93,4 +95,10 @@ public class TppFilenameParser extends SftpFilenameParser {
         return LocalDateTime.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
     }
 
+    @Override
+    public Date getExtractDate() {
+        return java.util.Date.from(extractDateTime
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
+    }
 }
