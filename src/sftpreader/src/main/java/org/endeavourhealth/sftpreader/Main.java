@@ -265,9 +265,6 @@ public class Main {
                 LOG.debug("Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
 
                 for (BatchSplit split: splits) {
-                    if (split.isBulk()) {
-                        continue;
-                    }
 
                     String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
                     String tempDir = edsConfiguration.getTempDirectory(); //e.g. c:\temp
@@ -314,31 +311,23 @@ public class Main {
                         }
 
                         //got some Vision deltas which didn't contain all files
-                        if (permPatientPath == null || permJournalPath == null) {
-                            ps.setBoolean(1, false);
-                            ps.setInt(2, split.getBatchSplitId());
+                        if (permPatientPath != null) {
+                            String patientFileName = FilenameUtils.getName(permPatientPath);
+                            String tmpPatientPath = FilenameUtils.concat(tempPath, patientFileName);
 
-                            ps.executeUpdate();
-                            conn.commit();
-
-                            //delete the tmp directory contents
-                            FileHelper.deleteRecursiveIfExists(tempPath);
-                            continue;
+                            InputStream is = FileHelper.readFileFromSharedStorage(permPatientPath);
+                            Files.copy(is, new File(tmpPatientPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            is.close();
                         }
 
-                        String patientFileName = FilenameUtils.getName(permPatientPath);
-                        String journalFileName = FilenameUtils.getName(permJournalPath);
+                        if (permJournalPath != null) {
+                            String journalFileName = FilenameUtils.getName(permJournalPath);
+                            String tmpJournalPath = FilenameUtils.concat(tempPath, journalFileName);
 
-                        String tmpPatientPath = FilenameUtils.concat(tempPath, patientFileName);
-                        String tmpJournalPath = FilenameUtils.concat(tempPath, journalFileName);
-
-                        InputStream is = FileHelper.readFileFromSharedStorage(permPatientPath);
-                        Files.copy(is, new File(tmpPatientPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        is.close();
-
-                        is = FileHelper.readFileFromSharedStorage(permJournalPath);
-                        Files.copy(is, new File(tmpJournalPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        is.close();
+                            InputStream is = FileHelper.readFileFromSharedStorage(permJournalPath);
+                            Files.copy(is, new File(tmpJournalPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            is.close();
+                        }
 
                     } else if (bulkDetector instanceof EmisBulkDetector) {
                         //for Emis, we need the patient and observation files
