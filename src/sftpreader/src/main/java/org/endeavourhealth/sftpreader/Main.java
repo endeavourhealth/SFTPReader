@@ -275,6 +275,11 @@ public class Main {
                     Date lastModified = fileInfo.getLastModified();
                     long size = fileInfo.getSize();
 
+                    //ignore anything not in the directory itself
+                    if (filePath.contains("/Split/")) {
+                        continue;
+                    }
+
                     String fileName = FilenameUtils.getName(filePath);
                     LocalDateTime ldt = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
 
