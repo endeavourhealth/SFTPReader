@@ -32,6 +32,12 @@ public class VisionBulkDetector extends SftpBulkDetector {
         String patientFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionHelper.PATIENT_FILE_TYPE);
         String journalFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionHelper.JOURNAL_FILE_TYPE);
 
+        //Vision extracts don't always contain all files, in which case it's definitely not a bulk
+        if (patientFilePath == null
+                || journalFilePath == null) {
+            return false;
+        }
+
         Set<String> patientIds = new HashSet<>();
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(patientFilePath);

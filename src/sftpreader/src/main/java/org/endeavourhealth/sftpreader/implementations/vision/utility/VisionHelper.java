@@ -59,7 +59,9 @@ public class VisionHelper {
         }
 
         if (filePath == null) {
-            throw new SftpValidationException("Failed to find " + fileIdentifier + " file in " + tempDir);
+            //Vision extracts don't always contain all file types, so just return null
+            //throw new SftpValidationException("Failed to find " + fileIdentifier + " file in " + tempDir);
+            return null;
         }
 
         return filePath;
