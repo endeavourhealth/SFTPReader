@@ -237,6 +237,8 @@ public class Main {
                 throw new Exception("Failed to find configuration " + configurationId);
             }
 
+            Date now = new Date();
+
             DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
             DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
 
@@ -285,7 +287,15 @@ public class Main {
                     LocalDateTime ldt = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
                     RemoteFile r = new RemoteFile(filePath, size, ldt);
 
-                    SftpFilenameParser parser = ImplementationActivator.createFilenameParser(true, r, dbConfiguration);
+                    boolean isRaw = true;
+
+                    //TPP filename parser needs to think it's post-processed files so it can handle the directory names in S3
+                    String contentType = dbConfiguration.getSoftwareContentType();
+                    if (contentType.equalsIgnoreCase("TPPCSV")) {
+                        isRaw = false;
+                    }
+
+                    SftpFilenameParser parser = ImplementationActivator.createFilenameParser(isRaw, r, dbConfiguration);
                     if (parser.isFilenameValid()) {
                         String fileType = parser.generateFileTypeIdentifier();
                         Date extractDate = parser.getExtractDate();
@@ -299,7 +309,7 @@ public class Main {
                         ps.setInt(col++, batch.getBatchId()); //batch_id
                         ps.setInt(col++, interfaceTypeId); //interface_type_id
                         ps.setString(col++, fileType); //file_type_identifier
-                        ps.setDate(col++, new java.sql.Date(batchCreateDate.getTime())); //insert_date
+                        ps.setDate(col++, new java.sql.Date(now.getTime())); //insert_date
                         ps.setString(col++, fileName); //filename
                         ps.setDate(col++, new java.sql.Date(extractDate.getTime())); //remote_created_date
                         ps.setLong(col++, size); //remote_size_bytes
