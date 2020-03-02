@@ -274,16 +274,16 @@ public class Main {
                     String filePath = fileInfo.getFilePath();
                     Date lastModified = fileInfo.getLastModified();
                     long size = fileInfo.getSize();
+                    String fileName = FilenameUtils.getName(filePath);
 
                     //ignore anything not in the directory itself
+LOG.debug("Split file = " + filePath.contains("/Split/") + " for " + filePath);
                     if (filePath.contains("/Split/")) {
                         continue;
                     }
 
-                    String fileName = FilenameUtils.getName(filePath);
                     LocalDateTime ldt = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
-
-                    RemoteFile r = new RemoteFile(fileName, size, ldt);
+                    RemoteFile r = new RemoteFile(filePath, size, ldt);
 
                     SftpFilenameParser parser = ImplementationActivator.createFilenameParser(true, r, dbConfiguration);
                     if (parser.isFilenameValid()) {
