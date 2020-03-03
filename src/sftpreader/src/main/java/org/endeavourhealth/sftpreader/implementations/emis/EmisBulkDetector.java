@@ -58,10 +58,11 @@ public class EmisBulkDetector extends SftpBulkDetector {
 
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
-        if (patientIds.size() < 100) {
+        if (patientIds.size() < 1000) {
             return false;
         }
 
+        int journalRecords = 0;
         reader = FileHelper.readFileReaderFromSharedStorage(observationFilePath);
         csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
         try {
@@ -80,9 +81,16 @@ public class EmisBulkDetector extends SftpBulkDetector {
                 if (deletedStr.equals("true")) {
                     return false;
                 }
+
+                journalRecords ++;
             }
         } finally {
             csvParser.close();
+        }
+
+        //this 4000 number is based on the smaller practice in the Emis test pack, so it is detected as a bulk
+        if (journalRecords < 4000) {
+            return false;
         }
 
         return true;

@@ -76,7 +76,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
 
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
-        if (patientIds.size() < 100) {
+        if (patientIds.size() < 1000) {
             LOG.debug("Only " + patientIds.size() + " patient IDs, so not a bulk");
             return false;
         }
