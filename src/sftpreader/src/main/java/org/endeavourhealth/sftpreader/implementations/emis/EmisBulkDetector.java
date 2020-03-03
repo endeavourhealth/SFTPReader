@@ -12,6 +12,8 @@ import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStreamReader;
 import java.util.HashSet;
@@ -19,6 +21,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class EmisBulkDetector extends SftpBulkDetector {
+    private static final Logger LOG = LoggerFactory.getLogger(EmisBulkDetector.class);
 
     /**
      * the Emis extract doesn't have any "bulk" flag, so infer whether a bulk or not by:
@@ -49,6 +52,7 @@ public class EmisBulkDetector extends SftpBulkDetector {
                 //if we find a deleted patient record, this can't be a bulk, so return out
                 String deletedStr = record.get("Deleted");
                 if (deletedStr.equals("true")) {
+                    LOG.debug("Found deleted patient so not bulk");
                     return false;
                 }
             }
@@ -59,10 +63,11 @@ public class EmisBulkDetector extends SftpBulkDetector {
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 1000) {
+            LOG.debug("On " + patientIds.size() + " patients so not bulk");
             return false;
         }
 
-        int journalRecords = 0;
+        int observationRecords = 0;
         reader = FileHelper.readFileReaderFromSharedStorage(observationFilePath);
         csvParser = new CSVParser(reader, EmisConstants.CSV_FORMAT.withHeader());
         try {
@@ -73,23 +78,26 @@ public class EmisBulkDetector extends SftpBulkDetector {
                 //if our observation file contains a record for a patient not in the patient file it can't be a bulk
                 String patientId = record.get("PatientGuid");
                 if (!patientIds.contains(patientId)) {
+                    LOG.debug("Observation for patient not in patient file so not bulk");
                     return false;
                 }
 
                 //if we find a deleted observation record, this can't be a bulk, so return out
                 String deletedStr = record.get("Deleted");
                 if (deletedStr.equals("true")) {
+                    LOG.debug("Deleted Observation so not bulk");
                     return false;
                 }
 
-                journalRecords ++;
+                observationRecords ++;
             }
         } finally {
             csvParser.close();
         }
 
         //this 4000 number is based on the smaller practice in the Emis test pack, so it is detected as a bulk
-        if (journalRecords < 4000) {
+        if (observationRecords < 4000) {
+            LOG.debug("Only " + observationRecords + " Observation records so not bulk");
             return false;
         }
 

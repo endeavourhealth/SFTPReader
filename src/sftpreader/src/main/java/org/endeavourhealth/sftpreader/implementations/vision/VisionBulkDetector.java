@@ -38,7 +38,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
         //Vision extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null
                 || journalFilePath == null) {
-            LOG.debug("Null patient or journal file so not a bulk");
+            //LOG.debug("Null patient or journal file so not a bulk");
             return false;
         }
 
@@ -77,7 +77,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 1000) {
-            LOG.debug("Only " + patientIds.size() + " patient IDs, so not a bulk");
+            //LOG.debug("Only " + patientIds.size() + " patient IDs, so not a bulk");
             return false;
         }
 
@@ -113,7 +113,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
 
                 //if our observation file contains a record for a patient not in the patient file it can't be a bulk
                 if (!patientIds.contains(patientId)) {
-                    LOG.debug("Patient ID " + patientId + " in journal but not in patient file, so not a bulk");
+                    //LOG.debug("Patient ID " + patientId + " in journal but not in patient file, so not a bulk");
                     return false;
                 }
 
@@ -133,11 +133,11 @@ public class VisionBulkDetector extends SftpBulkDetector {
         }
 
         if (journalRecords < 25000) {
-            LOG.debug("Only " + journalRecords + " found so not a bulk");
+            //LOG.debug("Only " + journalRecords + " found so not a bulk");
             return false;
         }
 
-        LOG.debug("Found " + patientIds.size() + " patients and " + journalRecords + " journal records so treating as bulk");
+        //LOG.debug("Found " + patientIds.size() + " patients and " + journalRecords + " journal records so treating as bulk");
         return true;
     }
 

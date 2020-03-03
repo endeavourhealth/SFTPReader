@@ -174,11 +174,11 @@ public class Main {
                     System.exit(0);
                 }
 
-                if (args[1].equalsIgnoreCase("RecreateBatchFile")) {
+                /*if (args[1].equalsIgnoreCase("RecreateBatchFile")) {
                     String configurationId = args[2];
                     recreateBatchFile(configurationId);
                     System.exit(0);
-                }
+                }*/
             }
 
             /*if (args.length > 0) {
@@ -221,7 +221,7 @@ public class Main {
         }
 	}
 
-    private static void recreateBatchFile(String configurationId) {
+    /*private static void recreateBatchFile(String configurationId) {
         LOG.info("Recreating batch file for " + configurationId);
         try {
             Connection conn = ConnectionManager.getSftpReaderNonPooledConnection();
@@ -338,7 +338,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
     /**
      * one-off routine to populate the new is_bulk column on the batch_split table so we
@@ -351,7 +351,7 @@ public class Main {
         PreparedStatement ps = null;
 
         try {
-            conn = ConnectionManager.getSftpReaderConnection();
+            conn = ConnectionManager.getSftpReaderNonPooledConnection();
 
             String sql = null;
             if (ConnectionManager.isPostgreSQL(conn)) {
