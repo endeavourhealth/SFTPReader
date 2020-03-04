@@ -179,6 +179,12 @@ public class Main {
                     recreateBatchFile(configurationId);
                     System.exit(0);
                 }*/
+
+                if (args[1].equalsIgnoreCase("RecreateBatchFile2")) {
+                    String configurationId = args[2];
+                    recreateBatchFile2(configurationId);
+                    System.exit(0);
+                }
             }
 
             /*if (args.length > 0) {
@@ -221,6 +227,162 @@ public class Main {
         }
 	}
 
+    /**
+     * recreates the batch_file table content after it was lost, but for the
+     * Emis configurations where the raw GPG files are deleted from S3 after four weeks
+     */
+    private static void recreateBatchFile2(String configurationId) {
+        LOG.info("Recreating batch file <2> for " + configurationId);
+        try {
+
+            if (!configurationId.contains("EMIS")) {
+                throw new Exception("Cannot run for non-Emis configuration");
+            }
+
+            Connection conn = ConnectionManager.getSftpReaderNonPooledConnection();
+
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+            if (dbConfiguration == null) {
+                throw new Exception("Failed to find configuration " + configurationId);
+            }
+
+            Date now = new Date();
+
+            DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+            List<Batch> batches = configuration.getDataLayer().getAllBatches(configurationId);
+            LOG.debug("Found " + batches.size() + " batches");
+
+            String sql = null;
+            if (ConnectionManager.isPostgreSQL(conn)) {
+                sql = "SELECT interface_type_id FROM configuration.configuration WHERE configuration_id = ?";
+            } else {
+                sql = "SELECT interface_type_id FROM configuration WHERE configuration_id = ?";
+            }
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, configurationId);
+
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            int interfaceTypeId = rs.getInt(1);
+
+            ps.close();
+
+            String localPath = dbConfiguration.getLocalRootPath();
+
+            for (int i=0; i<batches.size(); i++) {
+                Batch batch = batches.get(i);
+
+                List<BatchSplit> batchSplits = configuration.getDataLayer().getBatchSplitsForBatch(batch.getBatchId());
+                if (batchSplits.isEmpty()) {
+                    throw new Exception("No batch splits for batch " + batch.getBatchId());
+                }
+
+                Date batchCreateDate = batch.getInsertDate();
+
+                Map<String, String> hmFileNamesByType = new HashMap<>();
+                Map<String, Date> hmFileDatesByType = new HashMap<>();
+
+                for (BatchSplit batchSplit: batchSplits) {
+
+                    //work out S3 path
+                    String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
+                    String configurationDir = localPath; //e.g. TPP_TEST
+                    String batchSplitRelativePath = batchSplit.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00/Split/<org guid>/
+
+                    String path = FilenameUtils.concat(permDir, configurationDir);
+                    path = FilenameUtils.concat(path, batchSplitRelativePath);
+
+                    List<FileInfo> files = FileHelper.listFilesInSharedStorageWithInfo(path);
+                    for (FileInfo fileInfo: files) {
+
+                        String filePath = fileInfo.getFilePath();
+                        Date lastModified = fileInfo.getLastModified();
+                        long size = fileInfo.getSize();
+
+                        LocalDateTime ldt = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
+                        RemoteFile r = new RemoteFile(filePath, size, ldt);
+
+                        SftpFilenameParser parser = ImplementationActivator.createFilenameParser(false, r, dbConfiguration);
+                        if (parser.isFilenameValid()) {
+
+                            String fileType = parser.generateFileTypeIdentifier();
+                            Date extractDate = parser.getExtractDate();
+                            String fileName = FilenameUtils.getName(filePath) + ".gpg"; //files in split dirs have had this removed
+
+                            hmFileNamesByType.put(fileType, fileName);
+                            hmFileDatesByType.put(fileType, extractDate);
+                        }
+                    }
+                }
+
+                for (String fileType: hmFileDatesByType.keySet()) {
+                    String fileName = hmFileNamesByType.get(fileType);
+                    Date extractDate = hmFileDatesByType.get(fileType);
+
+                    //check batch file
+                    boolean alreadyThere = false;
+                    for (BatchFile batchFile: batch.getBatchFiles()) {
+                        if (batchFile.getFileTypeIdentifier().equals(fileType)) {
+                            alreadyThere = true;
+                            break;
+                        }
+                    }
+                    if (alreadyThere) {
+                        continue;
+                    }
+
+                    if (ConnectionManager.isPostgreSQL(conn)) {
+                        sql = "INSERT INTO log.batch_file (batch_id, interface_type_id, file_type_identifier,"
+                                + " insert_date, filename, remote_created_date, remote_size_bytes, is_downloaded, download_date, is_deleted)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    } else {
+                        sql = "INSERT INTO batch_file (batch_id, interface_type_id, file_type_identifier,"
+                                + " insert_date, filename, remote_created_date, remote_size_bytes, is_downloaded, download_date, is_deleted)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    }
+                    ps = conn.prepareStatement(sql);
+
+                    int col = 1;
+                    ps.setInt(col++, batch.getBatchId()); //batch_id
+                    ps.setInt(col++, interfaceTypeId); //interface_type_id
+                    ps.setString(col++, fileType); //file_type_identifier
+                    ps.setDate(col++, new java.sql.Date(now.getTime())); //insert_date
+                    ps.setString(col++, fileName); //filename
+                    ps.setDate(col++, new java.sql.Date(extractDate.getTime())); //remote_created_date
+                    ps.setLong(col++, 0); //remote_size_bytes
+                    ps.setBoolean(col++, true); //is_downloaded
+                    ps.setDate(col++, new java.sql.Date(batchCreateDate.getTime())); //download_date
+                    ps.setBoolean(col++, true); //is_deleted
+
+                    ps.executeUpdate();
+                    conn.commit();
+                    ps.close();
+                }
+
+                if (i % 100 == 0) {
+                    LOG.debug("Done " + i + " of " + batches.size());
+                }
+            }
+
+            conn.close();
+
+            LOG.info("Finished recreating batch file");
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
+
+    /**
+     * recreates the batch_file table content after it was lost using what's in S3
+     */
     /*private static void recreateBatchFile(String configurationId) {
         LOG.info("Recreating batch file for " + configurationId);
         try {
