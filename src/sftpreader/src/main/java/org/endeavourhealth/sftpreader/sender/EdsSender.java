@@ -70,7 +70,8 @@ public class EdsSender {
             }
 
             if (isBulk) {
-                httpPost.addHeader("IsBulk", "true");
+                //note that the case is lost in HTTP parameters, so there's no point trying to use CamelCase
+                httpPost.addHeader("is-bulk", "true");
             }
 
             httpPost.addHeader("Content-Type", "text/xml");

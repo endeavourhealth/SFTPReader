@@ -168,7 +168,8 @@ public class Main {
                     System.exit(0);
                 }*/
 
-                if (args[1].equalsIgnoreCase("CheckForBulks")) {
+                if (args.length > 1
+                    && args[1].equalsIgnoreCase("CheckForBulks")) {
                     String configurationId = args[2];
                     checkForBulks(configurationId);
                     System.exit(0);
@@ -180,11 +181,12 @@ public class Main {
                     System.exit(0);
                 }*/
 
-                if (args[1].equalsIgnoreCase("RecreateBatchFile2")) {
+                /*if (args.length > 1
+                    && args[1].equalsIgnoreCase("RecreateBatchFile2")) {
                     String configurationId = args[2];
                     recreateBatchFile2(configurationId);
                     System.exit(0);
-                }
+                }*/
             }
 
             /*if (args.length > 0) {
@@ -231,7 +233,7 @@ public class Main {
      * recreates the batch_file table content after it was lost, but for the
      * Emis configurations where the raw GPG files are deleted from S3 after four weeks
      */
-    private static void recreateBatchFile2(String configurationId) {
+    /*private static void recreateBatchFile2(String configurationId) {
         LOG.info("Recreating batch file <2> for " + configurationId);
         try {
 
@@ -378,7 +380,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
     /**
      * recreates the batch_file table content after it was lost using what's in S3
@@ -565,7 +567,7 @@ public class Main {
 
                     String tempPath = FilenameUtils.concat(tempDir, configurationDir);
                     tempPath = FilenameUtils.concat(tempPath, splitRelativePath);
-                    new File(tempPath).mkdirs();
+                    boolean createdTempPath = new File(tempPath).mkdirs();
 
                     LOG.debug(">>>>>>>>>>>>>>>>>>>>>>>Doing batch split " + split.getBatchSplitId());
 
@@ -628,6 +630,12 @@ public class Main {
 
                         String patientFileName = FilenameUtils.getName(permPatientPath);
                         String observationFileName = FilenameUtils.getName(permObservationPath);
+
+                        if (!new File(tempPath).exists()) {
+                            LOG.error("Temp path " + tempPath + " doesn't exist");
+                            boolean created = new File(tempPath).mkdirs();
+                            LOG.debug("Created Temp path = " + created);
+                        }
 
                         String tmpPatientPath = FilenameUtils.concat(tempPath, patientFileName);
                         String tmpObservationPath = FilenameUtils.concat(tempPath, observationFileName);
