@@ -567,6 +567,7 @@ public class Main {
                     tempPath = FilenameUtils.concat(tempPath, splitRelativePath);
                     new File(tempPath).mkdirs();
 
+                    LOG.debug(">>>>>>>>>>>>>>>>>>>>>>>Doing batch split " + split.getBatchSplitId());
 
                     if (bulkDetector instanceof TppBulkDetector) {
                         //for TPP, we have to copy the Manifest file to tmp
@@ -631,14 +632,16 @@ public class Main {
                         String tmpPatientPath = FilenameUtils.concat(tempPath, patientFileName);
                         String tmpObservationPath = FilenameUtils.concat(tempPath, observationFileName);
 
+                        LOG.debug("Copying patient file from " + permPatientPath + " -> " + tmpPatientPath);
                         InputStream is = FileHelper.readFileFromSharedStorage(permPatientPath);
                         Files.copy(is, new File(tmpPatientPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
                         is.close();
 
+                        LOG.debug("Copying observation file from " + permObservationPath + " -> " + tmpObservationPath);
                         is = FileHelper.readFileFromSharedStorage(permObservationPath);
                         Files.copy(is, new File(tmpObservationPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
                         is.close();
-                        LOG.debug("Copied patient file from " + permPatientPath + " -> " + tmpPatientPath + " exists = " + new File(tmpPatientPath).exists());
+
 
                     } else {
                         throw new Exception("Not implemented this yet for " + bulkDetector.getClass().getSimpleName());
