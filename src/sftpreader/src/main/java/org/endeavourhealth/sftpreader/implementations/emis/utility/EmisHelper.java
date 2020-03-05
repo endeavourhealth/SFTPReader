@@ -92,8 +92,7 @@ public class EmisHelper {
             return filePath;
         }
 
-        //we don't keep the un-split files in permanent storage now, so the below won't work
-        throw new SftpValidationException("Failed to find " + fileIdentifier + " in temp dir " + tempPath);
+        throw new SftpValidationException("Failed to find " + fileIdentifier + " in temp dir (expecting " + filePath + ")");
     }
 
 

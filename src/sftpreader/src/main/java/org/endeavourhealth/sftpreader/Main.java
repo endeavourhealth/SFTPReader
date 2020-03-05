@@ -638,6 +638,7 @@ public class Main {
                         is = FileHelper.readFileFromSharedStorage(permObservationPath);
                         Files.copy(is, new File(tmpObservationPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
                         is.close();
+                        LOG.debug("Copied patient file from " + permPatientPath + " -> " + tmpPatientPath + " exists = " + new File(tmpPatientPath).exists());
 
                     } else {
                         throw new Exception("Not implemented this yet for " + bulkDetector.getClass().getSimpleName());
