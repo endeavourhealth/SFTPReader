@@ -10,6 +10,8 @@ import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 public class EmisHelper {
-
+    private static final Logger LOG = LoggerFactory.getLogger(EmisHelper.class);
 
     public static String findPreSplitFileInTempDir(DbInstanceEds instanceConfiguration,
                                                     DbConfiguration dbConfiguration,
@@ -90,6 +92,15 @@ public class EmisHelper {
         File f = new File(filePath);
         if (f.exists()) {
             return filePath;
+        }
+
+        LOG.debug("File type [" + fileIdentifier + "]");
+        LOG.debug("File name [" + fileName + "]");
+        LOG.debug("Directory [" + tempPath + "]");
+        File[] contents = new File(tempPath).listFiles();
+        LOG.debug("Directory contains " + contents.length + " files");
+        for (File content: contents) {
+            LOG.debug("File: " + content);
         }
 
         throw new SftpValidationException("Failed to find " + fileIdentifier + " in temp dir (expecting " + filePath + ")");
