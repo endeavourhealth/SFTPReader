@@ -52,7 +52,7 @@ public class EmisBulkDetector extends SftpBulkDetector {
                 //if we find a deleted patient record, this can't be a bulk, so return out
                 String deletedStr = record.get("Deleted");
                 if (deletedStr.equals("true")) {
-                    LOG.debug("Found deleted patient so not bulk");
+                    //LOG.debug("Found deleted patient so not bulk");
                     return false;
                 }
             }
@@ -63,7 +63,7 @@ public class EmisBulkDetector extends SftpBulkDetector {
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 1000) {
-            LOG.debug("On " + patientIds.size() + " patients so not bulk");
+            //LOG.debug("Only " + patientIds.size() + " patients so not bulk");
             return false;
         }
 
@@ -78,14 +78,14 @@ public class EmisBulkDetector extends SftpBulkDetector {
                 //if our observation file contains a record for a patient not in the patient file it can't be a bulk
                 String patientId = record.get("PatientGuid");
                 if (!patientIds.contains(patientId)) {
-                    LOG.debug("Observation for patient not in patient file so not bulk");
+                    //LOG.debug("Observation for patient not in patient file so not bulk");
                     return false;
                 }
 
                 //if we find a deleted observation record, this can't be a bulk, so return out
                 String deletedStr = record.get("Deleted");
                 if (deletedStr.equals("true")) {
-                    LOG.debug("Deleted Observation so not bulk");
+                    //LOG.debug("Deleted Observation so not bulk");
                     return false;
                 }
 
@@ -97,7 +97,7 @@ public class EmisBulkDetector extends SftpBulkDetector {
 
         //this 4000 number is based on the smaller practice in the Emis test pack, so it is detected as a bulk
         if (observationRecords < 4000) {
-            LOG.debug("Only " + observationRecords + " Observation records so not bulk");
+            //LOG.debug("Only " + observationRecords + " Observation records so not bulk");
             return false;
         }
 
