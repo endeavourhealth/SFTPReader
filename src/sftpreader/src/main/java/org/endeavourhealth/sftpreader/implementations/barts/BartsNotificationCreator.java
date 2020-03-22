@@ -16,7 +16,7 @@ public class BartsNotificationCreator extends SftpNotificationCreator {
     private static final Logger LOG = LoggerFactory.getLogger(BartsNotificationCreator.class);
 
     @Override
-    public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
+    public PayloadWrapper createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
         //we have multiple file fragments of the same type in the same day, so we need to ensure they're properly ordered, so that the queue reader
@@ -46,7 +46,7 @@ public class BartsNotificationCreator extends SftpNotificationCreator {
             files.add(fileWrapper.getFileObj());
         }
 
-        return super.combineFilesForNotificationMessage(files);
+        return new PayloadWrapper(files);
     }
 
 

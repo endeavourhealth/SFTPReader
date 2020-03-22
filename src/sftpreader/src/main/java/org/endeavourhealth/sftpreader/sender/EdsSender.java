@@ -53,7 +53,7 @@ public class EdsSender {
         return edsEnvelope;
     }
 
-    public static EdsSenderResponse notifyEds(String edsUrl, boolean useKeycloak, String outboundMessage, boolean isBulk) throws EdsSenderHttpErrorResponseException, IOException
+    public static EdsSenderResponse notifyEds(String edsUrl, boolean useKeycloak, String outboundMessage, boolean isBulk, Long fileTotalSize) throws EdsSenderHttpErrorResponseException, IOException
     {
         RequestConfig requestConfig = RequestConfig
                 .custom()
@@ -72,6 +72,9 @@ public class EdsSender {
             if (isBulk) {
                 //note that the case is lost in HTTP parameters, so there's no point trying to use CamelCase
                 httpPost.addHeader("is-bulk", "true");
+            }
+            if (fileTotalSize != null) {
+                httpPost.addHeader("file-total-size", "" + fileTotalSize);
             }
 
             httpPost.addHeader("Content-Type", "text/xml");

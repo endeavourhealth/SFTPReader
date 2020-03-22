@@ -732,11 +732,11 @@ public class SftpReaderTask implements Runnable {
 
         try {
             SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration);
-            String messagePayload = sftpNotificationCreator.createNotificationMessage(organisationId, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, unnotifiedBatchSplit);
+            SftpNotificationCreator.PayloadWrapper messagePayload = sftpNotificationCreator.createNotificationMessage(organisationId, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, unnotifiedBatchSplit);
 
             EdsSenderResponse edsSenderResponse = null;
 
-            if (Strings.isNullOrEmpty(messagePayload)) {
+            if (messagePayload == null) {
                 //if an empty message payload is returned, this means to NOT fail the batch but also not notify the messaging API for it
                 //which allows us to skip earlier extracts for an organisation received BEFORE a bulk or re-bulk
                 edsSenderResponse = new EdsSenderResponse();
@@ -744,13 +744,13 @@ public class SftpReaderTask implements Runnable {
                 edsSenderResponse.setResponseBody("Outbound message payload was empty, so message not being sent to Messaging API");
 
             } else {
-                outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload);
+                outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload.getPayload());
 
                 String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
                 boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
                 boolean isBulk = unnotifiedBatchSplit.isBulk();
 
-                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage, isBulk);
+                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage, isBulk, messagePayload.getTotalSize());
             }
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),

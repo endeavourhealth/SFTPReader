@@ -20,27 +20,24 @@ import java.util.*;
 public abstract class SftpNotificationCreator {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SftpNotificationCreator.class);
 
-    public abstract String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
+    public abstract PayloadWrapper createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                                      DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception;
 
 
     /**
      * creates default notification message which is a list of files found
      */
-    protected String createDefaultNotificationMessage(DbInstanceEds instanceConfiguration,
+    protected PayloadWrapper createDefaultNotificationMessage(DbInstanceEds instanceConfiguration,
                                                    DbConfiguration dbConfiguration,
                                                       DataLayerI db,
                                                    BatchSplit batchSplit,
                                                    String requiredFileExtension) throws Exception {
 
         List<ExchangePayloadFile> files = findFilesForDefaultNotificationMessage(instanceConfiguration, dbConfiguration, db, batchSplit, requiredFileExtension);
-        return combineFilesForNotificationMessage(files);
+        return new PayloadWrapper(files);
     }
 
-    protected String combineFilesForNotificationMessage(List<ExchangePayloadFile> files) {
-        String json = JsonSerializer.serialize(files);
-        return json;
-    }
+
 
     protected List<ExchangePayloadFile> findFilesForDefaultNotificationMessage(DbInstanceEds instanceConfiguration,
                                                                                DbConfiguration dbConfiguration,
@@ -215,4 +212,39 @@ public abstract class SftpNotificationCreator {
         return ret;
     }*/
 
+    public static class PayloadWrapper {
+        private String payload;
+        private Long totalSize;
+
+        public PayloadWrapper(List<ExchangePayloadFile> files) {
+            this.payload = combineFilesForNotificationMessage(files);
+            this.totalSize = sumFilesForNotificationMessage(files);
+        }
+
+        public PayloadWrapper(String payload, Long totalSize) {
+            this.payload = payload;
+            this.totalSize = totalSize;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
+
+        public Long getTotalSize() {
+            return totalSize;
+        }
+
+        public static Long sumFilesForNotificationMessage(List<ExchangePayloadFile> files) {
+            long sum = 0;
+            for (ExchangePayloadFile file: files) {
+                sum += file.getSize().longValue();
+            }
+            return new Long(sum);
+        }
+
+        public static String combineFilesForNotificationMessage(List<ExchangePayloadFile> files) {
+            String json = JsonSerializer.serialize(files);
+            return json;
+        }
+    }
 }

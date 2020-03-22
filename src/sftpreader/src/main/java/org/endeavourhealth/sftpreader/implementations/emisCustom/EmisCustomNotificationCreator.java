@@ -8,7 +8,7 @@ import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 
 public class EmisCustomNotificationCreator extends SftpNotificationCreator {
     @Override
-    public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
+    public PayloadWrapper createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
         return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, db, batchSplit, "txt");
     }
 }

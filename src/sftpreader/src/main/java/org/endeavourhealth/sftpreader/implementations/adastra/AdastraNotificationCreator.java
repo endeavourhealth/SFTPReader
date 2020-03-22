@@ -9,7 +9,7 @@ import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 public class AdastraNotificationCreator extends SftpNotificationCreator {
 
     @Override
-    public String createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
+    public PayloadWrapper createNotificationMessage(String organisationId, DataLayerI db, DbInstanceEds instanceConfiguration,
                                             DbConfiguration dbConfiguration, BatchSplit batchSplit) throws Exception {
 
         return super.createDefaultNotificationMessage(instanceConfiguration, dbConfiguration, db, batchSplit, "csv");
