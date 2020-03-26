@@ -41,6 +41,12 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
     @Override
     public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
+        //we have had some zero-length Adastra files (see data for 2019-11-24) and the function to read the first
+        //characters doesn't support files shorter than the requested length. So explicitly test for empty files
+        if (isBatchEmpty(batch)) {
+            return new ArrayList<>();
+        }
+
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
         String configurationDir = dbConfiguration.getLocalRootPath();
@@ -70,6 +76,33 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         } else {
             LOG.debug("Detected case file V2 " + caseFilePath);
             return splitBatchVersion2(batch, db, dbConfiguration, caseFilePath, sourcePermDir, splitTempDir);
+        }
+    }
+
+    private boolean isBatchEmpty(Batch batch) throws Exception {
+
+        long caseFileLen = 0;
+        long totalFileLen = 0;
+
+        for (BatchFile batchFile: batch.getBatchFiles()) {
+            String fileType = batchFile.getFileTypeIdentifier();
+            long len = batchFile.getRemoteSizeBytes();
+
+            totalFileLen += len;
+
+            if (fileType.equals(FILE_TYPE_CASE)) {
+                caseFileLen = len;
+            }
+        }
+
+        if (caseFileLen > 0) {
+            return false;
+
+        } else if (totalFileLen == 0) {
+            return true;
+
+        } else {
+            throw new Exception("Zero length case file but non-empty other files for batch " + batch.getBatchIdentifier());
         }
     }
 
@@ -472,12 +505,9 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
     private static String findCaseFile(Batch batch, String sourcePermDir, DbConfiguration dbConfiguration) throws Exception {
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
-
-            String fileName = batchFile.getFilename();
-            RemoteFile remoteFile = new RemoteFile(fileName, -1, null);
-            AdastraFilenameParser nameParser = new AdastraFilenameParser(false, remoteFile, dbConfiguration);
-            String fileType = nameParser.generateFileTypeIdentifier();
+            String fileType = batchFile.getFileTypeIdentifier();
             if (fileType.equals(FILE_TYPE_CASE)) {
+                String fileName = batchFile.getFilename();
                 return FilenameUtils.concat(sourcePermDir, fileName);
             }
         }
