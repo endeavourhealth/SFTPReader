@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.nio.file.Files;
@@ -202,7 +203,10 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
                 for (String odsCode: expectedOdsCodes) {
                     String copyTo = FilenameUtils.concat(splitTempDir, odsCode);
                     copyTo = FilenameUtils.concat(copyTo, fileName);
-                    Files.copy(new File(filePath).toPath(), new File(copyTo).toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                    InputStream is = FileHelper.readFileFromSharedStorage(filePath);
+                    Files.copy(is, new File(copyTo).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    is.close();
                 }
 
             } else {
@@ -251,11 +255,15 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             }
         }
 
+        return copyToPermanentStorageAndCreateBatchSplits(expectedOdsCodes, batch, sourcePermDir, splitTempDir);
+    }
 
+    private List<BatchSplit> copyToPermanentStorageAndCreateBatchSplits(Set<String> odsCodes, Batch batch,
+                                                                        String sourcePermDir, String splitTempDir) throws Exception {
         List<BatchSplit> ret = new ArrayList<>();
 
         //create a batch split for each ODS code
-        for (String odsCode: expectedOdsCodes) {
+        for (String odsCode: odsCodes) {
 
             String localPath = FilenameUtils.concat(batch.getLocalRelativePath(), SPLIT_FOLDER);
             localPath = FilenameUtils.concat(localPath, odsCode);
