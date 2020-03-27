@@ -12,7 +12,7 @@ public class AdastraSlackNotifier extends SftpSlackNotifier {
 
     public String getCompleteBatchMessageSuffix(Batch completeBatch) {
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy HH:mm:ss");
         LocalDateTime extractDate = AdastraFilenameParser.parseBatchIdentifier(completeBatch.getBatchIdentifier());
 
         long totalSizeInBytes = completeBatch.
