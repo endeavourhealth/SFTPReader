@@ -23,9 +23,9 @@ public class AdastraBatchValidator extends SftpBatchValidator {
         Validate.notNull(dbConfiguration.getInterfaceFileTypes(), "dbConfiguration.interfaceFileTypes is null");
         Validate.notEmpty(dbConfiguration.getInterfaceFileTypes(), "No interface file types configured");
 
-        //a batch for an Adastra extract is made up of 9 files (v1) or 11 files (v2)
+        //a batch for an Adastra extract is made up of 11 files (v2)
         int fileCount = incompleteBatch.getBatchFiles().size();
-        if (fileCount != 9 && fileCount != 11) {
+        if (fileCount != 11) {
             throw new SftpValidationException("Incorrect number of files ("+Integer.toString(fileCount)+") in batch. Batch identifier = " + incompleteBatch.getBatchIdentifier());
         }
 
