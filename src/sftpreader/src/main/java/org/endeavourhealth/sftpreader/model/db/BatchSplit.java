@@ -91,7 +91,8 @@ public class BatchSplit {
         return isBulk;
     }
 
-    public void setBulk(boolean bulk) {
+    public BatchSplit setBulk(boolean bulk) {
         isBulk = bulk;
+        return this;
     }
 }

@@ -293,6 +293,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                     .setBatchId(resultSet.getInt("batch_id"))
                     .setLocalRelativePath(resultSet.getString("local_relative_path"))
                     .setOrganisationId(resultSet.getString("organisation_id"))
+                    .setBulk(resultSet.getBoolean("is_bulk"))
                     .setConfigurationId(configurationId));
 
         List<Batch> batches = populateBatches(pgStoredProc);
