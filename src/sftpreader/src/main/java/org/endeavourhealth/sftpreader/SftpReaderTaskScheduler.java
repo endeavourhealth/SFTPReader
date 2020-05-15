@@ -77,5 +77,11 @@ public class SftpReaderTaskScheduler implements ApplicationHeartbeatCallbackI {
     @Override
     public void populateIsBusy(ApplicationHeartbeat applicationHeartbeat) {
         applicationHeartbeat.setBusy(new Boolean(this.isRunning));
+        //applicationHeartbeat.setIsBusyDetail(); can't think of anything specific for this
+    }
+
+    @Override
+    public void populateInstanceNumber(ApplicationHeartbeat applicationHeartbeat) {
+        //no instance number to set
     }
 }
