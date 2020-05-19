@@ -36,6 +36,9 @@ public class ImplementationActivator {
         } else if (contentType.equalsIgnoreCase("ADASTRACSV")) {
             return "org.endeavourhealth.sftpreader.implementations.adastra.Adastra";
 
+        } else if (contentType.equalsIgnoreCase("BHRUTCSV")) {
+            return "org.endeavourhealth.sftpreader.implementations.bhrut.Bhrut";
+
         } else {
             throw new Exception("Unknown content type [" + contentType + "]");
         }
