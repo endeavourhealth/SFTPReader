@@ -63,9 +63,10 @@ public class BhrutFilenameParser extends SftpFilenameParser {
 
         //check for rogue characters in filename
         String baseName = FilenameUtils.getBaseName(fileName);
-        if (baseName.contains("%") || baseName.contains("\\")) {
+        String fullPath = this.remoteFile.getFullPath();
+        if (baseName.contains("%") || fullPath.contains("/\\")) {
 
-            throw new SftpFilenameParseException("Unexpected filename format received: "+fileName);
+            throw new SftpFilenameParseException("Unexpected filename format found: "+fullPath);
         }
 
         //filename format e.g. dds_PATIENT_ALERTS_20200421103433.csv or dds_PMI_20200421103433.csv

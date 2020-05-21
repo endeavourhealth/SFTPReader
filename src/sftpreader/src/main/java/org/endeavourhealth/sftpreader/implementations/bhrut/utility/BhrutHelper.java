@@ -2,7 +2,7 @@ package org.endeavourhealth.sftpreader.implementations.bhrut.utility;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
-import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
@@ -71,7 +71,7 @@ public class BhrutHelper {
             if (ext.equalsIgnoreCase("csv")) {
 
                 RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Vision filename parsing
-                VisionFilenameParser parser = new VisionFilenameParser(false, r, dbConfiguration);
+                BhrutFilenameParser parser = new BhrutFilenameParser(false, r, dbConfiguration);
                 String fileType = parser.generateFileTypeIdentifier();
                 if (fileType.equals(fileIdentifier)) {
                     filePath = f.getAbsolutePath();
