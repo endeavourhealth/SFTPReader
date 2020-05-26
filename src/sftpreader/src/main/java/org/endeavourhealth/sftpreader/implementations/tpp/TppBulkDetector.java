@@ -93,7 +93,7 @@ public class TppBulkDetector extends SftpBulkDetector {
 
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
-        if (patientIds.size() < 1000) {
+        if (patientIds.size() < 900) { //test pack has 956 patients, so set the threshold below this
             LOG.debug("Only " + patientIds.size() + " patients so not bulk");
             return false;
         }
@@ -111,7 +111,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 CSVRecord record = iterator.next();
 
                 //if our SRCode file contains a record for a patient not in the patient file it can't be a bulk
-                String patientId = record.get("RowIdentifier");
+                String patientId = record.get("IDPatient");
                 if (!patientIds.contains(patientId)) {
                     LOG.debug("SRCode for patient not in patient file so not bulk");
                     return false;

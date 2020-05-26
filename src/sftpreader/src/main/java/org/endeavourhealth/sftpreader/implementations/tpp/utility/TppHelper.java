@@ -42,8 +42,7 @@ public class TppHelper {
             String name = f.getName();
             String ext = FilenameUtils.getExtension(name);
             if (ext.equalsIgnoreCase("csv")) {
-LOG.trace("Checking file " + f);
-                RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for TPP filename parsing
+                RemoteFile r = new RemoteFile(f.getAbsolutePath(), -1, null); //size and modification date aren't needed for TPP filename parsing
                 TppFilenameParser parser = new TppFilenameParser(false, r, dbConfiguration);
                 String fileType = parser.generateFileTypeIdentifier();
                 if (fileType.equals(fileIdentifier)) {

@@ -680,7 +680,7 @@ public class Main {
 
             for (Batch b: batches) {
                 List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
-                LOG.debug("Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
+                LOG.debug(">>>>>>>>Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
 
                 for (BatchSplit split: splits) {
 
@@ -703,7 +703,7 @@ public class Main {
                     tempPath = FilenameUtils.concat(tempPath, splitRelativePath);
                     boolean createdTempPath = new File(tempPath).mkdirs();
 
-                    LOG.debug(">>>>>>>>>>>>>>>>>>>>>>>Doing batch split " + split.getBatchSplitId());
+                    //LOG.debug(">>>>>>>>>>>>>>>>>>>>>>>Doing batch split " + split.getBatchSplitId());
 
                     if (bulkDetector instanceof TppBulkDetector) {
                         //for TPP, we have to copy the Manifest, Patient and Code file to tmp
@@ -726,7 +726,7 @@ public class Main {
                                     InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
                                     Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
                                     is.close();
-                                    LOG.trace("Copied " + filePermPath + " to " + fileTempPath);
+                                    //LOG.trace("Copied " + filePermPath + " to " + fileTempPath);
                                 } catch (Exception ex) {
                                     LOG.error("Error copying " + filePermPath + " to " + fileTempPath);
                                     throw ex;
