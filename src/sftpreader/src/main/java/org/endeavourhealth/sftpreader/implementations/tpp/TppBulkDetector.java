@@ -55,6 +55,13 @@ public class TppBulkDetector extends SftpBulkDetector {
         String patientFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.PATIENT_FILE_TYPE);
         String codeFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.CODE_FILE_TYPE);
 
+        //TPP extracts don't always contain all files, in which case it's definitely not a bulk
+        if (patientFilePath == null
+                || codeFilePath == null) {
+            LOG.debug("Null patient or code file so not a bulk");
+            return false;
+        }
+
         Set<String> patientIds = new HashSet<>();
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(patientFilePath);

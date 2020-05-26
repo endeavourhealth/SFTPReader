@@ -711,20 +711,24 @@ public class Main {
                         files.add(TppConstants.PATIENT_FILE);
                         files.add(TppConstants.CODE_FILE);
 
-                        for (String fileName: files) {
-                            String permPath = FilenameUtils.concat(permDir, configurationDir);
-                            permPath = FilenameUtils.concat(permPath, splitRelativePath);
-                            String filePermPath = FilenameUtils.concat(permPath, fileName);
+                        String permPath = FilenameUtils.concat(permDir, configurationDir);
+                        permPath = FilenameUtils.concat(permPath, splitRelativePath);
 
-                            String fileTempPath = FilenameUtils.concat(tempPath, fileName);
+                        List<String> storageContents = FileHelper.listFilesInSharedStorage(permPath);
+                        for (String filePermPath: storageContents) {
+                            String fileName = FilenameUtils.getName(filePermPath);
+                            if (files.contains(fileName)) {
 
-                            try {
-                                InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
-                                Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                                is.close();
-                            } catch (Exception ex) {
-                                LOG.error("Error copying " + filePermPath + " to " + fileTempPath);
-                                throw ex;
+                                String fileTempPath = FilenameUtils.concat(tempPath, fileName);
+
+                                try {
+                                    InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
+                                    Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                    is.close();
+                                } catch (Exception ex) {
+                                    LOG.error("Error copying " + filePermPath + " to " + fileTempPath);
+                                    throw ex;
+                                }
                             }
                         }
 
