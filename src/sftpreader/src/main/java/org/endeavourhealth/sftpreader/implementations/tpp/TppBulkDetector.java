@@ -64,7 +64,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         //TPP extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null
                 || codeFilePath == null) {
-            //LOG.debug("Null patient or code file so not a bulk");
+            LOG.debug("Null patient or code file so not a bulk");
             return false;
         }
 
@@ -88,7 +88,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 if (patientFileHasDeletedColumn) {
                     String deletedStr = record.get("RemovedData");
                     if (deletedStr.equals("1")) { //TPP use 1 and 0 for booleans
-                        //LOG.debug("Found deleted patient so not bulk");
+                        LOG.debug("Found deleted patient so not bulk");
                         return false;
                     }
                 }
@@ -100,7 +100,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 900) { //test pack has 956 patients, so set the threshold below this
-            //LOG.debug("Only " + patientIds.size() + " patients so not bulk");
+            LOG.debug("Only " + patientIds.size() + " patients so not bulk");
             return false;
         }
 
@@ -119,7 +119,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 //if our SRCode file contains a record for a patient not in the patient file it can't be a bulk
                 String patientId = record.get("IDPatient");
                 if (!patientIds.contains(patientId)) {
-                    //LOG.debug("SRCode for patient not in patient file so not bulk");
+                    LOG.debug("SRCode for patient not in patient file so not bulk");
                     return false;
                 }
 
@@ -127,7 +127,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 if (codeFileHasDeletedColumn) {
                     String deletedStr = record.get("RemovedData");
                     if (deletedStr.equals("1")) {
-                        //LOG.debug("Deleted SRCode so not bulk");
+                        LOG.debug("Deleted SRCode so not bulk");
                         return false;
                     }
                 }
@@ -140,7 +140,7 @@ public class TppBulkDetector extends SftpBulkDetector {
 
         //this 4000 number is based on the smaller practice in the Emis test pack, so it is detected as a bulk
         if (observationRecords < 10000) {
-            //LOG.debug("Only " + observationRecords + " Observation records so not bulk");
+            LOG.debug("Only " + observationRecords + " Observation records so not bulk");
             return false;
         }
 
