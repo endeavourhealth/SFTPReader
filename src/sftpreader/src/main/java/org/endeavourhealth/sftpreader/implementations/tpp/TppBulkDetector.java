@@ -29,13 +29,19 @@ public class TppBulkDetector extends SftpBulkDetector {
     private static final Logger LOG = LoggerFactory.getLogger(TppBulkDetector.class);
 
     /**
-     * the TPP extract
+     * the SRManifest file is supposed to tell us whether a file is a bulk or not. However, we have had
+     * at least one case where the SRPatient.csv file is flagged as a bulk but it doesn't contain any data for
+     * a practice included in the other files (see batch 14239 for ODS code E85745). Because of this,
+     * the TPP bulk detection has been changed to rely on the content of the Patient and Code files (similar to Emis and Vision)
+     * rather than the manifest file
      */
     @Override
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
-        boolean manifestIsBulk = detectBulkFromManifest(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+        return detectBulkFromFileContents(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+
+        /*boolean manifestIsBulk = detectBulkFromManifest(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
         boolean filesLookBulk = detectBulkFromFileContents(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
 
         //if the match, then we're good
@@ -45,7 +51,7 @@ public class TppBulkDetector extends SftpBulkDetector {
 
         String msg = "Manifest bulk = " + manifestIsBulk + " and file bulk = " + filesLookBulk
                 + " for batch " + batch.getBatchId() + " in " + dbConfiguration.getConfigurationId();
-        throw new Exception(msg);
+        throw new Exception(msg);*/
     }
 
     private boolean detectBulkFromFileContents(Batch batch, BatchSplit batchSplit, DataLayerI db,
@@ -58,7 +64,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         //TPP extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null
                 || codeFilePath == null) {
-            LOG.debug("Null patient or code file so not a bulk");
+            //LOG.debug("Null patient or code file so not a bulk");
             return false;
         }
 
@@ -82,7 +88,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 if (patientFileHasDeletedColumn) {
                     String deletedStr = record.get("RemovedData");
                     if (deletedStr.equals("1")) { //TPP use 1 and 0 for booleans
-                        LOG.debug("Found deleted patient so not bulk");
+                        //LOG.debug("Found deleted patient so not bulk");
                         return false;
                     }
                 }
@@ -94,7 +100,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 900) { //test pack has 956 patients, so set the threshold below this
-            LOG.debug("Only " + patientIds.size() + " patients so not bulk");
+            //LOG.debug("Only " + patientIds.size() + " patients so not bulk");
             return false;
         }
 
@@ -113,7 +119,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 //if our SRCode file contains a record for a patient not in the patient file it can't be a bulk
                 String patientId = record.get("IDPatient");
                 if (!patientIds.contains(patientId)) {
-                    LOG.debug("SRCode for patient not in patient file so not bulk");
+                    //LOG.debug("SRCode for patient not in patient file so not bulk");
                     return false;
                 }
 
@@ -121,7 +127,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 if (codeFileHasDeletedColumn) {
                     String deletedStr = record.get("RemovedData");
                     if (deletedStr.equals("1")) {
-                        LOG.debug("Deleted SRCode so not bulk");
+                        //LOG.debug("Deleted SRCode so not bulk");
                         return false;
                     }
                 }
@@ -141,7 +147,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         return true;
     }
 
-    private boolean detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
+    /*private boolean detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the SRManifest file will still be in our temp storage
@@ -173,5 +179,5 @@ public class TppBulkDetector extends SftpBulkDetector {
         } else {
             return false;
         }
-    }
+    }*/
 }
