@@ -181,6 +181,14 @@ public class Main {
                     System.exit(0);
                 }
 
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("CopyTppManifestFiles")) {
+                    String configurationId = args[2];
+                    boolean testMode = Boolean.parseBoolean(args[3]);
+                    copyTppManifestFiles(configurationId, testMode);
+                    System.exit(0);
+                }
+
                 /*if (args[1].equalsIgnoreCase("RecreateBatchFile")) {
                     String configurationId = args[2];
                     recreateBatchFile(configurationId);
@@ -234,6 +242,114 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    /**
+     * TPP manifest files weren't originally copied into the /SPLIT/ODScode directories, but they are now.
+     * This routine copies them over where necessary so the old files are in the same pattern as the new
+     */
+    private static void copyTppManifestFiles(String configurationId, boolean testMode) {
+        LOG.info("Copying TPP Manifest Files for " + configurationId);
+
+        try {
+
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+            if (dbConfiguration == null) {
+                throw new Exception("Failed to find configuration " + configurationId);
+            }
+
+            DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+            SftpBulkDetector bulkDetector = ImplementationActivator.createSftpBulkDetector(dbConfiguration);
+
+            DataLayerI dataLayer = configuration.getDataLayer();
+            List<Batch> batches = dataLayer.getAllBatches(configurationId);
+            LOG.debug("Found " + batches.size() + " batches");
+
+            //ensure batches are sorted properly
+            batches.sort((o1, o2) -> {
+                Integer i1 = o1.getSequenceNumber();
+                Integer i2 = o2.getSequenceNumber();
+                return i1.compareTo(i2);
+            });
+
+            for (Batch b: batches) {
+                List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
+                LOG.debug("Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
+
+                String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
+                String tempDir = edsConfiguration.getTempDirectory(); //e.g. c:\temp
+                String configurationDir = dbConfiguration.getLocalRootPath(); //e.g. TPP_TEST
+                String batchRelativePath = b.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00
+
+                String tempPath = FilenameUtils.concat(tempDir, configurationDir);
+                tempPath = FilenameUtils.concat(tempPath, batchRelativePath);
+                if (!new File(tempPath).exists()) {
+                    new File(tempPath).mkdirs();
+                }
+                String fileTempPath = FilenameUtils.concat(tempPath, TppConstants.MANIFEST_FILE);
+
+                String permPath = FilenameUtils.concat(permDir, configurationDir);
+                permPath = FilenameUtils.concat(permPath, batchRelativePath);
+                String filePermPath = FilenameUtils.concat(permPath, TppConstants.MANIFEST_FILE);
+
+                try {
+                    InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
+                    Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    is.close();
+                } catch (Exception ex) {
+                    LOG.error("Error copying " + filePermPath + " to " + fileTempPath);
+                    throw ex;
+                }
+
+                //now check to see if the file exists in the SPLIT dir for each org
+                for (BatchSplit split: splits) {
+
+                    String splitRelativePath = split.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00\Split\HSCIC6
+
+                    String orgPermPath = FilenameUtils.concat(permDir, configurationDir);
+                    orgPermPath = FilenameUtils.concat(orgPermPath, splitRelativePath);
+
+                    boolean manifestMissing = true;
+
+                    List<String> files = FileHelper.listFilesInSharedStorage(orgPermPath);
+                    for (String file: files) {
+                        String fileName = FilenameUtils.getName(file);
+                        if (fileName.equals(TppConstants.MANIFEST_FILE)) {
+                            manifestMissing = false;
+                            break;
+                        }
+                    }
+
+                    if (manifestMissing) {
+
+                        if (testMode) {
+                            LOG.info("Would need to fix " + orgPermPath);
+
+                        } else {
+                            String orgPermFile = FilenameUtils.concat(orgPermPath, TppConstants.MANIFEST_FILE);
+                            FileHelper.writeFileToSharedStorage(orgPermFile, new File(fileTempPath));
+
+                            LOG.info("Copied into " + orgPermPath);
+                        }
+                    }
+                }
+
+                //delete the tmp directory contents
+                FileHelper.deleteRecursiveIfExists(tempPath);
+            }
+
+            LOG.info("Finished checking for Bulks in " + configurationId);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     /**
      * recreates the batch_file table content after it was lost, but for the
@@ -597,12 +713,7 @@ public class Main {
 
                         for (String fileName: files) {
                             String permPath = FilenameUtils.concat(permDir, configurationDir);
-                            if (fileName.equals(TppConstants.MANIFEST_FILE)) {
-                                //manifest file wasn't carried over into the SPLIT sub-directories
-                                permPath = FilenameUtils.concat(permPath, batchRelativePath);
-                            } else {
-                                permPath = FilenameUtils.concat(permPath, splitRelativePath);
-                            }
+                            permPath = FilenameUtils.concat(permPath, splitRelativePath);
                             String filePermPath = FilenameUtils.concat(permPath, fileName);
 
                             String fileTempPath = FilenameUtils.concat(tempPath, fileName);
