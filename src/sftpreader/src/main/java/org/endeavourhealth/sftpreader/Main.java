@@ -597,14 +597,24 @@ public class Main {
 
                         for (String fileName: files) {
                             String permPath = FilenameUtils.concat(permDir, configurationDir);
-                            permPath = FilenameUtils.concat(permPath, batchRelativePath); //don't have this in the split path
+                            if (fileName.equals(TppConstants.MANIFEST_FILE)) {
+                                //manifest file wasn't carried over into the SPLIT sub-directories
+                                permPath = FilenameUtils.concat(permPath, batchRelativePath);
+                            } else {
+                                permPath = FilenameUtils.concat(permPath, splitRelativePath);
+                            }
                             String filePermPath = FilenameUtils.concat(permPath, fileName);
 
                             String fileTempPath = FilenameUtils.concat(tempPath, fileName);
 
-                            InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
-                            Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                            is.close();
+                            try {
+                                InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
+                                Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                is.close();
+                            } catch (Exception ex) {
+                                LOG.error("Error copying " + filePermPath + " to " + fileTempPath);
+                                throw ex;
+                            }
                         }
 
                     } else if (bulkDetector instanceof VisionBulkDetector) {
