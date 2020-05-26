@@ -47,6 +47,7 @@ import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.regex.Pattern;
 
 
 public class Main {
@@ -171,7 +172,12 @@ public class Main {
                 if (args.length > 1
                     && args[1].equalsIgnoreCase("CheckForBulks")) {
                     String configurationId = args[2];
-                    checkForBulks(configurationId);
+                    boolean testMode = Boolean.parseBoolean(args[3]);
+                    String odsRegex = null;
+                    if (args.length > 4) {
+                        odsRegex = args[4];
+                    }
+                    checkForBulks(configurationId, testMode, odsRegex);
                     System.exit(0);
                 }
 
@@ -508,8 +514,11 @@ public class Main {
      * one-off routine to populate the new is_bulk column on the batch_split table so we
      * can work out if we've received bulk data for a service or not
      */
-    private static void checkForBulks(String configurationId) throws Exception {
+    private static void checkForBulks(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
         LOG.info("Checking for Bulks in " + configurationId);
+        if (!Strings.isNullOrEmpty(odsCodeRegex)) {
+            LOG.info("Restricting to orgs matching " + odsCodeRegex);
+        }
 
         Connection conn = null;
         PreparedStatement ps = null;
@@ -559,6 +568,14 @@ public class Main {
 
                 for (BatchSplit split: splits) {
 
+                    String odsCode = split.getOrganisationId();
+                    if (!Strings.isNullOrEmpty(odsCodeRegex)
+                            && (Strings.isNullOrEmpty(odsCode)
+                                || !Pattern.matches(odsCodeRegex, odsCode))) {
+                        LOG.debug("Skipping " + odsCode + " due to regex");
+                        continue;
+                    }
+
                     String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
                     String tempDir = edsConfiguration.getTempDirectory(); //e.g. c:\temp
                     String configurationDir = dbConfiguration.getLocalRootPath(); //e.g. TPP_TEST
@@ -572,16 +589,23 @@ public class Main {
                     LOG.debug(">>>>>>>>>>>>>>>>>>>>>>>Doing batch split " + split.getBatchSplitId());
 
                     if (bulkDetector instanceof TppBulkDetector) {
-                        //for TPP, we have to copy the Manifest file to tmp
-                        String permPath = FilenameUtils.concat(permDir, configurationDir);
-                        permPath = FilenameUtils.concat(permPath, batchRelativePath); //don't have this in the split path
-                        String perManifestPath = FilenameUtils.concat(permPath, TppConstants.MANIFEST_FILE);
+                        //for TPP, we have to copy the Manifest, Patient and Code file to tmp
+                        List<String> files = new ArrayList<>();
+                        files.add(TppConstants.MANIFEST_FILE);
+                        files.add(TppConstants.PATIENT_FILE);
+                        files.add(TppConstants.CODE_FILE);
 
-                        String tempManifestPath = FilenameUtils.concat(tempPath, TppConstants.MANIFEST_FILE);
+                        for (String fileName: files) {
+                            String permPath = FilenameUtils.concat(permDir, configurationDir);
+                            permPath = FilenameUtils.concat(permPath, batchRelativePath); //don't have this in the split path
+                            String filePermPath = FilenameUtils.concat(permPath, fileName);
 
-                        InputStream is = FileHelper.readFileFromSharedStorage(perManifestPath);
-                        Files.copy(is, new File(tempManifestPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        is.close();
+                            String fileTempPath = FilenameUtils.concat(tempPath, fileName);
+
+                            InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
+                            Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            is.close();
+                        }
 
                     } else if (bulkDetector instanceof VisionBulkDetector) {
                         //for Vision, we need the patient and journal files
@@ -655,16 +679,31 @@ public class Main {
                         throw new Exception("Not implemented this yet for " + bulkDetector.getClass().getSimpleName());
                     }
 
-                    boolean isBulk = bulkDetector.isBulkExtract(b, split, dataLayer, edsConfiguration, dbConfiguration);
-                    if (isBulk) {
-                        LOG.debug("    Found bulk for " + split.getOrganisationId());
+                    try {
+                        boolean isBulk = bulkDetector.isBulkExtract(b, split, dataLayer, edsConfiguration, dbConfiguration);
+
+                        if (isBulk) {
+                            LOG.debug("    Found bulk for " + split.getOrganisationId());
+                        }
+
+                        if (testMode) {
+                            LOG.debug("" + odsCode + " bulk = " + isBulk);
+
+                        } else {
+                            ps.setBoolean(1, isBulk);
+                            ps.setInt(2, split.getBatchSplitId());
+
+                            ps.executeUpdate();
+                            conn.commit();
+                        }
+
+                    } catch (Exception ex) {
+                        if (testMode) {
+                            LOG.error(ex.getMessage());
+                        } else {
+                            throw ex;
+                        }
                     }
-
-                    ps.setBoolean(1, isBulk);
-                    ps.setInt(2, split.getBatchSplitId());
-
-                    ps.executeUpdate();
-                    conn.commit();
 
                     //delete the tmp directory contents
                     FileHelper.deleteRecursiveIfExists(tempPath);
