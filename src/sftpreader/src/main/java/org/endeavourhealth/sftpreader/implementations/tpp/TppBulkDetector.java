@@ -60,10 +60,10 @@ public class TppBulkDetector extends SftpBulkDetector {
         if (!filesLookBulk) {
             msg += "\r\nData not a bulk because " + filesLookBulkReason;
         }
+        msg += "\r\nFile content bulk state will be used";
         LOG.warn(msg);
 
-        //TODO - restore this
-        //SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
+        SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
 
         //trust the files
         return filesLookBulk;
