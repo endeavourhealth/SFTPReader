@@ -688,9 +688,10 @@ public class Main {
                     if (!Strings.isNullOrEmpty(odsCodeRegex)
                             && (Strings.isNullOrEmpty(odsCode)
                                 || !Pattern.matches(odsCodeRegex, odsCode))) {
-                        LOG.debug("Skipping " + odsCode + " due to regex");
+                        //LOG.debug("Skipping " + odsCode + " due to regex");
                         continue;
                     }
+                    LOG.debug("Doing " + odsCode);
 
                     String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
                     String tempDir = edsConfiguration.getTempDirectory(); //e.g. c:\temp
@@ -725,6 +726,7 @@ public class Main {
                                     InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
                                     Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
                                     is.close();
+                                    LOG.trace("Copied " + filePermPath + " to " + fileTempPath);
                                 } catch (Exception ex) {
                                     LOG.error("Error copying " + filePermPath + " to " + fileTempPath);
                                     throw ex;

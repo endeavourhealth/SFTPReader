@@ -145,14 +145,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the SRManifest file will still be in our temp storage
-        String tempDir = instanceConfiguration.getTempDirectory(); //e.g. c:\temp
-        String configurationDir = dbConfiguration.getLocalRootPath(); //e.g. TPP_TEST
-        String splitRelativePath = batchSplit.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00\Split\HSCIC6
-
-        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
-        sourceTempDir = FilenameUtils.concat(sourceTempDir, splitRelativePath);
-
-        String manifestPath = FilenameUtils.concat(sourceTempDir, TppConstants.MANIFEST_FILE);
+        String manifestPath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.MANIFEST_FILE_TYPE);
         File f = new File(manifestPath);
         if (!f.exists()) {
             throw new Exception("Failed to find manifest file " + f);

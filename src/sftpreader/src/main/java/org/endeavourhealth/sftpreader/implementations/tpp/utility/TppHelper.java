@@ -6,11 +6,13 @@ import org.endeavourhealth.sftpreader.implementations.tpp.TppFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
 public class TppHelper {
-
+    private static final Logger LOG = LoggerFactory.getLogger(TppHelper.class);
     /**
      * finds the file of the given "type" in the temp directory structure
      * Note that although this looks similar to the equivalent Emis and Vision functions, it is different since
@@ -40,7 +42,7 @@ public class TppHelper {
             String name = f.getName();
             String ext = FilenameUtils.getExtension(name);
             if (ext.equalsIgnoreCase("csv")) {
-
+LOG.trace("Checking file " + f);
                 RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for TPP filename parsing
                 TppFilenameParser parser = new TppFilenameParser(false, r, dbConfiguration);
                 String fileType = parser.generateFileTypeIdentifier();

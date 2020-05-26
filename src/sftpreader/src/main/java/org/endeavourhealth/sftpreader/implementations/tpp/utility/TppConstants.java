@@ -16,6 +16,7 @@ public class TppConstants {
     //note these are file TYPES, not file names
     public static final String PATIENT_FILE_TYPE = "Patient";
     public static final String CODE_FILE_TYPE = "Code";
+    public static final String MANIFEST_FILE_TYPE = "Manifest";
 
     public static final String REQUIRED_CHARSET = "Cp1252";
 
