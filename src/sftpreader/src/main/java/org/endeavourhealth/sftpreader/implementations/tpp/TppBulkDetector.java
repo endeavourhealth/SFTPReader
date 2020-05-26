@@ -4,6 +4,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
@@ -33,28 +34,45 @@ public class TppBulkDetector extends SftpBulkDetector {
      * at least one case where the SRPatient.csv file is flagged as a bulk but it doesn't contain any data for
      * a practice included in the other files (see batch 14239 for ODS code E85745). Because of this,
      * the TPP bulk detection has been changed to rely on the content of the Patient and Code files (similar to Emis and Vision)
-     * rather than the manifest file
+     * rather than the manifest file. It still checks SRManifest and will send a Slack alert if it detects a difference,
+     * so this issue can be investigated in a more timely manner.
      */
     @Override
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
-        return detectBulkFromFileContents(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+        String manifestBulkReason = detectBulkFromManifest(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+        String filesLookBulkReason = detectBulkFromFileContents(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
 
-        /*boolean manifestIsBulk = detectBulkFromManifest(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
-        boolean filesLookBulk = detectBulkFromFileContents(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+        boolean manifestIsBulk = manifestBulkReason == null;
+        boolean filesLookBulk = filesLookBulkReason == null;
 
         //if the match, then we're good
         if (manifestIsBulk == filesLookBulk) {
             return manifestIsBulk;
         }
 
-        String msg = "Manifest bulk = " + manifestIsBulk + " and file bulk = " + filesLookBulk
-                + " for batch " + batch.getBatchId() + " in " + dbConfiguration.getConfigurationId();
-        throw new Exception(msg);*/
+        String msg = "Discrepancy between SRManifest (bulk = " + manifestIsBulk + ") and file content (bulk = " + filesLookBulk + ") for "
+                + batchSplit.getOrganisationId() + " batch " + batch.getBatchIdentifier();
+        if (!manifestIsBulk) {
+            msg += "\r\nSRManifest states " + manifestBulkReason;
+        }
+        if (!filesLookBulk) {
+            msg += "\r\nData doesn't look like a bulk because " + filesLookBulkReason;
+        }
+        LOG.warn(msg);
+
+        //TODO - restore this
+        //SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
+
+        //trust the files
+        return filesLookBulk;
     }
 
-    private boolean detectBulkFromFileContents(Batch batch, BatchSplit batchSplit, DataLayerI db,
+    /**
+     * returns NULL is it looked like a bulk, and a String saying why it doesn't
+     */
+    private String detectBulkFromFileContents(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the files will still be in our temp storage
@@ -64,8 +82,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         //TPP extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null
                 || codeFilePath == null) {
-            LOG.debug("Null patient or code file so not a bulk");
-            return false;
+            return "Missing SRPatient or SRCode file so not a bulk";
         }
 
         Set<String> patientIds = new HashSet<>();
@@ -88,8 +105,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                 if (patientFileHasDeletedColumn) {
                     String deletedStr = record.get("RemovedData");
                     if (deletedStr.equals("1")) { //TPP use 1 and 0 for booleans
-                        LOG.debug("Found deleted patient so not bulk");
-                        return false;
+                        return "Found deleted SRPatient record so not bulk";
                     }
                 }
             }
@@ -100,8 +116,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         //just as a safety, if the patients file was really small, then it can't be a bulk
         //which means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 900) { //test pack has 956 patients, so set the threshold below this
-            LOG.debug("Only " + patientIds.size() + " patients so not bulk");
-            return false;
+            return "Only " + patientIds.size() + " patients in SRPatient so not bulk";
         }
 
         int observationRecords = 0;
@@ -119,16 +134,14 @@ public class TppBulkDetector extends SftpBulkDetector {
                 //if our SRCode file contains a record for a patient not in the patient file it can't be a bulk
                 String patientId = record.get("IDPatient");
                 if (!patientIds.contains(patientId)) {
-                    LOG.debug("SRCode for patient not in patient file so not bulk");
-                    return false;
+                    return "SRCode record found for patient not in patient file so not bulk";
                 }
 
                 //if we find a deleted observation record, this can't be a bulk, so return out
                 if (codeFileHasDeletedColumn) {
                     String deletedStr = record.get("RemovedData");
                     if (deletedStr.equals("1")) {
-                        LOG.debug("Deleted SRCode so not bulk");
-                        return false;
+                        return "Deleted SRCode record so not bulk";
                     }
                 }
 
@@ -140,14 +153,13 @@ public class TppBulkDetector extends SftpBulkDetector {
 
         //this 4000 number is based on the smaller practice in the Emis test pack, so it is detected as a bulk
         if (observationRecords < 10000) {
-            LOG.debug("Only " + observationRecords + " Observation records so not bulk");
-            return false;
+            return "Only " + observationRecords + " SRCode records so not bulk";
         }
 
-        return true;
+        return null;
     }
 
-    /*private boolean detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
+    private String detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the SRManifest file will still be in our temp storage
@@ -159,25 +171,46 @@ public class TppBulkDetector extends SftpBulkDetector {
 
         //we know that a manifest may contain a mix of bulks and deltas, but for the sake of
         //simplicity treat it as a bulk if we have SRPatient and SRCode bulk files
+        boolean patientFound = false;
         boolean patientBulk = false;
+        boolean codeFound = false;
         boolean codeBulk = false;
+
 
         List<ManifestRecord> records = ManifestRecord.readManifestFile(f);
         for (ManifestRecord record: records) {
             String fileName = record.getFileNameWithExtension();
             if (fileName.equals(TppConstants.PATIENT_FILE)) {
+                patientFound = true;
                 patientBulk = !record.isDelta();
 
             } else if (fileName.equals(TppConstants.CODE_FILE)) {
+                codeFound = true;
                 codeBulk = !record.isDelta();
             }
         }
 
-        if (patientBulk && codeBulk) {
-            return true;
+        if (!patientFound && !codeFound) {
+            return "No SRPatient or SRCode file listed";
+
+        } else if (!patientFound) {
+            return "No SRPatient file listed";
+
+        } else if (!codeFound) {
+            return "No SRCode file listed";
+
+        } else if  (!patientBulk && !codeBulk) {
+            return "SRPatient and SRCode are deltas";
+
+        } else if (!patientBulk) {
+            return "SRPatient is delta";
+
+        } else if (!codeBulk) {
+            return "SRCode is delta";
 
         } else {
-            return false;
+            //indicates it IS a bulk
+            return null;
         }
-    }*/
+    }
 }
