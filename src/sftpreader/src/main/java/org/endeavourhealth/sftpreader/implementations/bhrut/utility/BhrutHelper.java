@@ -15,7 +15,7 @@ public class BhrutHelper {
 
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader(
             "LineStatus",
-            "PATIENT_EXTERNAL_ID",
+            "EXTERNAL_ID",
             "PAS_ID",
             "FORENAME",
             "SURNAME",
@@ -38,7 +38,10 @@ public class BhrutHelper {
             "ETHNICITY_CODE",
             "FOREIGN_LANGUAGE_CODE",
             "NOK_NAME",
-            "NOKREL_NHSCODE");
+            "NOKREL_NHSCODE",
+            "REGISTERED_GP_CODE",
+            "REGISTERED_GP_PRACTICE",
+            "REGISTERED_GP_PRACTICE_CODE");
 
     public static final String PATIENT_PMI_FILE_TYPE = "PMI";
 
