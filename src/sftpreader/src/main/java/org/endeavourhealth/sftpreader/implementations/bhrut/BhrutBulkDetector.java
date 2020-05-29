@@ -51,7 +51,7 @@ public class BhrutBulkDetector extends SftpBulkDetector {
                 String patientId = record.get("PAS_ID");
                 patientIds.add(patientId);
 
-                String dataUpdateStatusStr = record.get("DataUpdateStatusStr");
+                String dataUpdateStatusStr = record.get("DataUpdateStatus");
                 validateDataUpdateStatusStrValue(dataUpdateStatusStr);
 
                 //if we find a Delete or an Updated patient record, this can't be a bulk, so return out
