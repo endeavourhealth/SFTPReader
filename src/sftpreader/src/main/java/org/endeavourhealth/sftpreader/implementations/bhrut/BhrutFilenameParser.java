@@ -69,20 +69,22 @@ public class BhrutFilenameParser extends SftpFilenameParser {
             throw new SftpFilenameParseException("Unexpected filename format found: "+fullPath);
         }
 
-        //filename format e.g. dds_PATIENT_ALERTS_20200421103433.csv or dds_PMI_20200421103433.csv
+        //filename format from v1.3 specification
+        //e.g. BHRUT_1_PATIENT_ALERTS_DataWarehouse_20200526221214.csv or BHRUT_1_PMI_DataWarehouse_20200526221214.csv
+
         //split the filename into parts using the underscore
         String[] tokens = baseName.split("_");
 
-        if (tokens.length == 3) {
+        if (tokens.length == 5) {
 
-            this.fileTypeIdentifier = tokens[1];
-            String dateTimeStr = tokens[2];
+            this.fileTypeIdentifier = tokens[2];
+            String dateTimeStr = tokens[4];
             this.extractDateTime = LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
-        } else if (tokens.length == 4) {
+        } else if (tokens.length == 6) {
 
-            this.fileTypeIdentifier = tokens[1] + "_" + tokens[2];
-            String dateTimeStr = tokens[3];
+            this.fileTypeIdentifier = tokens[2] + "_" + tokens[3];
+            String dateTimeStr = tokens[5];
             this.extractDateTime = LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
         } else {

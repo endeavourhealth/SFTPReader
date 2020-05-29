@@ -20,9 +20,14 @@ public class BhrutHelper {
             "FORENAME",
             "SURNAME",
             "NHS_NUMBER",
-            "GENDER_CODE",
+            "GENDER",
             "BIRTH_DTTM",
             "DEATH_DTTM",
+            "CAUSEOFDEATH",
+            "CAUSEOFDEATH_1B",
+            "CAUSEOFDEATH_1c",
+            "CAUSEOFDEATH_2",
+            "INFECTION_STATUS",
             "ADDRESS1",
             "ADDRESS2",
             "ADDRESS3",
@@ -41,7 +46,8 @@ public class BhrutHelper {
             "NOKREL_NHSCODE",
             "REGISTERED_GP_CODE",
             "REGISTERED_GP_PRACTICE",
-            "REGISTERED_GP_PRACTICE_CODE");
+            "REGISTERED_GP_PRACTICE_CODE",
+            "DataUpdateStatus");
 
     public static final String PATIENT_PMI_FILE_TYPE = "PMI";
 

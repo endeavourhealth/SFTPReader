@@ -23,7 +23,7 @@ public class BhrutBulkDetector extends SftpBulkDetector {
 
     /**
      * the Bhrut extract doesn't have any "bulk" flag, so infer whether a bulk or not by:
-     * 1. look for deletes in the Patient PMI file (if deletes exist , then not a bulk)
+     * 1. look for deletes and updates in the Patient PMI file (if deletes exist , then not a bulk)
      * 2. look for a small (ish) number of patients in PMI file (if <1500, then not a bulk)
      */
     @Override
@@ -51,11 +51,11 @@ public class BhrutBulkDetector extends SftpBulkDetector {
                 String patientId = record.get("PAS_ID");
                 patientIds.add(patientId);
 
-                String lineStatusStr = record.get("LineStatus");
-                validateLineStatusStrValue(lineStatusStr);
+                String dataUpdateStatusStr = record.get("DataUpdateStatusStr");
+                validateDataUpdateStatusStrValue(dataUpdateStatusStr);
 
-                //if we find a Delete or an Undelete patient record, this can't be a bulk, so return out
-                if (!lineStatusStr.equalsIgnoreCase("Add")) {
+                //if we find a Delete or an Updated patient record, this can't be a bulk, so return out
+                if (!dataUpdateStatusStr.equalsIgnoreCase("Added")) {
                     return false;
                 }
             }
@@ -64,7 +64,7 @@ public class BhrutBulkDetector extends SftpBulkDetector {
         }
 
         //just as a safety, if the patients file was really small, then it can't be a bulk
-        //which means we won't accidentally count an empty file set as a bulk
+        //which also means we won't accidentally count an empty file set as a bulk
         if (patientIds.size() < 1500) {
             return false;
         }
@@ -72,13 +72,12 @@ public class BhrutBulkDetector extends SftpBulkDetector {
         return true;
     }
 
+    private static void validateDataUpdateStatusStrValue(String actionStr) throws Exception {
 
-    private static void validateLineStatusStrValue(String actionStr) throws Exception {
-
-        if (!actionStr.equalsIgnoreCase("Add")
-                && !actionStr.equalsIgnoreCase("Delete")
-                && !actionStr.equalsIgnoreCase("Undelete")) {
-            throw new Exception("LineStatus column contains unexpected value [" + actionStr + "]");
+        if (!actionStr.equalsIgnoreCase("Added")
+                && !actionStr.equalsIgnoreCase("Deleted")
+                && !actionStr.equalsIgnoreCase("Updated")) {
+            throw new Exception("DataUpdateStatus column contains unexpected value [" + actionStr + "]");
         }
     }
 }
