@@ -665,7 +665,7 @@ public class MySqlDataLayer implements DataLayerI {
                 int batchId = rs.getInt(col++);
                 String batchIdentifier = rs.getString(col++);
                 String batchLocalRelativePath = rs.getString(col++);
-                Date insertDate = rs.getDate(col++);
+                Date insertDate = new java.util.Date(rs.getTimestamp(col++).getTime());
 
                 //need to handle possible null of sequence number
                 Integer sequenceNumber = null;

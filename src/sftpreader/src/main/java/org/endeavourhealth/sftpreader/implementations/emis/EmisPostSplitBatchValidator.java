@@ -6,11 +6,13 @@ import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.SharingAgreementRecord;
+import org.endeavourhealth.sftpreader.implementations.tpp.TppFilenameParser;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -20,17 +22,19 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
     @Override
     public void validateBatchPostSplit(Batch newBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws Exception {
 
-        List<BatchSplit> splits = db.getBatchSplitsForBatch(newBatch.getBatchId());
-        LOG.trace("Found " + splits.size() + " splits for batch " + newBatch.getBatchId());
+        //detect if we've received data out of order for Emis
+        if (lastCompleteBatch != null) {
+            LocalDateTime incompleteDt = EmisFilenameParser.parseBatchIdentifier(newBatch.getBatchIdentifier());
+            LocalDateTime lastDt = EmisFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
+            checkForOutOfOrderBatches(newBatch, incompleteDt, lastCompleteBatch, lastDt, dbConfiguration, db);
+        }
 
+        //now we've split the files, we can attempt to fix any disabled extract
+        List<BatchSplit> splits = db.getBatchSplitsForBatch(newBatch.getBatchId());
         for (BatchSplit split: splits) {
 
             String odsCode = split.getOrganisationId();
-
-
-            //now we've split the files, we can attempt to fix any disabled extract
             attemptDisabledExtractFixIfNecessary(odsCode, newBatch, lastCompleteBatch, db, instanceConfiguration, dbConfiguration);
-
         }
     }
 
