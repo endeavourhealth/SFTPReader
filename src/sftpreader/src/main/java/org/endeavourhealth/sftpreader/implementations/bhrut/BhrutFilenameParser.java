@@ -70,7 +70,7 @@ public class BhrutFilenameParser extends SftpFilenameParser {
         }
 
         //filename format from v1.3 specification
-        //e.g. BHRUT_1_PATIENT_ALERTS_DataWarehouse_20200526221214.csv or BHRUT_1_PMI_DataWarehouse_20200526221214.csv
+        //e.g. BHRUT_1_PATIENT_ALERTS_DW_20200526221214.csv or BHRUT_1_PMI_DW_20200526221214.csv
 
         //split the filename into parts using the underscore
         String[] tokens = baseName.split("_");
