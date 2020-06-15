@@ -191,8 +191,12 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             File[] splitFiles = orgDir.listFiles();
 
             //filter each split file to include organisation and GMS registration data only
-            LOG.trace("Filtering " + splitFiles.length + " files in " + orgDir);
-            filterFiles(orgId, splitFiles, db);
+            LOG.trace("Filtering shared data out of " + splitFiles.length + " files in " + orgDir);
+            filterFilesForSharedData(orgId, splitFiles, db);
+
+            //TODO https://endeavourhealth.atlassian.net/browse/SD-70 - comment the below and create the function
+            /*LOG.trace("Filtering duplicate data out of " + splitFiles.length + " files in " + orgDir);
+            filterFilesForDuplicateData(orgId, splitFiles, db);*/
 
             //copy everything to storage
             LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
@@ -261,7 +265,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         return containsDelta;
     }
 
-    private static void filterFiles (String orgId, File[] splitFiles, DataLayerI db) throws Exception  {
+    private static void filterFilesForSharedData(String orgId, File[] splitFiles, DataLayerI db) throws Exception  {
 
         //save/update the split SRPatientRegistrationFile GMS orgs to the db
         for (File splitFile : splitFiles) {
