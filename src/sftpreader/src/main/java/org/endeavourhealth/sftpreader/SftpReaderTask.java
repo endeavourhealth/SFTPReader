@@ -186,11 +186,10 @@ public class SftpReaderTask implements Runnable {
         if (attempt.getConfigurationId().contains("VISION")) {
 
             //if we had the specific error then don't bother sending the all clear
-            if (previousAttempt != null) {
-                String previousError = previousAttempt.getErrorText();
-                if (previousError.contains("java.net.SocketException: Connection reset")) { //the specific error
-                    return false;
-                }
+            if (previousAttempt != null
+                    && previousAttempt.hasError()
+                    && previousAttempt.getErrorText().contains("java.net.SocketException: Connection reset")) {
+                return false;
             }
         }
 
