@@ -189,6 +189,12 @@ public class Main {
                     System.exit(0);
                 }
 
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("TestVisionSlackAlert")) {
+                    testVisionSlackAlert();
+                    System.exit(0);
+                }
+
                 /*if (args[1].equalsIgnoreCase("RecreateBatchFile")) {
                     String configurationId = args[2];
                     recreateBatchFile(configurationId);
@@ -242,6 +248,53 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void testVisionSlackAlert() {
+        try {
+            LOG.debug("Testing Vision Slack Alert");
+
+            ConfigurationPollingAttempt newAttempt;
+            ConfigurationPollingAttempt previousAttempt;
+
+            String err = "org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException: Exception occurred while downloading files - cannot continue or may process batches out of order\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.downloadNewFiles(SftpReaderTask.java:375)\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.run(SftpReaderTask.java:74)\n" +
+                    "\tat java.lang.Thread.run(Thread.java:748)\n" +
+                    "Caused by: com.jcraft.jsch.JSchException: Session.connect: java.net.SocketException: Connection reset\n" +
+                    "\tat com.jcraft.jsch.Session.connect(Session.java:565)\n" +
+                    "\tat com.jcraft.jsch.Session.connect(Session.java:183)\n" +
+                    "\tat org.endeavourhealth.sftpreader.sources.SftpConnection.open(SftpConnection.java:74)\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.openSftpConnection(SftpReaderTask.java:391)\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.downloadNewFiles(SftpReaderTask.java:323)\n" +
+                    "\t... 2 more\n";
+
+            newAttempt = new ConfigurationPollingAttempt();
+            newAttempt.setConfigurationId("VISION_Y03296");
+            newAttempt.setErrorText(err);
+
+            previousAttempt = new ConfigurationPollingAttempt();
+            previousAttempt.setConfigurationId("VISION_Y03296");
+            previousAttempt.setErrorText(null);
+
+            boolean shouldSendAlert = SftpReaderTask.shouldSendSlackAlert(newAttempt, previousAttempt);
+            LOG.debug("Would send alert = " + shouldSendAlert + " SHOULD BE FALSE");
+
+            newAttempt = new ConfigurationPollingAttempt();
+            newAttempt.setConfigurationId("VISION_Y03296");
+            newAttempt.setErrorText(err);
+
+            previousAttempt = new ConfigurationPollingAttempt();
+            previousAttempt.setConfigurationId("VISION_Y03296");
+            previousAttempt.setErrorText(err);
+
+            shouldSendAlert = SftpReaderTask.shouldSendSlackAlert(newAttempt, previousAttempt);
+            LOG.debug("Would send alert = " + shouldSendAlert + " SHOULD BE TRUE");
+
+            LOG.debug("Finished Testing Vision Slack Alert");
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     /**
      * TPP manifest files weren't originally copied into the /SPLIT/ODScode directories, but they are now.
