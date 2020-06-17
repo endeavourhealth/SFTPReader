@@ -188,8 +188,15 @@ public class SftpReaderTask implements Runnable {
         //to a new extract being made available and we get errors connecting. Changing the polling frequency
         //doesn't really stop this, so this code attempts to stop the Slack alerts for this known behaviour.
         if (attempt.getConfigurationId().contains("VISION")) {
+
             LOG.trace("Is VISION");
-            LOG.trace("(previousAttempt != null) = " + (previousAttempt != null) + " && (previousAttempt.hasError()) = " + (previousAttempt.hasError()) + " && (previousAttempt.getErrorText().contains(\"java.net.SocketException: Connection reset\")) = " + (previousAttempt.getErrorText().contains("java.net.SocketException: Connection reset")));
+            LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
+            if (previousAttempt != null) {
+                LOG.trace(" && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
+                if (previousAttempt.hasError()) {
+                    LOG.trace(" && (previousAttempt.getErrorText().contains(\"java.net.SocketException: Connection reset\")) = " + (previousAttempt.getErrorText().contains("java.net.SocketException: Connection reset")));
+                }
+            }
 
             //if we had the specific error then don't bother sending the all clear
             if (previousAttempt != null
@@ -200,7 +207,11 @@ public class SftpReaderTask implements Runnable {
         }
 
         //if no error now but we previously had one, then send a Slack message to say all OK now
-        LOG.trace("(previousAttempt != null) = " + (previousAttempt != null) + " && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
+        LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
+        if (previousAttempt != null) {
+            LOG.trace(" && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
+        }
+
         return previousAttempt != null
                 && previousAttempt.hasError();
 
@@ -225,8 +236,16 @@ public class SftpReaderTask implements Runnable {
             //but if the same error persists over two polling attempts, then send the alert
             String currentError = attempt.getErrorText();
             if (currentError.contains("java.net.SocketException: Connection reset")) { //the specific error
+
                 LOG.trace("Current error contains Connection reset message");
-                LOG.trace("(previousAttempt != null) = " + (previousAttempt != null) + " && (previousAttempt.hasError()) = " + (previousAttempt.hasError()) + " && (previousAttempt.getErrorText().equals(attempt.getErrorText())) = " + (previousAttempt.getErrorText().equals(attempt.getErrorText())));
+                LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
+                if (previousAttempt != null) {
+                    LOG.trace(" && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
+                    if (previousAttempt.hasError()) {
+                        LOG.trace(" && (previousAttempt.getErrorText().equals(attempt.getErrorText())) = " + (previousAttempt.getErrorText().equals(attempt.getErrorText())));
+                    }
+                }
+
                 //note this is the exact opposite of the regular logic
                 return previousAttempt != null
                         && previousAttempt.hasError()
@@ -235,7 +254,14 @@ public class SftpReaderTask implements Runnable {
         }
 
         //if we've got a new or different error to the previous polling attempt then send the alert
-        LOG.trace("(previousAttempt == null) = " + (previousAttempt == null) + " || (!previousAttempt.hasError()) = " + (!previousAttempt.hasError()) + " || (!previousAttempt.getErrorText().equals(attempt.getErrorText()) = " + (!previousAttempt.getErrorText().equals(attempt.getErrorText())));
+        LOG.trace("(previousAttempt == null) = " + (previousAttempt == null));
+        if (previousAttempt != null) {
+            LOG.trace(" || (!previousAttempt.hasError()) = " + (!previousAttempt.hasError()));
+            if (previousAttempt.hasError()) {
+                LOG.trace(" || (!previousAttempt.getErrorText().equals(attempt.getErrorText()) = " + (!previousAttempt.getErrorText().equals(attempt.getErrorText())));
+            }
+        }
+
         return previousAttempt == null
                 || !previousAttempt.hasError()
                 || !previousAttempt.getErrorText().equals(attempt.getErrorText());
