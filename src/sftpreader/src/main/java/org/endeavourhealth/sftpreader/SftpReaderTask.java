@@ -151,13 +151,12 @@ public class SftpReaderTask implements Runnable {
 
     private void savePollingAttempt(ConfigurationPollingAttempt attempt) {
         try {
-
-            //save the latest polling attempt
-            attempt.setAttemptFinished(new Date());
-            db.savePollingAttempt(attempt);
-
             LOG.trace(">>>Getting details on previous polling attempt");
             ConfigurationPollingAttempt previousAttempt = db.getLastPollingAttempt(configurationId);
+
+            //save the latest polling attempt, AFTER getting the previous one!
+            attempt.setAttemptFinished(new Date());
+            db.savePollingAttempt(attempt);
 
             //if an error now, then see if the error has appeared or changed since last polling attempt
             if (shouldSendSlackAlert(attempt, previousAttempt)) {
