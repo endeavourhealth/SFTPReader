@@ -352,6 +352,7 @@ public class Main {
                     LOG.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                     continue;
                 }
+                LOG.debug("Latest bulk " + lastBulk.getBatchId() + " from " + lastBulk.getBatchIdentifier());
 
                 int lastBulkIndex = batches.indexOf(lastBulk);
                 if (lastBulkIndex == -1) {
@@ -380,6 +381,7 @@ public class Main {
 
                     //find data date
                     Date dataDate = null;
+                    boolean foundPatientOrCode = false;
 
                     //work out S3 path
                     String permDir = edsConfiguration.getSharedStoragePath();
@@ -402,6 +404,12 @@ public class Main {
                         SftpFilenameParser parser = ImplementationActivator.createFilenameParser(false, r, dbConfiguration);
                         if (parser.isFilenameValid()) {
 
+                            String fileType = parser.generateFileTypeIdentifier();
+                            if (fileType.equals("Code")
+                                    || fileType.equals("Patient")) {
+                                foundPatientOrCode = true;
+                            }
+
                             Date extractDate = parser.getExtractDate();
 
                             if (dataDate == null) {
@@ -416,22 +424,26 @@ public class Main {
                         throw new Exception("Failed to find data date for batch " + b.getBatchId());
                     }
 
-                    logging.add("Seq# " + b.getSequenceNumber() + " -> " + simpleDateFormat.format(dataDate) + " batch ID " + b.getBatchId());
+                    //only count the batch if it had a patient or code file
+                    if (foundPatientOrCode) {
 
-                    if (lastDataDate != null
-                            && dataDate.before(lastDataDate)) {
+                        logging.add("Seq# " + b.getSequenceNumber() + " -> " + simpleDateFormat.format(dataDate) + " batch ID " + b.getBatchId());
 
-                        if (testMode) {
-                            logging.add(">>>>>>>>>>Latest batch before previous one!<<<<<<<<<<<<<<");
-                            LOG.debug(String.join("\n", logging));
+                        if (lastDataDate != null
+                                && dataDate.before(lastDataDate)) {
 
-                        } else {
-                            //TODO
+                            if (testMode) {
+                                logging.add(">>>>>>>>>>Latest batch before previous one!<<<<<<<<<<<<<<");
+                                LOG.debug(String.join("\n", logging));
+
+                            } else {
+                                //TODO
+                            }
                         }
+
+                        lastDataDate = dataDate;
+
                     }
-
-                    lastDataDate = dataDate;
-
                 }
             }
 
