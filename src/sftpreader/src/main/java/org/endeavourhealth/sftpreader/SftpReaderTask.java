@@ -200,7 +200,8 @@ public class SftpReaderTask implements Runnable {
             //if we had the specific error then don't bother sending the all clear
             if (previousAttempt != null
                     && previousAttempt.hasError()
-                    && previousAttempt.getErrorText().contains("java.net.SocketException: Connection reset")) {
+                    && (previousAttempt.getErrorText().contains("java.net.SocketException: Connection reset")
+                        || previousAttempt.getErrorText().contains("java.net.ConnectException: Connection refused"))) {
                 return false;
             }
         }
@@ -234,7 +235,8 @@ public class SftpReaderTask implements Runnable {
             //if we get the specific error, and DIDN'T have that error last polling attempt, then don't send an alert,
             //but if the same error persists over two polling attempts, then send the alert
             String currentError = attempt.getErrorText();
-            if (currentError.contains("java.net.SocketException: Connection reset")) { //the specific error
+            if (currentError.contains("java.net.SocketException: Connection reset")
+                    || currentError.contains("java.net.ConnectException: Connection refused")) { //the specific errors
 
                 LOG.trace("Current error contains Connection reset message");
                 LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
