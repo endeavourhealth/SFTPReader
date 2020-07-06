@@ -164,7 +164,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         return null;
     }
 
-    private String detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
+    public static String detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the SRManifest file will still be in our temp storage

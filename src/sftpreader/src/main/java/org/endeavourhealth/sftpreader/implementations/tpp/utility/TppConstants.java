@@ -21,4 +21,16 @@ public class TppConstants {
     public static final String REQUIRED_CHARSET = "Cp1252";
 
     public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.ALL);
+
+    //Column unique identifier for SR Code file
+    public static final String COL_ROW_IDENTIFIER_TPP = "RowIdentifier";
+    //Flag to process duplicate records for TPP
+    public static final boolean FILTER_DUPLICATE_TPP = true;
+    //Publisher TPP
+    public static final String PUBLISHER_TPP = "TPP";
+    //Max threshold FOR TPP
+    public static final int MAX_THRESHOLD_TPP = 200000;
+
+
+
 }

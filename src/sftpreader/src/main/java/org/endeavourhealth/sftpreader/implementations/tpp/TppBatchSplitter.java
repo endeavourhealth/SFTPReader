@@ -1,15 +1,24 @@
 package org.endeavourhealth.sftpreader.implementations.tpp;
 
 import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.apache.commons.csv.*;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.StringMemorySaver;
+import org.endeavourhealth.core.csv.CsvHelper;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.ManifestRecord;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +26,16 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.Callable;
+
+
 
 public class TppBatchSplitter extends SftpBatchSplitter {
 
@@ -30,8 +48,9 @@ public class TppBatchSplitter extends SftpBatchSplitter {
     private static final String REMOVED_DATA_COLUMN = "RemovedData";
     private static final String SPLIT_FOLDER = "Split";
 
-    //private static Set<String> cachedFilesToIgnore = null;
     private static Set<String> cachedFilesToNotSplit = null;
+    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
+    private static String batchDir = null;
 
     /**
      * splits the TPP extract files org ID, storing the results in sub-directories using that org ID as the name
@@ -43,7 +62,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
         String tempDir = instanceConfiguration.getTempDirectory();
         String configurationDir = dbConfiguration.getLocalRootPath();
-        String batchDir = batch.getLocalRelativePath();
+        batchDir = batch.getLocalRelativePath();
 
         //the big CSV files should already be in our temp storage. If so, use those files rather than the ones from permanent storage
         String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
@@ -102,7 +121,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
         //copy all our files to permanent storage and create the batch split objects
         //build a list of the folders containing file sets, to return
-        return copyToPermanentStorageAndCreateBatchSplits(orgDirs, batch, sourcePermDir, db);
+        return copyToPermanentStorageAndCreateBatchSplits(orgDirs, batch, sourcePermDir, db, instanceConfiguration, dbConfiguration);
     }
 
     /**
@@ -172,7 +191,9 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
     }
 
-    private static List<BatchSplit> copyToPermanentStorageAndCreateBatchSplits(List<File> orgDirs, Batch batch, String sourcePermDir, DataLayerI db) throws Exception {
+    private static List<BatchSplit> copyToPermanentStorageAndCreateBatchSplits(List<File> orgDirs, Batch batch, String sourcePermDir,
+                                          DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+
         List<BatchSplit> ret = new ArrayList<>();
 
         for (File orgDir : orgDirs) {
@@ -194,25 +215,344 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             LOG.trace("Filtering shared data out of " + splitFiles.length + " files in " + orgDir);
             filterFilesForSharedData(orgId, splitFiles, db);
 
-            //TODO https://endeavourhealth.atlassian.net/browse/SD-70 - comment the below and create the function
-            /*LOG.trace("Filtering duplicate data out of " + splitFiles.length + " files in " + orgDir);
-            filterFilesForDuplicateData(orgId, splitFiles, db);*/
-
             //copy everything to storage
             LOG.trace("Copying " + splitFiles.length + " files from " + orgDir + " to permanent storage");
             String storagePath = FilenameUtils.concat(sourcePermDir, SPLIT_FOLDER);
             storagePath = FilenameUtils.concat(storagePath, orgId);
-
             for (File splitFile : splitFiles) {
-
                 String fileName = splitFile.getName();
                 String storageFilePath = FilenameUtils.concat(storagePath, fileName);
-
                 FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
             }
+            /* Check the duplicate record flag in TPP Constant
+             * and do the processing Jira Ref https://endeavourhealth.atlassian.net/browse/SD-70
+             */
+            LOG.trace("Filtering duplicate data out of " + splitFiles.length + " files in " + orgDir);
+            for (File splitFile : splitFiles) {
+                if (splitFile.getName().equalsIgnoreCase(TppConstants.CODE_FILE) && TppConstants.FILTER_DUPLICATE_TPP) {
+                    String uniqueKey = TppConstants.COL_ROW_IDENTIFIER_TPP ;
+                    String manifestBulkReason = TppBulkDetector.detectBulkFromManifest(
+                            batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+                    String storageFilePath = FilenameUtils.concat(storagePath, splitFile.getName());
+                    filterFilesForDuplicateData(storagePath, uniqueKey, orgId, storageFilePath, manifestBulkReason);
+                }
+            }
+        }
+        return ret;
+    }
+    /**
+     * This method is used to filter the duplicates. The method creates hash code for input records and compares those with database for duplication.
+     * After comparision it produces the extract without any duplicates to be further processed by Message Transformer
+     *
+     * @param filePath This is the path of the feed file
+     * @param uniqueKey This is the unique field name in the input feed file, i.e., RowIdentifier in SRCode
+     * @param orgId This is the org id i.e., HSCIC6
+     * @param storageFilePath This is the filePath + file name
+     * @param manifestBulkReason if the value is null then this is a bulk load otherwise delta load
+     * @return Nothing.
+     * @exception Exception On processing error.
+     */
+    private static void filterFilesForDuplicateData(String filePath, String uniqueKey,  String orgId,
+                                                   String storageFilePath, String manifestBulkReason) throws Exception {
+        LOG.info("Hashed File Filtering for SRCode using filePath : " + filePath + " uniqueKey " + uniqueKey  +  " orgId " +  orgId + " storageFilePath " + storageFilePath +
+                " batchDir " + batchDir);
+        try {
+            File mainFile = new File(storageFilePath);
+            if (!mainFile.exists()) {
+                throw new Exception("Failed to find file " + mainFile);
+            }
+            //Get the date from batch directory of format i.e., 2017-04-26T09.37.00
+            Date dataDate = null;
+            if(batchDir != null && batchDir.length() > 0 ) {
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                dataDate = formatter.parse(batchDir.substring(0, batchDir.indexOf("T")));
+            }
+            else
+                throw new Exception("Unexpected file " + filePath);
+
+            HashFunction hf = Hashing.sha256();
+
+            //copy file to local file
+            String name = FilenameUtils.getName(filePath);
+            String srcTempName = "TMP_SRC_" + name;
+            String dstTempName = "TMP_DST_" + name;
+
+            File srcFile = new File(srcTempName);
+            File dstFile = new File(dstTempName);
+
+            InputStream is = FileHelper.readFileFromSharedStorage(storageFilePath);
+            Files.copy(is, srcFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            is.close();
+            LOG.debug("Copied " + srcFile.length() + " byte file from S3");
+
+            long msStart = System.currentTimeMillis();
+
+            CSVParser parser = CSVParser.parse(srcFile, Charset.defaultCharset(), CSVFormat.DEFAULT.withHeader());
+
+            //Check if input file is empty then processing should not kick off
+/*            if (parser == null ||  parser.getRecords().size() == 0) {
+                LOG.debug("The input file is empty" );
+                throw new Exception("The input file is empty");
+            }
+*/
+            Map<String, Integer> headers = parser.getHeaderMap();
+            if (!headers.containsKey(uniqueKey)) {
+                LOG.debug("Headers found: " + headers);
+                throw new Exception("Couldn't find unique key " + uniqueKey);
+            }
+
+            String[] headerArray = CsvHelper.getHeaderMapAsArray(parser);
+            int uniqueKeyIndex = headers.get(uniqueKey).intValue();
+
+            LOG.debug("Starting hash calculations");
+            //
+
+            String hashTempName = "TMP_HSH_" + name;
+            File hashFile = new File(hashTempName);
+            FileOutputStream fos = new FileOutputStream(hashFile);
+            OutputStreamWriter osw = new OutputStreamWriter(fos);
+            BufferedWriter bufferedWriter = new BufferedWriter(osw);
+            CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, CSVFormat.DEFAULT.withHeader("record_id", "record_hash"));
+
+            int done = 0;
+            Iterator<CSVRecord> iterator = parser.iterator();
+            while (iterator.hasNext()) {
+                CSVRecord record = iterator.next();
+
+                String uniqueVal = record.get(uniqueKey);
+
+                Hasher hashser = hf.newHasher();
+
+                int size = record.size();
+                for (int i=0; i<size; i++) {
+                    if (i == uniqueKeyIndex) {
+                        continue;
+                    }
+
+                    String val = record.get(i);
+                    hashser.putString(val, Charset.defaultCharset());
+                }
+
+                HashCode hc = hashser.hash();
+                String hashString = hc.toString();
+
+                csvPrinter.printRecord(uniqueVal, hashString);
+
+                done ++;
+                if (done % TppConstants.MAX_THRESHOLD_TPP == 0) {
+                    LOG.debug("Done " + done);
+                }
+            }
+
+            csvPrinter.close();
+            parser.close();
+
+            /*
+             * Check if input file is empty then processing should not kick off.
+             */
+            if( done == 0 ) {
+                LOG.debug("The input file is empty" );
+                srcFile.delete();
+                dstFile.delete();
+                throw new Exception("The input file is empty");
+            }
+
+            LOG.debug("Finished hash calculations for " + done + " records to " + hashFile);
+
+            Set<StringMemorySaver> hsUniqueIdsToKeep = new HashSet<>();
+
+            String tempTableName = ConnectionManager.generateTempTableName(FilenameUtils.getBaseName(filePath));
+
+            //Load data from the file to temp table
+            loadDataToTempTable(tempTableName, dataDate, hashFile);
+
+            Connection connection = ConnectionManager.getSftpReaderHashesNonPooledConnection();
+            try {
+                LOG.debug("Selecting IDs with different hashes");
+                    String sql = "SELECT record_id FROM " + tempTableName + " s"
+                        + " WHERE ignore_record = false";
+                Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+                statement.setFetchSize(10000);
+                ResultSet rs = statement.executeQuery(sql);
+                while (rs.next()) {
+                    String id = rs.getString(1);
+                    hsUniqueIdsToKeep.add(new StringMemorySaver(id));
+                }
+
+            } finally {
+                //MUST change this back to false
+                connection.setAutoCommit(false);
+                connection.close();
+            }
+            LOG.debug("Found " + hsUniqueIdsToKeep.size() + " records to retain");
+            //Save updated hashes to database
+            syncDatabaseWithUpdatedRecords(tempTableName, dataDate);
+            /*
+             * Write filter data to final storage
+             * If manifestBulkReason is null, then the entire set of files is a bulk (and we don't want to filter the SRCode file,
+             * although we still want to update the hash table). So the SR Code file will be deleted.
+             * If it returns a non-null string, then it's intended to be a delta and we need to generate fnal filter extract
+             */
+            if(manifestBulkReason != null && manifestBulkReason.length() > 0) {
+                writeDataToFile(headerArray, hsUniqueIdsToKeep, uniqueKey,
+                        srcFile, storageFilePath, dstFile);
+            }
+            else {
+                //Delete this file
+                mainFile.delete();
+            }
+            LOG.debug("Finished saving hashes to DB");
+            long msEnd = System.currentTimeMillis();
+            LOG.debug("Took " + ((msEnd - msStart) / 1000) + " s");
+
+            //delete all files
+            srcFile.delete();
+            hashFile.delete();
+            dstFile.delete();
+
+            LOG.info("Finished  Hashed File Filtering for SRCode using " + filePath);
+        } catch (Throwable t) {
+            LOG.error("", t);
         }
 
-        return ret;
+    }
+    /*
+     * Create temp table and load data
+     */
+    private static void loadDataToTempTable(String tempTableName, Date dataDate, File hashFile) throws Exception {
+        LOG.info("Start loadDataToTempTable");
+        //load into TEMP table
+        Connection connection = ConnectionManager.getSftpReaderHashesNonPooledConnection();
+        try {
+            //turn on auto commit so we don't need to separately commit these large SQL operations
+            connection.setAutoCommit(true);
+
+            //create a temporary table to load the data into
+            LOG.debug("Loading " + hashFile + " into " + tempTableName);
+            String sql = "CREATE TABLE " + tempTableName + " ("
+                    + "record_id varchar(255), "
+                    + "record_hash char(128), "
+                    + "record_exists boolean DEFAULT FALSE, "
+                    + "ignore_record boolean DEFAULT FALSE, "
+                    + "PRIMARY KEY (record_id))";
+            Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+            statement.executeUpdate(sql);
+            //statement.close();
+
+            //bulk load temp table, adding record number as we go
+            LOG.debug("Starting bulk load into " + tempTableName + "path " + hashFile.getAbsolutePath() );
+            //Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+            sql = "LOAD DATA  INFILE '" + hashFile.getAbsolutePath().replace("\\", "\\\\") + "'"
+                    + " INTO TABLE " + tempTableName
+                    + " FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\\\"'"
+                    + " LINES TERMINATED BY '\\r\\n'"
+                    + " IGNORE 1 LINES (record_id, record_hash)";
+            statement.executeUpdate(sql);
+            //statement.close();
+
+            //work out which records already exist in the target table
+            LOG.debug("Finding records that exist in file_record_hash");
+            String formattedDateString = ConnectionManager.formatDateString(dataDate, true);
+            sql = "UPDATE " + tempTableName + " s"
+                    + " INNER JOIN sftp_reader_hashes.file_record_hash t"
+                    + " ON t.record_id = s.record_id"
+                    + " SET s.record_exists = true, "
+                    + " s.ignore_record = IF (s.record_hash = t.record_hash OR t.dt_last_updated > " + formattedDateString + ", true, false)";
+            statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+            statement.executeUpdate(sql);
+            statement.close();
+
+            LOG.debug("Creating index on temp table");
+            sql = "CREATE INDEX ix ON " + tempTableName + " (ignore_record)";
+            statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+            statement.executeUpdate(sql);
+            statement.close();
+        } finally {
+            //MUST change this back to false
+            connection.setAutoCommit(false);
+            connection.close();
+        }
+        LOG.info("End loadDataToTempTable");
+    }
+
+    /*
+     * Create / update hashes to database
+     */
+    private static void syncDatabaseWithUpdatedRecords(String tempTableName, Date dataDate) throws Exception {
+        LOG.info("Start syncDBWithUpdatedRecords");
+        Connection connection = ConnectionManager.getSftpReaderHashesNonPooledConnection();
+            try {
+                //turn on auto commit so we don't need to separately commit these large SQL operations
+                connection.setAutoCommit(true);
+
+                //update any records that previously existed, but have a changed term
+                LOG.debug("Updating existing records in target table file_record_hash");
+                String sql = "UPDATE sftp_reader_hashes.file_record_hash t"
+                        + " INNER JOIN " + tempTableName + " s"
+                        + " ON t.record_id = s.record_id"
+                        + " SET t.record_hash = s.record_hash,"
+                        + " t.dt_last_updated = " + ConnectionManager.formatDateString(dataDate, true)
+                        + " WHERE s.record_exists = true";
+                Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+                statement.executeUpdate(sql);
+                //statement.close();
+
+                //insert records into the target table where the staging has new records
+                LOG.debug("Inserting new records in target table file_record_hash");
+                sql = "INSERT IGNORE INTO sftp_reader_hashes.file_record_hash (record_id, record_hash, dt_last_updated)"
+                        + " SELECT record_id, record_hash, " + ConnectionManager.formatDateString(dataDate, true)
+                        + " FROM " + tempTableName
+                        + " WHERE record_exists = false";
+                statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+                statement.executeUpdate(sql);
+                //statement.close();
+
+                //delete the temp table
+                LOG.debug("Deleting temp table");
+                sql = "DROP TABLE " + tempTableName;
+                statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+                statement.executeUpdate(sql);
+                statement.close();
+
+
+            } finally {
+                //MUST change this back to false
+                connection.setAutoCommit(false);
+                connection.close();
+            }
+            LOG.info("End syncDBWithUpdatedRecords");
+    }
+
+    /*
+     * Build final extract, check and write the non duplicate records to a file to be processed by Message Transformer
+     */
+    private static void writeDataToFile(String[] headerArray, Set<StringMemorySaver> hsUniqueIdsToKeep, String uniqueKey,
+                                         File srcFile, String storageFilePath, File dstFile) throws Exception {
+        LOG.info("Start loadDataToTempTable");
+        //Build final extract
+        CSVFormat format = CSVFormat.DEFAULT.withHeader(headerArray);
+
+        FileOutputStream fos = new FileOutputStream(dstFile);
+        OutputStreamWriter osw = new OutputStreamWriter(fos);
+        BufferedWriter bufferedWriter = new BufferedWriter(osw);
+        CSVPrinter csvPrinterFiltered = new CSVPrinter(bufferedWriter, format);
+
+        CSVParser parserFiltered = CSVParser.parse(srcFile, Charset.defaultCharset(), CSVFormat.DEFAULT.withHeader());
+        Iterator<CSVRecord> iteratorFiltered = parserFiltered.iterator();
+
+        while (iteratorFiltered.hasNext()) {
+            CSVRecord record = iteratorFiltered.next();
+            String uniqueVal = record.get(uniqueKey);
+            if (hsUniqueIdsToKeep.contains(new StringMemorySaver(uniqueVal))) {
+                csvPrinterFiltered.printRecord(record);
+            }
+        }
+        parserFiltered.close();
+        csvPrinterFiltered.close();
+
+        // Copy the file to permanent storage
+        FileHelper.writeFileToSharedStorage(storageFilePath, dstFile);
+        LOG.info("End loadDataToTempTable");
     }
 
     /**
