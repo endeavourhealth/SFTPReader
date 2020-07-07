@@ -44,6 +44,7 @@ import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -189,6 +190,24 @@ public class Main {
                     System.exit(0);
                 }
 
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("TestVisionSlackAlert")) {
+                    testVisionSlackAlert();
+                    System.exit(0);
+                }
+
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("FixTppOutOfOrderData")) {
+                    String configurationId = args[2];
+                    boolean testMode = Boolean.parseBoolean(args[3]);
+                    String odsRegex = null;
+                    if (args.length > 4) {
+                        odsRegex = args[4];
+                    }
+                    fixTppOutOfOrderData(configurationId, testMode, odsRegex);
+                    System.exit(0);
+                }
+
                 /*if (args[1].equalsIgnoreCase("RecreateBatchFile")) {
                     String configurationId = args[2];
                     recreateBatchFile(configurationId);
@@ -242,6 +261,249 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void fixTppOutOfOrderData(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
+        LOG.debug("fixTppOutOfOrderData for " + configurationId + " testmode = " + testMode + " org regex " + odsCodeRegex);
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+
+        try {
+            conn = ConnectionManager.getSftpReaderNonPooledConnection();
+
+            /*String sql = null;
+            if (ConnectionManager.isPostgreSQL(conn)) {
+                sql = "UPDATE log.batch_split SET is_bulk = ? WHERE batch_split_id = ?";
+            } else {
+                sql = "UPDATE batch_split SET is_bulk = ? WHERE batch_split_id = ?";
+            }
+            ps = conn.prepareStatement(sql);*/
+
+
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+            if (dbConfiguration == null) {
+                throw new Exception("Failed to find configuration " + configurationId);
+            }
+
+            DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+            DataLayerI dataLayer = configuration.getDataLayer();
+            List<Batch> batches = dataLayer.getAllBatches(configurationId);
+            LOG.debug("Found " + batches.size() + " batches");
+
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+            //ensure batches are sorted properly
+            batches.sort((o1, o2) -> {
+                Integer i1 = o1.getSequenceNumber();
+                Integer i2 = o2.getSequenceNumber();
+                return i1.compareTo(i2);
+            });
+
+            //find all orgs to process
+            LOG.debug("Finding orgs in batches");
+            Map<String, List<Batch>> hmBatchesByOrg = new HashMap<>();
+            Map<String, Batch> hmLastBulkByOrg = new HashMap<>();
+            Map<Batch, List<BatchSplit>> hmSplitsByBatch = new HashMap<>();
+
+            for (Batch b: batches) {
+                List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
+                hmSplitsByBatch.put(b, splits);
+
+                for (BatchSplit split: splits) {
+
+                    String odsCode = split.getOrganisationId();
+                    if (!Strings.isNullOrEmpty(odsCodeRegex)
+                            && (Strings.isNullOrEmpty(odsCode)
+                            || !Pattern.matches(odsCodeRegex, odsCode))) {
+                        //LOG.debug("Skipping " + odsCode + " due to regex");
+                        continue;
+                    }
+
+                    List<Batch> l = hmBatchesByOrg.get(odsCode);
+                    if (l == null) {
+                        l = new ArrayList<>();
+                        hmBatchesByOrg.put(odsCode, l);
+                    }
+                    l.add(b);
+
+                    if (split.isBulk()) {
+                        hmLastBulkByOrg.put(odsCode, b);
+                    }
+                }
+            }
+            LOG.debug("Found " + hmBatchesByOrg.size() + " orgs");
+
+            for (String odsCode: hmBatchesByOrg.keySet()) {
+                batches = hmBatchesByOrg.get(odsCode);
+                LOG.debug(">>>>>>>>>>>>>> Doing " + odsCode + " with " + batches.size() + " batches");
+
+                Batch lastBulk = hmLastBulkByOrg.get(odsCode);
+                if (lastBulk == null) {
+                    LOG.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    LOG.error("No bulk found for " + odsCode);
+                    LOG.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                    continue;
+                }
+                LOG.debug("Latest bulk " + lastBulk.getBatchId() + " from " + lastBulk.getBatchIdentifier());
+
+                int lastBulkIndex = batches.indexOf(lastBulk);
+                if (lastBulkIndex == -1) {
+                    throw new Exception("Failed to find bulk batch " + lastBulk.getBatchId() + " in batches for org");
+                }
+
+                List<String> logging = new ArrayList<>();
+                logging.add("");
+
+                Date lastDataDate = null;
+
+                for (int i=lastBulkIndex; i<batches.size(); i++) {
+                    Batch b = batches.get(i);
+
+                    BatchSplit batchSplit = null;
+                    List<BatchSplit> splits = hmSplitsByBatch.get(b);
+                    for (BatchSplit s: splits) {
+                        if (s.getOrganisationId().equals(odsCode)) {
+                            batchSplit = s;
+                            break;
+                        }
+                    }
+                    if (batchSplit == null) {
+                        throw new Exception("Failed to find batch split in batch " + b.getBatchId());
+                    }
+
+                    //find data date
+                    Date dataDate = null;
+                    boolean foundPatientOrCode = false;
+
+                    //work out S3 path
+                    String permDir = edsConfiguration.getSharedStoragePath();
+                    String configurationDir = dbConfiguration.getLocalRootPath();
+                    String batchSplitRelativePath = batchSplit.getLocalRelativePath();
+
+                    String path = FilenameUtils.concat(permDir, configurationDir);
+                    path = FilenameUtils.concat(path, batchSplitRelativePath);
+
+                    List<FileInfo> files = FileHelper.listFilesInSharedStorageWithInfo(path);
+                    for (FileInfo fileInfo: files) {
+
+                        String filePath = fileInfo.getFilePath();
+                        Date lastModified = fileInfo.getLastModified();
+                        long size = fileInfo.getSize();
+
+                        LocalDateTime ldt = LocalDateTime.ofInstant(lastModified.toInstant(), ZoneId.systemDefault());
+                        RemoteFile r = new RemoteFile(filePath, size, ldt);
+
+                        SftpFilenameParser parser = ImplementationActivator.createFilenameParser(false, r, dbConfiguration);
+                        if (parser.isFilenameValid()) {
+
+                            String fileType = parser.generateFileTypeIdentifier();
+                            if (fileType.equals("Code")
+                                    || fileType.equals("Patient")) {
+                                foundPatientOrCode = true;
+                            }
+
+                            Date extractDate = parser.getExtractDate();
+
+                            if (dataDate == null) {
+                                dataDate = extractDate;
+                            } else if (!dataDate.equals(extractDate)) {
+                                throw new Exception("Files in batch " + b.getBatchId() + " have different dates (" + filePath + ")");
+                            }
+                        }
+                    }
+
+                    if (dataDate == null) {
+                        throw new Exception("Failed to find data date for batch " + b.getBatchId());
+                    }
+
+                    //only count the batch if it had a patient or code file
+                    if (foundPatientOrCode) {
+
+                        logging.add("Seq# " + b.getSequenceNumber() + " -> " + simpleDateFormat.format(dataDate) + " batch ID " + b.getBatchId());
+
+                        if (lastDataDate != null
+                                && dataDate.before(lastDataDate)) {
+
+                            if (testMode) {
+                                logging.add(">>>>>>>>>>Latest batch before previous one!<<<<<<<<<<<<<<");
+                                LOG.debug(String.join("\n", logging));
+
+                            } else {
+                                //TODO
+                            }
+                        }
+
+                        lastDataDate = dataDate;
+
+                    }
+                }
+            }
+
+            LOG.debug("FINISHED fixTppOutOfOrderData for " + configurationId + " testmode = " + testMode + " org regex " + odsCodeRegex);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            conn.close();
+        }
+    }
+
+    private static void testVisionSlackAlert() {
+        try {
+            LOG.debug("Testing Vision Slack Alert");
+
+            ConfigurationPollingAttempt newAttempt;
+            ConfigurationPollingAttempt previousAttempt;
+
+            String err = "org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException: Exception occurred while downloading files - cannot continue or may process batches out of order\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.downloadNewFiles(SftpReaderTask.java:375)\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.run(SftpReaderTask.java:74)\n" +
+                    "\tat java.lang.Thread.run(Thread.java:748)\n" +
+                    "Caused by: com.jcraft.jsch.JSchException: Session.connect: java.net.SocketException: Connection reset\n" +
+                    "\tat com.jcraft.jsch.Session.connect(Session.java:565)\n" +
+                    "\tat com.jcraft.jsch.Session.connect(Session.java:183)\n" +
+                    "\tat org.endeavourhealth.sftpreader.sources.SftpConnection.open(SftpConnection.java:74)\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.openSftpConnection(SftpReaderTask.java:391)\n" +
+                    "\tat org.endeavourhealth.sftpreader.SftpReaderTask.downloadNewFiles(SftpReaderTask.java:323)\n" +
+                    "\t... 2 more\n";
+
+            newAttempt = new ConfigurationPollingAttempt();
+            newAttempt.setConfigurationId("VISION_Y03296");
+            newAttempt.setErrorText(err);
+
+            previousAttempt = new ConfigurationPollingAttempt();
+            previousAttempt.setConfigurationId("VISION_Y03296");
+            previousAttempt.setErrorText(null);
+
+            boolean shouldSendAlert = SftpReaderTask.shouldSendSlackAlert(newAttempt, previousAttempt);
+            LOG.debug("Would send alert = " + shouldSendAlert + " SHOULD BE FALSE");
+
+            newAttempt = new ConfigurationPollingAttempt();
+            newAttempt.setConfigurationId("VISION_Y03296");
+            newAttempt.setErrorText(err);
+
+            previousAttempt = new ConfigurationPollingAttempt();
+            previousAttempt.setConfigurationId("VISION_Y03296");
+            previousAttempt.setErrorText(err);
+
+            shouldSendAlert = SftpReaderTask.shouldSendSlackAlert(newAttempt, previousAttempt);
+            LOG.debug("Would send alert = " + shouldSendAlert + " SHOULD BE TRUE");
+
+            LOG.debug("Finished Testing Vision Slack Alert");
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     /**
      * TPP manifest files weren't originally copied into the /SPLIT/ODScode directories, but they are now.

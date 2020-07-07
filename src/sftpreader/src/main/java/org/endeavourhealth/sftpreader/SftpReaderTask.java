@@ -1,6 +1,5 @@
 package org.endeavourhealth.sftpreader;
 
-import com.google.common.base.Strings;
 import com.jcraft.jsch.JSchException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -155,33 +154,118 @@ public class SftpReaderTask implements Runnable {
             LOG.trace(">>>Getting details on previous polling attempt");
             ConfigurationPollingAttempt previousAttempt = db.getLastPollingAttempt(configurationId);
 
-            if (attempt.hasError()) {
-
-                //if an error now, then see if the error has appeared or changed since last polling attempt
-                if (previousAttempt == null
-                        || !previousAttempt.hasError()
-                        || !previousAttempt.getErrorText().equals(attempt.getErrorText())) {
-
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "New exception in SFTP Reader for " + this.configurationId, attempt.getErrorText());
-                }
-
-            } else {
-
-                //if no error now but we previously had one, then send a Slack message to say all OK now
-                if (previousAttempt != null
-                        && previousAttempt.hasError()) {
-                    SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "Previous exception in SFTP Reader for " + this.configurationId + " is now OK");
-                }
-            }
-
-            //save the latest polling attempt
+            //save the latest polling attempt, AFTER getting the previous one!
             attempt.setAttemptFinished(new Date());
             db.savePollingAttempt(attempt);
+
+            //if an error now, then see if the error has appeared or changed since last polling attempt
+            if (shouldSendSlackAlert(attempt, previousAttempt)) {
+                LOG.trace("Sending slack alert");
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "New exception in SFTP Reader for " + this.configurationId, attempt.getErrorText());
+
+            } else if (shouldSendSlackAllClear(attempt, previousAttempt)) {
+                LOG.trace("Sending all clear alert");
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "Previous exception in SFTP Reader for " + this.configurationId + " is now OK");
+            }
 
         } catch (Throwable t) {
             LOG.error("Error saving polling attempt", t);
             SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "Exception saving polling attempt for " + this.configurationId, t);
         }
+    }
+
+    private boolean shouldSendSlackAllClear(ConfigurationPollingAttempt attempt, ConfigurationPollingAttempt previousAttempt) {
+
+        //if we've had an error, then it's obviously not clear
+        if (attempt.hasError()) {
+            return false;
+        }
+
+        LOG.trace("Checking is should send Slack all clear for " + attempt.getConfigurationId());
+
+        //hack to deal with Vision - Vision disable connections to their SFTP Readers for a period prior
+        //to a new extract being made available and we get errors connecting. Changing the polling frequency
+        //doesn't really stop this, so this code attempts to stop the Slack alerts for this known behaviour.
+        if (attempt.getConfigurationId().contains("VISION")) {
+
+            LOG.trace("Is VISION");
+            LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
+            if (previousAttempt != null) {
+                LOG.trace(" && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
+                if (previousAttempt.hasError()) {
+                    LOG.trace(" && (previousAttempt.getErrorText().contains(\"java.net.SocketException: Connection reset\")) = " + (previousAttempt.getErrorText().contains("java.net.SocketException: Connection reset")));
+                }
+            }
+
+            //if we had the specific error then don't bother sending the all clear
+            if (previousAttempt != null
+                    && previousAttempt.hasError()
+                    && (previousAttempt.getErrorText().contains("java.net.SocketException: Connection reset")
+                        || previousAttempt.getErrorText().contains("java.net.ConnectException: Connection refused"))) {
+                return false;
+            }
+        }
+
+        //if no error now but we previously had one, then send a Slack message to say all OK now
+        LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
+        if (previousAttempt != null) {
+            LOG.trace(" && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
+        }
+
+        return previousAttempt != null
+                && previousAttempt.hasError();
+
+    }
+
+    public static boolean shouldSendSlackAlert(ConfigurationPollingAttempt attempt, ConfigurationPollingAttempt previousAttempt) {
+
+        //if no error, obviously don't send an alert
+        if (!attempt.hasError()) {
+            return false;
+        }
+
+        LOG.trace("Checking is should send Slack alert for " + attempt.getConfigurationId());
+
+        //hack to deal with Vision - Vision disable connections to their SFTP Readers for a period prior
+        //to a new extract being made available and we get errors connecting. Changing the polling frequency
+        //doesn't really stop this, so this code attempts to stop the Slack alerts for this known behaviour.
+        if (attempt.getConfigurationId().contains("VISION")) {
+            LOG.trace("Is VISION");
+
+            //if we get the specific error, and DIDN'T have that error last polling attempt, then don't send an alert,
+            //but if the same error persists over two polling attempts, then send the alert
+            String currentError = attempt.getErrorText();
+            if (currentError.contains("java.net.SocketException: Connection reset")
+                    || currentError.contains("java.net.ConnectException: Connection refused")) { //the specific errors
+
+                LOG.trace("Current error contains Connection reset message");
+                LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
+                if (previousAttempt != null) {
+                    LOG.trace(" && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
+                    if (previousAttempt.hasError()) {
+                        LOG.trace(" && (previousAttempt.getErrorText().equals(attempt.getErrorText())) = " + (previousAttempt.getErrorText().equals(attempt.getErrorText())));
+                    }
+                }
+
+                //note this is the exact opposite of the regular logic
+                return previousAttempt != null
+                        && previousAttempt.hasError()
+                        && previousAttempt.getErrorText().equals(attempt.getErrorText());
+            }
+        }
+
+        //if we've got a new or different error to the previous polling attempt then send the alert
+        LOG.trace("(previousAttempt == null) = " + (previousAttempt == null));
+        if (previousAttempt != null) {
+            LOG.trace(" || (!previousAttempt.hasError()) = " + (!previousAttempt.hasError()));
+            if (previousAttempt.hasError()) {
+                LOG.trace(" || (!previousAttempt.getErrorText().equals(attempt.getErrorText()) = " + (!previousAttempt.getErrorText().equals(attempt.getErrorText())));
+            }
+        }
+
+        return previousAttempt == null
+                || !previousAttempt.hasError()
+                || !previousAttempt.getErrorText().equals(attempt.getErrorText());
     }
 
     private void performHouseKeeping() throws Exception {
