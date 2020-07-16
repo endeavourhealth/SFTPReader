@@ -435,7 +435,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
             //bulk load temp table, adding record number as we go
             LOG.debug("Starting bulk load into " + tempTableName + "path " + hashFile.getAbsolutePath() );
             //Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
-            sql = "LOAD DATA  INFILE '" + hashFile.getAbsolutePath().replace("\\", "\\\\") + "'"
+            sql = "LOAD DATA LOCAL INFILE '" + hashFile.getAbsolutePath().replace("\\", "\\\\") + "'"
                     + " INTO TABLE " + tempTableName
                     + " FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\\\"'"
                     + " LINES TERMINATED BY '\\r\\n'"
