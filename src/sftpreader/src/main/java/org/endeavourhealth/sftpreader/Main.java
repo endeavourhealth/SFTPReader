@@ -6,6 +6,10 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.apache.commons.csv.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -14,7 +18,9 @@ import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
+import org.endeavourhealth.common.utility.StringMemorySaver;
 import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
+import org.endeavourhealth.core.csv.CsvHelper;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
@@ -39,11 +45,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -112,6 +120,11 @@ public class Main {
                     test7zDecompress(file, password);
                     System.exit(0);
                 }*/
+                //One-off data load for TPP
+                if (args[0].equalsIgnoreCase("TEST")) {
+                    SRCodeLoader.loadTPPSRCodetoHahtable(configuration,"TPP_TEST");
+                    System.exit(0);
+                }
 
                 if (args[0].equalsIgnoreCase("DecryptGpg")) {
                     String filePath = args[1];
@@ -1842,5 +1855,270 @@ public class Main {
             LOG.error("", t);
         }
     }*/
+
+    /**
+     * one-off routine to populate the new is_bulk column on the batch_split table so we
+     * can work out if we've received bulk data for a service or not
+     */
+    /*private static void loadTPPSRCodetoHahtable(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
+        LOG.info("Checking for Bulks in " + configurationId);
+        if (!Strings.isNullOrEmpty(odsCodeRegex)) {
+            LOG.info("Restricting to orgs matching " + odsCodeRegex);
+        }
+
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+
+        try {
+            conn = ConnectionManager.getSftpReaderNonPooledConnection();
+
+            DbConfiguration dbConfiguration = null;
+            for (DbConfiguration c : configuration.getConfigurations()) {
+                if (c.getConfigurationId().equals(configurationId)) {
+                    dbConfiguration = c;
+                    break;
+                }
+            }
+            if (dbConfiguration == null) {
+                throw new Exception("Failed to find configuration " + configurationId);
+            }
+
+            DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+            //SftpBulkDetector bulkDetector = ImplementationActivator.createSftpBulkDetector(dbConfiguration);
+
+            DataLayerI dataLayer = configuration.getDataLayer();
+            List<Batch> batches = dataLayer.getAllBatches(configurationId);
+            LOG.debug("Found " + batches.size() + " batches");
+
+            //ensure batches are sorted properly
+            batches.sort((o1, o2) -> {
+                Integer i1 = o1.getSequenceNumber();
+                Integer i2 = o2.getSequenceNumber();
+                return i1.compareTo(i2);
+            });
+            int count = 0;
+            for (Batch b: batches) {
+                count ++;
+                if (count > 1)
+                    System.exit(0);
+                List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
+                LOG.debug(">>>>>>>>Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
+
+                for (BatchSplit split: splits) {
+
+
+                    String permDir = edsConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/path
+                    String tempDir = edsConfiguration.getTempDirectory(); //e.g. c:\temp
+                    String configurationDir = dbConfiguration.getLocalRootPath(); //e.g. TPP_TEST
+                    String batchRelativePath = b.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00
+                    String splitRelativePath = split.getLocalRelativePath(); //e.g. 2017-04-27T09.08.00\Split\HSCIC6
+
+                    String tempPath = FilenameUtils.concat(tempDir, configurationDir);
+                    LOG.trace("permDir: " + permDir + " tempDir: " + tempDir + " configurationDir: " + configurationDir  + " batchRelativePath: "
+                            + batchRelativePath  + " splitRelativePath: " + splitRelativePath ) ;
+                    tempPath = FilenameUtils.concat(tempPath, splitRelativePath);
+                    boolean createdTempPath = new File(tempPath).mkdirs();
+
+                    //LOG.debug(">>>>>>>>>>>>>>>>>>>>>>>Doing batch split " + split.getBatchSplitId());
+
+                        //for TPP, we have to copy Code file to tmp
+                        List<String> files = new ArrayList<>();
+                        files.add(TppConstants.CODE_FILE);
+
+                        String permPath = FilenameUtils.concat(permDir, configurationDir);
+                        LOG.trace("permPath1: " + permPath );
+                        permPath = FilenameUtils.concat(permPath, splitRelativePath);
+                        LOG.trace("permPath2: " + permPath );
+
+
+                        List<String> storageContents = FileHelper.listFilesInSharedStorage(permPath);
+                        File splitFile = null;
+                        for (String filePermPath: storageContents) {
+                            String fileName = FilenameUtils.getName(filePermPath);
+                            if (files.contains(fileName)) {
+
+                                String fileTempPath = FilenameUtils.concat(tempPath, fileName);
+
+                                try {
+                                    InputStream is = FileHelper.readFileFromSharedStorage(filePermPath);
+                                    splitFile = new File(fileTempPath);
+                                    Files.copy(is, new File(fileTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                    is.close();
+                                    //LOG.trace("Copied " + filePermPath + " to " + fileTempPath);
+                                } catch (Exception ex) {
+                                    LOG.error("Error copying " + filePermPath + " to " + fileTempPath);
+                                    throw ex;
+                                }
+                            }
+                        }
+                        writeToHashtable(permPath, TppConstants.COL_ROW_IDENTIFIER_TPP, splitFile, batchRelativePath);
+                        //delete the tmp directory contents
+                        FileHelper.deleteRecursiveIfExists(tempPath);
+                }
+
+            }
+
+            LOG.info("Finished checking for Bulks in " + configurationId);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }  finally {
+            if (ps != null) {
+                ps.close();
+            }
+            if (conn != null) {
+                conn.close();
+            }
+        }
+    }
+*/
+    /**
+     * This method is used to filter the duplicates. The method creates hash codes for input records and compares those with database for duplication.
+     * After comparision it produces the extract without any duplicates to be further processed by Message Transformer
+     *
+     * @param storagePath This is the path to where the file should be copied after processing is done
+     * @param uniqueKey This is the unique field name in the input feed file, i.e., RowIdentifier in SRCode
+     //* @param orgId This is the org id i.e., HSCIC6
+     * @param splitFile This is the input file
+     * @return Nothing.
+     * @exception Exception On processing error.
+     */
+    private static void writeToHashtable(String storagePath, String uniqueKey,
+                                                    File splitFile, String batchDir) throws Exception {
+        LOG.info("Hashed File Filtering for SRCode using storagePath : " + storagePath + " uniqueKey " + uniqueKey    );
+        Connection connection = ConnectionManager.getSftpReaderHashesNonPooledConnection();
+        try {
+            //turn on auto commit so we don't need to separately commit these large SQL operations
+            connection.setAutoCommit(true);
+            //Get the date from batch directory of format i.e., 2017-04-26T09.37.00
+            Date dataDate = null;
+            String formattedDateString = null;
+            if(batchDir != null && batchDir.length() > 0 ) {
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                dataDate = formatter.parse(batchDir.substring(0, batchDir.indexOf("T")));
+                formattedDateString = ConnectionManager.formatDateString(dataDate, false);
+            }
+            else
+                throw new Exception("Unexpected file " + storagePath);
+
+            HashFunction hf = Hashing.sha256();
+
+            //copy file to local file
+            String name = FilenameUtils.getName(storagePath);
+            String srcTempName = "TMP_SRC_" + name;
+            String dstTempName = "TMP_DST_" + name;
+
+            File srcFile = new File(srcTempName);
+            //File dstFile = new File(dstTempName);
+
+            InputStream is = FileHelper.readFileFromSharedStorage(splitFile.toPath().toString());
+            Files.copy(is, srcFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            is.close();
+            LOG.debug("Copied " + srcFile.length() + " byte file from S3");
+
+            long msStart = System.currentTimeMillis();
+
+            CSVParser parser = CSVParser.parse(srcFile, Charset.defaultCharset(), CSVFormat.DEFAULT.withHeader());
+
+            Map<String, Integer> headers = parser.getHeaderMap();
+            if (!headers.containsKey(uniqueKey)) {
+                LOG.debug("Headers found: " + headers);
+                throw new Exception("Couldn't find unique key " + uniqueKey);
+            }
+
+            String[] headerArray = CsvHelper.getHeaderMapAsArray(parser);
+            int uniqueKeyIndex = headers.get(uniqueKey).intValue();
+
+            LOG.debug("Starting hash calculations");
+            //
+
+            String hashTempName = "TMP_HSH_" + name;
+            File hashFile = new File(hashTempName);
+            FileOutputStream fos = new FileOutputStream(hashFile);
+            OutputStreamWriter osw = new OutputStreamWriter(fos);
+            BufferedWriter bufferedWriter = new BufferedWriter(osw);
+            CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, CSVFormat.DEFAULT.withHeader("record_id", "record_hash", "dt_last_updated"));
+
+            int done = 0;
+            Iterator<CSVRecord> iterator = parser.iterator();
+            while (iterator.hasNext()) {
+                CSVRecord record = iterator.next();
+
+                String uniqueVal = record.get(uniqueKey);
+
+                Hasher hashser = hf.newHasher();
+
+                int size = record.size();
+                for (int i=0; i<size; i++) {
+                    if (i == uniqueKeyIndex) {
+                        continue;
+                    }
+
+                    String val = record.get(i);
+                    hashser.putString(val, Charset.defaultCharset());
+                }
+
+                HashCode hc = hashser.hash();
+                String hashString = hc.toString();
+
+                csvPrinter.printRecord(uniqueVal, hashString, formattedDateString);
+
+                done ++;
+                if (done % TppConstants.MAX_THRESHOLD_TPP == 0) {
+                    LOG.debug("Done " + done);
+                }
+            }
+
+            csvPrinter.close();
+            parser.close();
+
+            /*
+             * Check if input file is empty then processing should not kick off.
+             */
+            if( done == 0 ) {
+                LOG.debug("The input file is empty" );
+                srcFile.delete();
+                //dstFile.delete();
+                throw new Exception("The input file is empty");
+            }
+
+            LOG.debug("Finished hash calculations for " + done + " records to " + hashFile);
+
+            Set<StringMemorySaver> hsUniqueIdsToKeep = new HashSet<>();
+
+            LOG.debug("Found " + hsUniqueIdsToKeep.size() + " records to retain");
+            //Save updated hashes to database
+            //insert records into the target table where the staging has new records
+            LOG.debug("Inserting new records in target table file_record_hash");
+            String sql = "LOAD DATA  INFILE '" + hashFile.getAbsolutePath().replace("\\", "\\\\") + "'"
+                    + " INTO TABLE sftp_reader_hashes.file_record_hash "
+                    + " FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\\\"'"
+                    + " LINES TERMINATED BY '\\r\\n'"
+                    + " IGNORE 1 LINES (record_id, record_hash,dt_last_updated )";
+
+            Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+            statement.executeUpdate(sql);
+            statement.close();
+
+            LOG.debug("Finished saving hashes to DB");
+
+            //delete all files
+            srcFile.delete();
+            hashFile.delete();
+            //dstFile.delete();
+
+            LOG.info("Finished  Hashed File Filtering for SRCode using " + storagePath);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        } finally {
+            //MUST change this back to false
+            connection.setAutoCommit(false);
+            connection.close();
+        }
+
+    }
+
 }
 
