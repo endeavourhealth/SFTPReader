@@ -1,4 +1,4 @@
--- Scripts for SD-89 TPP Transform SRCtv3ToSnomed
+--  Scripts for SD-89 TPP Transform SRCtv3ToSnomed
 use publisher_common;
 
 DROP TABLE IF EXISTS tpp_ctv3_to_snomed;
