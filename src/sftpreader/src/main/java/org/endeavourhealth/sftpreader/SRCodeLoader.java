@@ -34,7 +34,7 @@ public class SRCodeLoader {
     /**
      * one-off routine to populate the hash table sftp_reader_hashes.file_record_hash from SR Code file
      */
-    public static void loadTPPSRCodetoHahtable(Configuration configuration, String configurationId) throws Exception {
+    public static void loadTppSRCodetoHahtable(Configuration configuration, String configurationId) throws Exception {
         LOG.info("Starting the load for configuration id: " + configurationId);
         Connection conn = null;
         PreparedStatement ps = null;

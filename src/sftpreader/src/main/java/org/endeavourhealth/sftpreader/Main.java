@@ -120,12 +120,6 @@ public class Main {
                     test7zDecompress(file, password);
                     System.exit(0);
                 }*/
-                //One-off data load for TPP
-                if (args[0].equalsIgnoreCase("TEST")) {
-                    SRCodeLoader.loadTPPSRCodetoHahtable(configuration,"TPP_TEST");
-                    System.exit(0);
-                }
-
                 if (args[0].equalsIgnoreCase("DecryptGpg")) {
                     String filePath = args[1];
                     String configurationId = args[2];
@@ -218,6 +212,13 @@ public class Main {
                         odsRegex = args[4];
                     }
                     fixTppOutOfOrderData(configurationId, testMode, odsRegex);
+                    System.exit(0);
+                }
+                //One-off data load for TPP
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("loadTppSRCode")) {
+                    String configurationId = args[2];
+                    SRCodeLoader.loadTppSRCodetoHahtable(configuration,configurationId);
                     System.exit(0);
                 }
 
