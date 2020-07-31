@@ -2093,7 +2093,7 @@ public class Main {
             //Save updated hashes to database
             //insert records into the target table where the staging has new records
             LOG.debug("Inserting new records in target table file_record_hash");
-            String sql = "LOAD DATA  INFILE '" + hashFile.getAbsolutePath().replace("\\", "\\\\") + "'"
+            String sql = "LOAD DATA LOCAL INFILE '" + hashFile.getAbsolutePath().replace("\\", "\\\\") + "'"
                     + " INTO TABLE sftp_reader_hashes.file_record_hash "
                     + " FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\\\"'"
                     + " LINES TERMINATED BY '\\r\\n'"
