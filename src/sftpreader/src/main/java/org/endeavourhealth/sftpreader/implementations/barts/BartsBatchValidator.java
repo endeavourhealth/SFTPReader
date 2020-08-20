@@ -3,7 +3,11 @@ package org.endeavourhealth.sftpreader.implementations.barts;
 import com.google.common.base.Strings;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.Validate;
+import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
+import org.endeavourhealth.sftpreader.SftpFile;
+import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
+import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -14,10 +18,17 @@ import org.endeavourhealth.sftpreader.model.db.BatchFile;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 public class BartsBatchValidator extends SftpBatchValidator {
@@ -52,9 +63,15 @@ public class BartsBatchValidator extends SftpBatchValidator {
             }*/
         }
 
-        // All CDS/SUS files must have a matching Tails file
-        checkAllRequiredTailsFilesArePresentInBatch(incompleteBatch, dbConfiguration);
-        checkForSkippedSusFiles(incompleteBatch, lastCompleteBatch, dbConfiguration, db);
+        try {
+            // All CDS/SUS files must have a matching Tails file
+            checkAllRequiredTailsFilesArePresentInBatch(db, instanceConfiguration, dbConfiguration, incompleteBatch);
+            checkForSkippedSusFiles(incompleteBatch, lastCompleteBatch, dbConfiguration, db);
+
+        } catch (Exception ex) {
+            throw new SftpValidationException(ex);
+        }
+
 
         //we were told that SUSOPA or TAILOPA should be the last file received, but we can receive
         //multiple of these in a day, so it's not possible to guarantee that the presence of these files
@@ -72,7 +89,7 @@ public class BartsBatchValidator extends SftpBatchValidator {
     /**
      * SUS files are numbered sequentially - this fn checks to see if any numbers have been missed
      */
-    private void checkForSkippedSusFiles(Batch incompleteBatch, Batch lastCompleteBatch, DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
+    private void checkForSkippedSusFiles(Batch incompleteBatch, Batch lastCompleteBatch, DbConfiguration dbConfiguration, DataLayerI db) throws Exception {
 
         List<BatchFile> susInpatientFiles = new ArrayList<>();
         List<BatchFile> susOutpatientFiles = new ArrayList<>();
@@ -101,15 +118,10 @@ public class BartsBatchValidator extends SftpBatchValidator {
             }
         }
 
-        try {
-            checkForSkippedSusTypeFiles(incompleteBatch, susInpatientFiles, lastCompleteBatch, dbConfiguration, db);
-            checkForSkippedSusTypeFiles(incompleteBatch, susOutpatientFiles, lastCompleteBatch, dbConfiguration, db);
-            checkForSkippedSusTypeFiles(incompleteBatch, susEmergencyFiles, lastCompleteBatch, dbConfiguration, db);
-            checkForSkippedSusTypeFiles(incompleteBatch, susEcdsFiles, lastCompleteBatch, dbConfiguration, db);
-
-        } catch (Exception ex) {
-            throw new SftpValidationException(ex);
-        }
+        checkForSkippedSusTypeFiles(incompleteBatch, susInpatientFiles, lastCompleteBatch, dbConfiguration, db);
+        checkForSkippedSusTypeFiles(incompleteBatch, susOutpatientFiles, lastCompleteBatch, dbConfiguration, db);
+        checkForSkippedSusTypeFiles(incompleteBatch, susEmergencyFiles, lastCompleteBatch, dbConfiguration, db);
+        checkForSkippedSusTypeFiles(incompleteBatch, susEcdsFiles, lastCompleteBatch, dbConfiguration, db);
     }
 
     private void checkForSkippedSusTypeFiles(Batch incompleteBatch, List<BatchFile> susFiles, Batch lastCompleteBatch, DbConfiguration dbConfiguration, DataLayerI db) throws Exception  {
@@ -196,7 +208,7 @@ public class BartsBatchValidator extends SftpBatchValidator {
     /**
      * each SUS file should have a tails file with it - this fn checks to see if any are missing
      */
-    private void checkAllRequiredTailsFilesArePresentInBatch(Batch incompleteBatch, DbConfiguration dbConfiguration) throws SftpValidationException {
+    private void checkAllRequiredTailsFilesArePresentInBatch(DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch incompleteBatch) throws Exception {
 
         List<String> missingTails = new ArrayList<>();
 
@@ -205,11 +217,22 @@ public class BartsBatchValidator extends SftpBatchValidator {
         for (BatchFile file: files) {
             String fileType = file.getFileTypeIdentifier();
 
-            //skip any file types that don't have a tail file
-            if (!fileType.equals(BartsFilenameParser.TYPE_2_1_SUSAEA)
-                    && !fileType.equals(BartsFilenameParser.TYPE_2_1_SUSOPA)
-                    && !fileType.equals(BartsFilenameParser.TYPE_2_1_SUSIP)
-                    && !fileType.equals(BartsFilenameParser.TYPE_EMERGENCY_CARE)) {
+            String tailsFileType = null;
+
+            if (fileType.equals(BartsFilenameParser.TYPE_2_1_SUSOPA)) {
+                tailsFileType = BartsFilenameParser.TYPE_2_1_TAILOPA;
+
+            } else if (fileType.equals(BartsFilenameParser.TYPE_EMERGENCY_CARE)) {
+                tailsFileType = BartsFilenameParser.TYPE_EMERGENCY_CARE_TAILS;
+
+            } else if (fileType.equals(BartsFilenameParser.TYPE_2_1_SUSAEA)) {
+                tailsFileType = BartsFilenameParser.TYPE_2_1_TAILAEA;
+
+            } else if (fileType.equals(BartsFilenameParser.TYPE_2_1_SUSIP)) {
+                tailsFileType = BartsFilenameParser.TYPE_2_1_TAILIP;
+
+            } else {
+                //skip any file types that don't have a tail file
                 continue;
             }
 
@@ -219,15 +242,7 @@ public class BartsBatchValidator extends SftpBatchValidator {
 
             for (BatchFile otherFile: files) {
                 String otherFileType = otherFile.getFileTypeIdentifier();
-
-                if ((fileType.equals(BartsFilenameParser.TYPE_2_1_SUSOPA)
-                        && otherFileType.equalsIgnoreCase(BartsFilenameParser.TYPE_2_1_TAILOPA))
-                    || (fileType.equals(BartsFilenameParser.TYPE_EMERGENCY_CARE)
-                        && otherFileType.equalsIgnoreCase(BartsFilenameParser.TYPE_EMERGENCY_CARE_TAILS))
-                    || (fileType.equals(BartsFilenameParser.TYPE_2_1_SUSAEA)
-                        && otherFileType.equalsIgnoreCase(BartsFilenameParser.TYPE_2_1_TAILAEA))
-                    || (fileType.equals(BartsFilenameParser.TYPE_2_1_SUSIP)
-                        && otherFileType.equalsIgnoreCase(BartsFilenameParser.TYPE_2_1_TAILIP))) {
+                if (otherFileType.equals(tailsFileType)) {
 
                     String otherFileName = otherFile.getFilename();
                     int otherFileNum = getFileNumber(otherFileName);
@@ -239,9 +254,15 @@ public class BartsBatchValidator extends SftpBatchValidator {
             }
 
             if (!foundTailFile) {
-                //a missing tails file isn't the end of the world so don't throw an exception, but log to Slack so we can see if it's regularly happening
-                missingTails.add(fileName);
-                //throw new SftpValidationException("Missing tail file for " + fileName + " in batch " + incompleteBatch.getBatchIdentifier());
+                //Barts have started sending ECDS Tails files the day before (sometimes days before) the actual proper
+                //file, so we should attempt to find the file in a previous batch and move it over to this batch
+                LOG.debug("Failed to find tails file for " + fileName + " in batch " + incompleteBatch.getBatchId());
+                if (!tryFindFileInPreviousBatch(db, instanceConfiguration, dbConfiguration, incompleteBatch, fileNum, tailsFileType)) {
+
+                    //a missing tails file isn't the end of the world so don't throw an exception, but log to Slack so we can see if it's regularly happening
+                    missingTails.add(fileName);
+                    //throw new SftpValidationException("Missing tail file for " + fileName + " in batch " + incompleteBatch.getBatchIdentifier());
+                }
             }
         }
 
@@ -249,6 +270,95 @@ public class BartsBatchValidator extends SftpBatchValidator {
             String msg = dbConfiguration.getConfigurationId() + " has missing tail file(s) for SUS file(s): " + String.join(", ", missingTails) + " in batch " + incompleteBatch.getBatchIdentifier();
             SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
         }
+    }
+
+    private boolean tryFindFileInPreviousBatch(DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, Batch incompleteBatch, int fileNum, String tailsFileType) throws Exception {
+        String configId = dbConfiguration.getConfigurationId();
+        List<Batch> batches = db.getAllBatches(configId); //this really should be optimised to only retrieve the last 30 or so...
+
+        //ensure batches are sorted properly
+        batches.sort((o1, o2) -> {
+            Integer i1 = o1.getSequenceNumber();
+            Integer i2 = o2.getSequenceNumber();
+            return i1.compareTo(i2);
+        });
+
+        int checked = 0;
+
+        for (int i=batches.size()-1; i>=0; i--) {
+            Batch batch = batches.get(i);
+            List<BatchFile> files = batch.getBatchFiles();
+            for (BatchFile file: files) {
+                String type = file.getFileTypeIdentifier();
+                if (!type.equals(tailsFileType)) {
+                    continue;
+                }
+
+                String thisFileName = file.getFilename();
+                int thisFileNum = getFileNumber(thisFileName);
+                if (thisFileNum != fileNum) {
+                    continue;
+                }
+
+                //if we make it here, we've found our tails file
+                LOG.debug("Found tails file " + thisFileName + " in batch " + batch.getBatchId());
+
+                //we need to copy the file from the original directory (of the date it was received)
+                //to the date of the new batch
+                String sharedStorageDir = instanceConfiguration.getSharedStoragePath();
+                String tempDir = instanceConfiguration.getTempDirectory();
+                String configurationDir = dbConfiguration.getLocalRootPath();
+                String existingBatchDir = batch.getLocalRelativePath();
+                String newBatchDir = incompleteBatch.getLocalRelativePath();
+
+                String existingPermPath = FileHelper.concatFilePath(sharedStorageDir, configurationDir, existingBatchDir, thisFileName);
+
+                String newTempDir = FileHelper.concatFilePath(tempDir, configurationDir, existingBatchDir);
+                if (!new File(newTempDir).exists()) {
+                    new File(newTempDir).mkdirs();
+                }
+                String newTempPath = FileHelper.concatFilePath(newTempDir, thisFileName, existingBatchDir, thisFileName);
+
+                String newPermPath = FileHelper.concatFilePath(sharedStorageDir, configurationDir, newBatchDir, thisFileName);
+
+                //copy from S3 to local temp dir
+                LOG.debug("Copying from " + existingPermPath + " to " + newTempPath);
+                InputStream is = FileHelper.readFileFromSharedStorage(existingPermPath);
+                Files.copy(is, new File(newTempPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                is.close();
+
+                //write back from local temp dir to S3
+                LOG.debug("Copying from " + newTempPath + " to " + newPermPath);
+                FileHelper.writeFileToSharedStorage(newPermPath, new File(newTempPath));
+
+                //now add the tail file to the new batch
+                //we need to set the last modified on the RemoteFile to match the new batch identifier to force
+                //it to add the file to the new batch
+                String newBatchIdentifier = incompleteBatch.getBatchIdentifier();
+                LocalDate newBatchDate = BartsFilenameParser.parseBatchIdentifier(newBatchIdentifier);
+                LocalDateTime newBatchDateTime = newBatchDate.atTime(0, 0);
+                RemoteFile r = new RemoteFile(newPermPath, file.getRemoteSizeBytes(), newBatchDateTime);
+                LOG.debug("Adding file with path " + newPermPath + " and new datetime " + newBatchDateTime);
+                SftpFilenameParser filenameParser = ImplementationActivator.createFilenameParser(true, r, dbConfiguration);
+                LOG.debug("New batch identifier [" + filenameParser.generateBatchIdentifier() + "] which should match incomplete batch [" + incompleteBatch.getBatchIdentifier() + "]");
+                SftpFile f = new SftpFile(r, filenameParser, configurationDir);
+                db.addFile(configId, f);
+                LOG.debug("Added new file");
+
+                String msg = dbConfiguration.getConfigurationId() + " " + tailsFileType + " num " + fileNum + " was found in a previous batch (" + existingBatchDir + ") and has been copied to the new batch (" + newBatchDir + ")";
+                SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
+
+                return true;
+            }
+
+            //only check the last 30 batches before failing
+            checked ++;
+            if (checked >= 30) {
+                break;
+            }
+        }
+
+        return false;
     }
 
     private static int getFileNumber(String fileName) {

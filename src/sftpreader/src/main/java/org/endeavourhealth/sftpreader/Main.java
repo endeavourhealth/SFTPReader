@@ -177,7 +177,7 @@ public class Main {
                     System.exit(0);
                 }*/
 
-                if (args.length > 1
+                /*if (args.length > 1
                     && args[1].equalsIgnoreCase("CheckForBulks")) {
                     String configurationId = args[2];
                     boolean testMode = Boolean.parseBoolean(args[3]);
@@ -187,23 +187,23 @@ public class Main {
                     }
                     checkForBulks(configurationId, testMode, odsRegex);
                     System.exit(0);
-                }
+                }*/
 
-                if (args.length > 1
+                /*if (args.length > 1
                         && args[1].equalsIgnoreCase("CopyTppManifestFiles")) {
                     String configurationId = args[2];
                     boolean testMode = Boolean.parseBoolean(args[3]);
                     copyTppManifestFiles(configurationId, testMode);
                     System.exit(0);
-                }
+                }*/
 
-                if (args.length > 1
+                /*if (args.length > 1
                         && args[1].equalsIgnoreCase("TestVisionSlackAlert")) {
                     testVisionSlackAlert();
                     System.exit(0);
-                }
+                }*/
 
-                if (args.length > 1
+                /*if (args.length > 1
                         && args[1].equalsIgnoreCase("FixTppOutOfOrderData")) {
                     String configurationId = args[2];
                     boolean testMode = Boolean.parseBoolean(args[3]);
@@ -213,12 +213,17 @@ public class Main {
                     }
                     fixTppOutOfOrderData(configurationId, testMode, odsRegex);
                     System.exit(0);
-                }
+                }*/
+
                 //One-off data load for TPP
                 if (args.length > 1
                         && args[1].equalsIgnoreCase("loadTppSRCode")) {
                     String configurationId = args[2];
-                    SRCodeLoader.loadTppSRCodetoHahtable(configuration,configurationId);
+                    String odsCodeRegex = null;
+                    if (args.length > 3) {
+                        odsCodeRegex = args[3];
+                    }
+                    SRCodeLoader.loadTppSRCodetoHahtable(configuration, configurationId, odsCodeRegex);
                     System.exit(0);
                 }
 
@@ -276,7 +281,7 @@ public class Main {
         }
 	}
 
-    private static void fixTppOutOfOrderData(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
+    /*private static void fixTppOutOfOrderData(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
         LOG.debug("fixTppOutOfOrderData for " + configurationId + " testmode = " + testMode + " org regex " + odsCodeRegex);
 
         Connection conn = null;
@@ -285,13 +290,13 @@ public class Main {
         try {
             conn = ConnectionManager.getSftpReaderNonPooledConnection();
 
-            /*String sql = null;
+            *//*String sql = null;
             if (ConnectionManager.isPostgreSQL(conn)) {
                 sql = "UPDATE log.batch_split SET is_bulk = ? WHERE batch_split_id = ?";
             } else {
                 sql = "UPDATE batch_split SET is_bulk = ? WHERE batch_split_id = ?";
             }
-            ps = conn.prepareStatement(sql);*/
+            ps = conn.prepareStatement(sql);*//*
 
 
             DbConfiguration dbConfiguration = null;
@@ -470,9 +475,9 @@ public class Main {
             }
             conn.close();
         }
-    }
+    }*/
 
-    private static void testVisionSlackAlert() {
+    /*private static void testVisionSlackAlert() {
         try {
             LOG.debug("Testing Vision Slack Alert");
 
@@ -517,13 +522,13 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
     /**
      * TPP manifest files weren't originally copied into the /SPLIT/ODScode directories, but they are now.
      * This routine copies them over where necessary so the old files are in the same pattern as the new
      */
-    private static void copyTppManifestFiles(String configurationId, boolean testMode) {
+    /*private static void copyTppManifestFiles(String configurationId, boolean testMode) {
         LOG.info("Copying TPP Manifest Files for " + configurationId);
 
         try {
@@ -625,7 +630,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
     /**
      * recreates the batch_file table content after it was lost, but for the
@@ -906,7 +911,7 @@ public class Main {
      * one-off routine to populate the new is_bulk column on the batch_split table so we
      * can work out if we've received bulk data for a service or not
      */
-    private static void checkForBulks(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
+    /*private static void checkForBulks(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
         LOG.info("Checking for Bulks in " + configurationId);
         if (!Strings.isNullOrEmpty(odsCodeRegex)) {
             LOG.info("Restricting to orgs matching " + odsCodeRegex);
@@ -1124,9 +1129,9 @@ public class Main {
                 conn.close();
             }
         }
-    }
+    }*/
 
-    private static void testSplitting(String srcFilePath) {
+    /*private static void testSplitting(String srcFilePath) {
         LOG.info("Testing splitting of " + srcFilePath);
         try {
             File srcFile = new File(srcFilePath);
@@ -1151,7 +1156,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
     private static void decryptGpgFile(String filePath, String configurationId) {
         LOG.info("Decrypting " + filePath + " from configuration " + configurationId);
@@ -1975,151 +1980,8 @@ public class Main {
         }
     }
 */
-    /**
-     * This method is used to filter the duplicates. The method creates hash codes for input records and compares those with database for duplication.
-     * After comparision it produces the extract without any duplicates to be further processed by Message Transformer
-     *
-     * @param storagePath This is the path to where the file should be copied after processing is done
-     * @param uniqueKey This is the unique field name in the input feed file, i.e., RowIdentifier in SRCode
-     //* @param orgId This is the org id i.e., HSCIC6
-     * @param splitFile This is the input file
-     * @return Nothing.
-     * @exception Exception On processing error.
-     */
-    private static void writeToHashtable(String storagePath, String uniqueKey,
-                                                    File splitFile, String batchDir) throws Exception {
-        LOG.info("Hashed File Filtering for SRCode using storagePath : " + storagePath + " uniqueKey " + uniqueKey    );
-        Connection connection = ConnectionManager.getSftpReaderHashesNonPooledConnection();
-        try {
-            //turn on auto commit so we don't need to separately commit these large SQL operations
-            connection.setAutoCommit(true);
-            //Get the date from batch directory of format i.e., 2017-04-26T09.37.00
-            Date dataDate = null;
-            String formattedDateString = null;
-            if(batchDir != null && batchDir.length() > 0 ) {
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-                dataDate = formatter.parse(batchDir.substring(0, batchDir.indexOf("T")));
-                formattedDateString = ConnectionManager.formatDateString(dataDate, false);
-            }
-            else
-                throw new Exception("Unexpected file " + storagePath);
 
-            HashFunction hf = Hashing.sha256();
 
-            //copy file to local file
-            String name = FilenameUtils.getName(storagePath);
-            String srcTempName = "TMP_SRC_" + name;
-            String dstTempName = "TMP_DST_" + name;
-
-            File srcFile = new File(srcTempName);
-            //File dstFile = new File(dstTempName);
-
-            InputStream is = FileHelper.readFileFromSharedStorage(splitFile.toPath().toString());
-            Files.copy(is, srcFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            is.close();
-            LOG.debug("Copied " + srcFile.length() + " byte file from S3");
-
-            long msStart = System.currentTimeMillis();
-
-            CSVParser parser = CSVParser.parse(srcFile, Charset.defaultCharset(), CSVFormat.DEFAULT.withHeader());
-
-            Map<String, Integer> headers = parser.getHeaderMap();
-            if (!headers.containsKey(uniqueKey)) {
-                LOG.debug("Headers found: " + headers);
-                throw new Exception("Couldn't find unique key " + uniqueKey);
-            }
-
-            String[] headerArray = CsvHelper.getHeaderMapAsArray(parser);
-            int uniqueKeyIndex = headers.get(uniqueKey).intValue();
-
-            LOG.debug("Starting hash calculations");
-            //
-
-            String hashTempName = "TMP_HSH_" + name;
-            File hashFile = new File(hashTempName);
-            FileOutputStream fos = new FileOutputStream(hashFile);
-            OutputStreamWriter osw = new OutputStreamWriter(fos);
-            BufferedWriter bufferedWriter = new BufferedWriter(osw);
-            CSVPrinter csvPrinter = new CSVPrinter(bufferedWriter, CSVFormat.DEFAULT.withHeader("record_id", "record_hash", "dt_last_updated"));
-
-            int done = 0;
-            Iterator<CSVRecord> iterator = parser.iterator();
-            while (iterator.hasNext()) {
-                CSVRecord record = iterator.next();
-
-                String uniqueVal = record.get(uniqueKey);
-
-                Hasher hashser = hf.newHasher();
-
-                int size = record.size();
-                for (int i=0; i<size; i++) {
-                    if (i == uniqueKeyIndex) {
-                        continue;
-                    }
-
-                    String val = record.get(i);
-                    hashser.putString(val, Charset.defaultCharset());
-                }
-
-                HashCode hc = hashser.hash();
-                String hashString = hc.toString();
-
-                csvPrinter.printRecord(uniqueVal, hashString, formattedDateString);
-
-                done ++;
-                if (done % TppConstants.MAX_THRESHOLD_TPP == 0) {
-                    LOG.debug("Done " + done);
-                }
-            }
-
-            csvPrinter.close();
-            parser.close();
-
-            /*
-             * Check if input file is empty then processing should not kick off.
-             */
-            if( done == 0 ) {
-                LOG.debug("The input file is empty" );
-                srcFile.delete();
-                //dstFile.delete();
-                throw new Exception("The input file is empty");
-            }
-
-            LOG.debug("Finished hash calculations for " + done + " records to " + hashFile);
-
-            Set<StringMemorySaver> hsUniqueIdsToKeep = new HashSet<>();
-
-            LOG.debug("Found " + hsUniqueIdsToKeep.size() + " records to retain");
-            //Save updated hashes to database
-            //insert records into the target table where the staging has new records
-            LOG.debug("Inserting new records in target table file_record_hash");
-            String sql = "LOAD DATA LOCAL INFILE '" + hashFile.getAbsolutePath().replace("\\", "\\\\") + "'"
-                    + " INTO TABLE sftp_reader_hashes.file_record_hash "
-                    + " FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\\\"'"
-                    + " LINES TERMINATED BY '\\r\\n'"
-                    + " IGNORE 1 LINES (record_id, record_hash,dt_last_updated )";
-
-            Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
-            statement.executeUpdate(sql);
-            statement.close();
-
-            LOG.debug("Finished saving hashes to DB");
-
-            //delete all files
-            srcFile.delete();
-            hashFile.delete();
-            //dstFile.delete();
-
-            LOG.info("Finished  Hashed File Filtering for SRCode using " + storagePath);
-        } catch (Throwable t) {
-            LOG.error("", t);
-        } finally {
-            //MUST change this back to false
-            connection.setAutoCommit(false);
-            connection.close();
-        }
-
-    }
 
 }
 

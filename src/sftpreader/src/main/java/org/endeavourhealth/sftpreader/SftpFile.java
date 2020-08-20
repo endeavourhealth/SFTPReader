@@ -18,7 +18,7 @@ public class SftpFile {
     private Long decryptedFileSizeBytes = null;
     private Integer batchFileId = null;
 
-    protected SftpFile(RemoteFile remoteFile, SftpFilenameParser sftpFilenameParser, String fullLocalRootPath) {
+    public SftpFile(RemoteFile remoteFile, SftpFilenameParser sftpFilenameParser, String fullLocalRootPath) {
         Validate.notNull(remoteFile, "remoteFile");
         Validate.notNull(sftpFilenameParser, "sftpFilenameParser");
         Validate.notNull(fullLocalRootPath, "fullLocalRootPath");

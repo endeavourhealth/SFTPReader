@@ -181,7 +181,7 @@ public class SftpReaderTask implements Runnable {
             return false;
         }
 
-        LOG.trace("Checking is should send Slack all clear for " + attempt.getConfigurationId());
+        //LOG.trace("Checking is should send Slack all clear for " + attempt.getConfigurationId());
 
         //hack to deal with Vision - Vision disable connections to their SFTP Readers for a period prior
         //to a new extract being made available and we get errors connecting. Changing the polling frequency
@@ -207,10 +207,10 @@ public class SftpReaderTask implements Runnable {
         }
 
         //if no error now but we previously had one, then send a Slack message to say all OK now
-        LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
+        /*LOG.trace("(previousAttempt != null) = " + (previousAttempt != null));
         if (previousAttempt != null) {
             LOG.trace(" && (previousAttempt.hasError()) = " + (previousAttempt.hasError()));
-        }
+        }*/
 
         return previousAttempt != null
                 && previousAttempt.hasError();

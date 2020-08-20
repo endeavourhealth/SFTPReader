@@ -77,13 +77,7 @@ public class CsvSplitter {
             }
 
             //convert the map into an ordered String array, so we can populate the column headers on new CSV files
-            columnHeaders = new String[headerMap.size()];
-            Iterator<String> headerIterator = headerMap.keySet().iterator();
-            while (headerIterator.hasNext()) {
-                String headerName = headerIterator.next();
-                int headerIndex = headerMap.get(headerName);
-                columnHeaders[headerIndex] = headerName;
-            }
+            columnHeaders = convertCsvHeaderMapToArray(headerMap);
 
             //go through the content of the source file
             //changing to also drop duplicated lines. The EMIS test pack has huge duplication of lines (see Admin_Orgamisation)
@@ -126,6 +120,19 @@ public class CsvSplitter {
         }
 
         return filesCreated;
+    }
+
+    public static String[] convertCsvHeaderMapToArray(Map<String, Integer> headerMap) {
+
+        String[] ret = new String[headerMap.size()];
+        Iterator<String> headerIterator = headerMap.keySet().iterator();
+        while (headerIterator.hasNext()) {
+            String headerName = headerIterator.next();
+            int headerIndex = headerMap.get(headerName);
+            ret[headerIndex] = headerName;
+        }
+
+        return ret;
     }
 
     private static boolean isSame(CSVRecord one, CSVRecord two) {

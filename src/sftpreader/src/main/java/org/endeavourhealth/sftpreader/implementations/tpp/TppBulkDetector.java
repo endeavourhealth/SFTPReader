@@ -70,9 +70,26 @@ public class TppBulkDetector extends SftpBulkDetector {
     }
 
     /**
+     * we filter content from SRCode files if we've received those records before, but don't do this if it's a bulk
+     * extract, so need this fn to test if the extract looks like a bulk. In this case, test both ways of checking
+     * for a bulk and return true if either think it is a bulk
+     */
+    public static boolean isBulkExtractNoAlert(Batch batch, BatchSplit batchSplit, DataLayerI db,
+                                               DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+
+        String manifestBulkReason = detectBulkFromManifest(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+        String filesLookBulkReason = detectBulkFromFileContents(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
+
+        boolean manifestIsBulk = manifestBulkReason == null;
+        boolean filesLookBulk = filesLookBulkReason == null;
+
+        return manifestIsBulk || filesLookBulk;
+    }
+
+    /**
      * returns NULL is it looked like a bulk, and a String saying why it doesn't
      */
-    private String detectBulkFromFileContents(Batch batch, BatchSplit batchSplit, DataLayerI db,
+    private static String detectBulkFromFileContents(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the files will still be in our temp storage
@@ -164,7 +181,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         return null;
     }
 
-    public static String detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
+    private static String detectBulkFromManifest(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the SRManifest file will still be in our temp storage

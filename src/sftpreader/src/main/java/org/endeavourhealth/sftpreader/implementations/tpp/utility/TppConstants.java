@@ -3,6 +3,8 @@ package org.endeavourhealth.sftpreader.implementations.tpp.utility;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.QuoteMode;
 
+import java.nio.charset.Charset;
+
 public class TppConstants {
 
     public static final String ORGANISATION_FILE = "SROrganisation.csv";
@@ -24,13 +26,10 @@ public class TppConstants {
 
     //Column unique identifier for SR Code file
     public static final String COL_ROW_IDENTIFIER_TPP = "RowIdentifier";
-    //Flag to process duplicate records for TPP
-    public static final boolean FILTER_DUPLICATE_TPP = true;
-    //Publisher TPP
-    public static final String PUBLISHER_TPP = "TPP";
-    //Max threshold FOR TPP
-    public static final int MAX_THRESHOLD_TPP = 200000;
 
 
 
+    public static Charset getCharset() {
+        return Charset.forName(TppConstants.REQUIRED_CHARSET);
+    }
 }
