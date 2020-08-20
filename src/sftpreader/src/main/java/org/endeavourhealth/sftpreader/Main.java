@@ -66,6 +66,7 @@ public class Main {
     //private static ManagementService managementService;
     //private static SlackNotifier slackNotifier;
 
+
 	public static void main(String[] args) {
 		try {
             String instanceName = null;
