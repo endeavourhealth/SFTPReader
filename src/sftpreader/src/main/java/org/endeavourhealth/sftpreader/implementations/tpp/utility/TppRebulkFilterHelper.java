@@ -139,8 +139,7 @@ public class TppRebulkFilterHelper {
         File hashFile = new File(hashPath);
         LOG.trace("Starting hash calculations from " + filePath + " to " + hashPath);
 
-        Charset charset = Charset.forName(TppConstants.REQUIRED_CHARSET);
-        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath, charset);
+        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(filePath, TppConstants.getCharset());
         CSVFormat csvFormat = TppConstants.CSV_FORMAT.withHeader();
         CSVParser csvParser = new CSVParser(reader, csvFormat);
 
@@ -155,7 +154,7 @@ public class TppRebulkFilterHelper {
         HashFunction hf = Hashing.sha256();
 
         FileOutputStream fos = new FileOutputStream(hashFile);
-        OutputStreamWriter osw = new OutputStreamWriter(fos);
+        OutputStreamWriter osw = new OutputStreamWriter(fos, TppConstants.getCharset());
         BufferedWriter bufferedWriter = new BufferedWriter(osw);
 
         csvFormat = CSVFormat.DEFAULT
@@ -304,39 +303,6 @@ public class TppRebulkFilterHelper {
         statement = connection.createStatement();
         statement.executeUpdate(sql);
         statement.close();
-    }
-
-
-    /*
-     * Build final extract, check and write the non duplicate records to a file to be processed by Message Transformer
-     */
-    private static void writeDataToFile(String[] headerArray, Set<StringMemorySaver> hsUniqueIdsToKeep, String uniqueKey,
-                                        File srcFile, String storageFilePath, File dstFile) throws Exception {
-        LOG.info("Start writeDataToFile");
-        //Build final extract
-        CSVFormat format = CSVFormat.DEFAULT.withHeader(headerArray);
-
-        FileOutputStream fos = new FileOutputStream(dstFile);
-        OutputStreamWriter osw = new OutputStreamWriter(fos);
-        BufferedWriter bufferedWriter = new BufferedWriter(osw);
-        CSVPrinter csvPrinterFiltered = new CSVPrinter(bufferedWriter, format);
-
-        CSVParser parserFiltered = CSVParser.parse(srcFile, Charset.defaultCharset(), CSVFormat.DEFAULT.withHeader());
-        Iterator<CSVRecord> iteratorFiltered = parserFiltered.iterator();
-
-        while (iteratorFiltered.hasNext()) {
-            CSVRecord record = iteratorFiltered.next();
-            String uniqueVal = record.get(uniqueKey);
-            if (hsUniqueIdsToKeep.contains(new StringMemorySaver(uniqueVal))) {
-                csvPrinterFiltered.printRecord(record);
-            }
-        }
-        parserFiltered.close();
-        csvPrinterFiltered.close();
-
-        // Copy the file to permanent storage
-        FileHelper.writeFileToSharedStorage(storageFilePath, dstFile);
-        LOG.info("End writeDataToFile");
     }
 
     /**

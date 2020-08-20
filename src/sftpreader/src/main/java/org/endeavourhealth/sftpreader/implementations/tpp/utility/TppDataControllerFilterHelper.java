@@ -202,7 +202,7 @@ public class TppDataControllerFilterHelper {
                 //create a new temp file output from the splitFile to write the filtered records
                 File splitFileTmp = new File(splitFile + ".tmp");
                 FileOutputStream fos = new FileOutputStream(splitFileTmp);
-                OutputStreamWriter osw = new OutputStreamWriter(fos, Charset.forName(TppConstants.REQUIRED_CHARSET));
+                OutputStreamWriter osw = new OutputStreamWriter(fos, TppConstants.getCharset());
                 BufferedWriter bufferedWriter = new BufferedWriter(osw);
                 csvPrinter = new CSVPrinter(bufferedWriter, TppConstants.CSV_FORMAT.withHeader(columnHeaders));
 

@@ -109,7 +109,7 @@ public class TppBulkDetector extends SftpBulkDetector {
 
         Set<String> patientIds = new HashSet<>();
 
-        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(patientFilePath);
+        InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(patientFilePath, TppConstants.getCharset());
         CSVParser csvParser = new CSVParser(reader, TppConstants.CSV_FORMAT.withHeader());
 
         //some older versions don't have the the deleted column
@@ -142,7 +142,7 @@ public class TppBulkDetector extends SftpBulkDetector {
         }
 
         int observationRecords = 0;
-        reader = FileHelper.readFileReaderFromSharedStorage(codeFilePath);
+        reader = FileHelper.readFileReaderFromSharedStorage(codeFilePath, TppConstants.getCharset());
         csvParser = new CSVParser(reader, TppConstants.CSV_FORMAT.withHeader());
 
         //some older versions don't have the the deleted column
