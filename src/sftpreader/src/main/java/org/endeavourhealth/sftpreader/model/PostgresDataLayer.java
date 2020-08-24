@@ -763,6 +763,41 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
     }
 
     @Override
+    public void resetBatch(int batchId) throws Exception {
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+
+            String sql = "DELETE FROM log.notification_message WHERE batch_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, batchId);
+            ps.executeUpdate();
+            ps.close();
+            ps = null;
+
+            sql = "DELETE FROM log.batch_split WHERE batch_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, batchId);
+            ps.executeUpdate();
+            ps.close();
+            ps = null;
+
+            sql = "UPDATE log.batch SET is_complete = false, complete_date = null WHERE batch_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, batchId);
+            ps.executeUpdate();
+            ps.close();
+            ps = null;
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
     public void addTppOrganisationGmsRegistrationMap(TppOrganisationGmsRegistrationMap map) throws Exception {
         Connection connection = getConnection();
         PreparedStatement ps = null;

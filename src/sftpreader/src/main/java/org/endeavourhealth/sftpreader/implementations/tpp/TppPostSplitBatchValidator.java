@@ -20,10 +20,13 @@ public class TppPostSplitBatchValidator extends SftpPostSplitBatchValidator {
 
         //detect if we've received data out of order for TPP
         if (lastCompleteBatch != null) {
-            LocalDateTime incompleteDt = TppFilenameParser.parseBatchIdentifier(incompleteBatch.getBatchIdentifier());
-            LocalDateTime lastDt = TppFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
-            checkForOutOfOrderBatches(incompleteBatch, incompleteDt, lastCompleteBatch, lastDt, dbConfiguration, db);
+            checkForOutOfOrderBatches(incompleteBatch, lastCompleteBatch, dbConfiguration, db);
         }
+    }
+
+    @Override
+    protected LocalDateTime parseBatchIdentifier(Batch batch) {
+        return TppFilenameParser.parseBatchIdentifier(batch.getBatchIdentifier());
     }
 
 }

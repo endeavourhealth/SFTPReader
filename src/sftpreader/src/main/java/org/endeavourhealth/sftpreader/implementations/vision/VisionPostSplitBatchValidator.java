@@ -18,9 +18,14 @@ public class VisionPostSplitBatchValidator extends SftpPostSplitBatchValidator {
 
         //detect if we've received data out of order for Vision
         if (lastCompleteBatch != null) {
-            LocalDateTime incompleteDt = VisionFilenameParser.parseBatchIdentifier(incompleteBatch.getBatchIdentifier());
-            LocalDateTime lastDt = VisionFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
-            checkForOutOfOrderBatches(incompleteBatch, incompleteDt, lastCompleteBatch, lastDt, dbConfiguration, db);
+            checkForOutOfOrderBatches(incompleteBatch, lastCompleteBatch, dbConfiguration, db);
         }
     }
+
+    @Override
+    protected LocalDateTime parseBatchIdentifier(Batch batch) {
+        return VisionFilenameParser.parseBatchIdentifier(batch.getBatchIdentifier());
+    }
+
+
 }

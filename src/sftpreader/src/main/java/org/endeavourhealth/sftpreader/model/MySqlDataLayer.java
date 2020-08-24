@@ -1495,7 +1495,42 @@ public class MySqlDataLayer implements DataLayerI {
             connection.close();
         }
     }
-    
+
+    @Override
+    public void resetBatch(int batchId) throws Exception {
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+
+            String sql = "DELETE FROM notification_message WHERE batch_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, batchId);
+            ps.executeUpdate();
+            ps.close();
+            ps = null;
+
+            sql = "DELETE FROM batch_split WHERE batch_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, batchId);
+            ps.executeUpdate();
+            ps.close();
+            ps = null;
+
+            sql = "UPDATE batch SET is_complete = false, complete_date = null WHERE batch_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, batchId);
+            ps.executeUpdate();
+            ps.close();
+            ps = null;
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
     private Connection getConnection() throws Exception {
         Connection conn = ConnectionManager.getSftpReaderConnection();
         conn.setAutoCommit(true);

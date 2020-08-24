@@ -142,7 +142,7 @@ public class VisionFilenameParser extends SftpFilenameParser {
         String nacsCode = fileTypeParts [2];
 
         String formatVersionPart = fileFormatAndDateSectionParts[0];
-        String extractDateTimeStr = fileFormatAndDateSectionParts[1].replace(".zip", "");;
+        String extractDateTimeStr = fileFormatAndDateSectionParts[1].replace(".zip", "");
 
         if (StringUtils.isEmpty(fileType)) {
             throw new SftpFilenameParseException("FileType is empty");

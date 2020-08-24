@@ -57,4 +57,6 @@ public interface DataLayerI {
 
     Set<String> getAdastraOdsCodes(String configurationId, String filenameOrgCode) throws Exception;
     void saveAdastraOdsCode(String configurationId, String filenameOrgCode, String odsCode) throws Exception;
+
+    void resetBatch(int batchId) throws Exception;
 }

@@ -24,9 +24,7 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
 
         //detect if we've received data out of order for Emis
         if (lastCompleteBatch != null) {
-            LocalDateTime incompleteDt = EmisFilenameParser.parseBatchIdentifier(newBatch.getBatchIdentifier());
-            LocalDateTime lastDt = EmisFilenameParser.parseBatchIdentifier(lastCompleteBatch.getBatchIdentifier());
-            checkForOutOfOrderBatches(newBatch, incompleteDt, lastCompleteBatch, lastDt, dbConfiguration, db);
+            checkForOutOfOrderBatches(newBatch, lastCompleteBatch, dbConfiguration, db);
         }
 
         //now we've split the files, we can attempt to fix any disabled extract
@@ -36,6 +34,11 @@ public class EmisPostSplitBatchValidator extends SftpPostSplitBatchValidator {
             String odsCode = split.getOrganisationId();
             attemptDisabledExtractFixIfNecessary(odsCode, newBatch, lastCompleteBatch, db, instanceConfiguration, dbConfiguration);
         }
+    }
+
+    @Override
+    protected LocalDateTime parseBatchIdentifier(Batch batch) {
+        return EmisFilenameParser.parseBatchIdentifier(batch.getBatchIdentifier());
     }
 
 
