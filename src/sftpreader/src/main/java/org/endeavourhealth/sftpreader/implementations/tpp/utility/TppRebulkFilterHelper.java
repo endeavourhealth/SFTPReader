@@ -109,7 +109,7 @@ public class TppRebulkFilterHelper {
             String sql = "SELECT record_id"
                     + " FROM " + tempTableName
                     + " WHERE ignore_record = false"
-                    + " LIMIT " + offset + " " + rows;
+                    + " LIMIT " + offset + ", " + rows;
             LOG.trace("Getting " + offset + " to " + (rows + offset));
 
             Statement statement = connection.createStatement();
