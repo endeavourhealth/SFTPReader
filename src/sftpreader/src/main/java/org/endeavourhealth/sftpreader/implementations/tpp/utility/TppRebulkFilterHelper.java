@@ -77,6 +77,10 @@ public class TppRebulkFilterHelper {
             //delete file of hashes
             hashFile.delete();
 
+        } catch (Exception ex) {
+            LOG.error("", ex);
+            throw ex;
+
         } finally {
             connection.setAutoCommit(false); //MUST change this back to false
             connection.close();
