@@ -100,6 +100,7 @@ public class TppRebulkFilterHelper {
 
     private static Set<Long> findRecordIdsToRetain(Connection connection, String tempTableName) throws Exception {
 
+        LOG.trace("Looking for records to retain");
         Set<Long> ret = new HashSet<>();
 
         int offset = 0;
