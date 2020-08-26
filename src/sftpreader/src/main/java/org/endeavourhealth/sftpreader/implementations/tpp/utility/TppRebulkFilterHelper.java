@@ -100,21 +100,37 @@ public class TppRebulkFilterHelper {
 
     private static Set<Long> findRecordIdsToRetain(Connection connection, String tempTableName) throws Exception {
 
-        String sql = "SELECT record_id"
-                + " FROM " + tempTableName
-                + " WHERE ignore_record = false";
-
         Set<Long> ret = new HashSet<>();
 
-        Statement statement = connection.createStatement();
-        statement.setFetchSize(10000);
-        ResultSet rs = statement.executeQuery(sql);
-        while (rs.next()) {
-            long id = rs.getLong(1);
-            ret.add(new Long(id));
-        }
+        int offset = 0;
+        int rows = 100000;
 
-        statement.close();
+        while (true) {
+            String sql = "SELECT record_id"
+                    + " FROM " + tempTableName
+                    + " WHERE ignore_record = false"
+                    + " LIMIT " + offset + " " + rows;
+            LOG.trace("Getting " + offset + " to " + (rows + offset));
+
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery(sql);
+            int read = 0;
+
+            while (rs.next()) {
+                long id = rs.getLong(1);
+                ret.add(new Long(id));
+                read ++;
+            }
+
+            statement.close();
+
+            if (read < rows) {
+                break;
+
+            } else {
+                offset += read;
+            }
+        }
 
         return ret;
     }
