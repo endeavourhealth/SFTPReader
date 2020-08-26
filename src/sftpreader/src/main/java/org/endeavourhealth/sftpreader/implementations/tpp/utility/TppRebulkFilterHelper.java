@@ -100,6 +100,12 @@ public class TppRebulkFilterHelper {
 
     private static Set<Long> findRecordIdsToRetain(Connection connection, String tempTableName) throws Exception {
 
+        LOG.debug("Creating index on temp table");
+        String sql = "CREATE INDEX ix ON " + tempTableName + " (ignore_record)";
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(sql);
+        statement.close();
+
         LOG.trace("Looking for records to retain");
         Set<Long> ret = new HashSet<>();
 
@@ -107,13 +113,13 @@ public class TppRebulkFilterHelper {
         int rows = 100000;
 
         while (true) {
-            String sql = "SELECT record_id"
+            sql = "SELECT record_id"
                     + " FROM " + tempTableName
                     + " WHERE ignore_record = false"
                     + " LIMIT " + offset + ", " + rows;
             LOG.trace("Getting " + offset + " to " + (rows + offset));
 
-            Statement statement = connection.createStatement();
+            statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(sql);
             int read = 0;
 
@@ -254,24 +260,34 @@ public class TppRebulkFilterHelper {
      */
     private static void updatePermHashTable(Connection connection, String permTableName, String tempTableName, LocalDateTime dataDate) throws Exception {
 
-        Statement statement = connection.createStatement(); //one-off SQL due to table name, so don't use prepared statement
+        LOG.trace("Creating index on record_exists");
+        String sql = "CREATE INDEX ix2 ON " + tempTableName + " (record_exists)";
+        Statement statement = connection.createStatement();
+        statement.executeUpdate(sql);
+        statement.close();
 
         //update any records that previously existed, but have a changed term
-        String sql = "UPDATE " + permTableName + " t"
+        LOG.trace("Updating records already in table");
+        sql = "UPDATE " + permTableName + " t"
                 + " INNER JOIN " + tempTableName + " s"
                 + " ON t.record_id = s.record_id"
                 + " SET t.record_hash = s.record_hash,"
-                + " t.dt_last_updated = " + ConnectionManager.formatDateString(dataDate, true)
-                + " WHERE s.record_exists = true";
+                + " t.dt_last_updated = " + ConnectionManager.formatDateString(dataDate, true);
+                //+ " WHERE s.record_exists = true"; //not required
+        //TODO - shouldn't it compare the DATE????
+        //+ " WHERE t.dt_last_updated < " + ConnectionManager.formatDateString(dataDate, true);
+        statement = connection.createStatement();
         statement.executeUpdate(sql);
+        statement.close();
 
         //insert records into the target table where the staging has new records
+        LOG.trace("Adding new records to table");
         sql = "INSERT IGNORE INTO " + permTableName + " (record_id, record_hash, dt_last_updated)"
                 + " SELECT record_id, record_hash, " + ConnectionManager.formatDateString(dataDate, true)
                 + " FROM " + tempTableName
                 + " WHERE record_exists = false";
+        statement = connection.createStatement();
         statement.executeUpdate(sql);
-
         statement.close();
     }
 
@@ -315,12 +331,7 @@ public class TppRebulkFilterHelper {
                 + " ON t.record_id = s.record_id"
                 + " SET s.record_exists = true, "
                 + " s.ignore_record = IF (s.record_hash = t.record_hash OR t.dt_last_updated > " + formattedDateString + ", true, false)";
-        statement = connection.createStatement();
-        statement.executeUpdate(sql);
-        statement.close();
-
-        LOG.debug("Creating index on temp table");
-        sql = "CREATE INDEX ix ON " + tempTableName + " (ignore_record)";
+        //TODO - isn't this wrong????
         statement = connection.createStatement();
         statement.executeUpdate(sql);
         statement.close();

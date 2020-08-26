@@ -157,7 +157,8 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 String filePath = splitFile.getAbsolutePath();
                 LocalDateTime dt = TppFilenameParser.parseBatchIdentifier(batch.getBatchIdentifier());
 
-                TppRebulkFilterHelper.filterFileForDuplicateData(orgId, filePath, uniqueKey, dt, actuallyFilterFile, instanceConfiguration);
+                //TODO - restore when done
+                //TppRebulkFilterHelper.filterFileForDuplicateData(orgId, filePath, uniqueKey, dt, actuallyFilterFile, instanceConfiguration);
             }
         }
 
