@@ -313,11 +313,11 @@ public class BartsBatchValidator extends SftpBatchValidator {
 
                 String existingPermPath = FileHelper.concatFilePath(sharedStorageDir, configurationDir, existingBatchDir, thisFileName);
 
-                String newTempDir = FileHelper.concatFilePath(tempDir, configurationDir, existingBatchDir);
-                if (!new File(newTempDir).exists()) {
+                String newTempDir = FileHelper.concatFilePath(tempDir, configurationDir, newBatchDir);
+                /*if (!new File(newTempDir).exists()) {
                     new File(newTempDir).mkdirs();
-                }
-                String newTempPath = FileHelper.concatFilePath(newTempDir, thisFileName, existingBatchDir, thisFileName);
+                }*/
+                String newTempPath = FileHelper.concatFilePath(newTempDir, thisFileName);
 
                 String newPermPath = FileHelper.concatFilePath(sharedStorageDir, configurationDir, newBatchDir, thisFileName);
 
