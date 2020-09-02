@@ -523,15 +523,6 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         }
     }
 
-    public void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception {
-
-        PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
-                .setName("configuration.add_tpp_organisation_map")
-                .addParameter("_ods_code", mapping.getOdsCode())
-                .addParameter("_name", mapping.getName());
-
-        pgStoredProc.execute();
-    }
 
     @Override
     public TppOrganisationMap getTppOrgNameFromOdsCode(String queryOdsCode) throws Exception {
@@ -788,6 +779,60 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             ps.executeUpdate();
             ps.close();
             ps = null;
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+
+    @Override
+    public Date isPausedNotifyingMessagingApi(String configurationId) throws Exception {
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+
+            String sql = "SELECT dt_paused FROM configuration.configuration_paused_notifying WHERE configuration_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setString(1, configurationId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new java.util.Date(rs.getTimestamp(1).getTime());
+
+            } else {
+                return null;
+            }
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public void addTppOrganisationMappings(List<TppOrganisationMap> mappings) throws Exception {
+
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO tpp_organisation_map (ods_code, name) VALUES (?, ?) "
+                    + " ON CONFLICT (ods_code) DO UPDATE SET"
+                    + " name = EXCLUDED.name";
+
+            ps = connection.prepareStatement(sql);
+
+            for (TppOrganisationMap mapping: mappings) {
+                ps.setString(1, mapping.getOdsCode());
+                ps.setString(2, mapping.getName());
+                ps.addBatch();
+            }
+
+            ps.executeBatch();
 
         } finally {
             if (ps != null) {

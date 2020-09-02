@@ -101,7 +101,7 @@ public class TppRebulkFilterHelper {
     private static Set<Long> findRecordIdsToRetain(Connection connection, String tempTableName) throws Exception {
 
         LOG.debug("Creating index on temp table");
-        String sql = "CREATE INDEX ix ON " + tempTableName + " (ignore_record)";
+        String sql = "CREATE INDEX ix ON " + tempTableName + " (process_record)";
         Statement statement = connection.createStatement();
         statement.executeUpdate(sql);
         statement.close();
@@ -115,7 +115,7 @@ public class TppRebulkFilterHelper {
         while (true) {
             sql = "SELECT record_id"
                     + " FROM " + tempTableName
-                    + " WHERE ignore_record = false"
+                    + " WHERE process_record = true"
                     + " LIMIT " + offset + ", " + rows;
             LOG.trace("Getting " + offset + " to " + (rows + offset));
 
@@ -243,8 +243,7 @@ public class TppRebulkFilterHelper {
                 + "record_hash char(128) NOT NULL, "
                 + "dt_last_updated datetime NOT NULL, "
                 + "CONSTRAINT pk PRIMARY KEY (record_id), "
-                + "INDEX ix_id_hash  (record_id, record_hash), "
-                + "INDEX ix_id_date  (record_id, dt_last_updated)"
+                + "INDEX ix_id_date  (record_id, dt_last_updated, record_hash)"
                 + ")"; //note no point adding compression as the hashes don't compress well
         Statement statement = connection.createStatement();
         statement.executeUpdate(sql);
@@ -261,7 +260,7 @@ public class TppRebulkFilterHelper {
     private static void updatePermHashTable(Connection connection, String permTableName, String tempTableName, LocalDateTime dataDate) throws Exception {
 
         LOG.trace("Creating index on record_exists");
-        String sql = "CREATE INDEX ix2 ON " + tempTableName + " (record_exists)";
+        String sql = "CREATE INDEX ix2 ON " + tempTableName + " (record_exists, process_record)";
         Statement statement = connection.createStatement();
         statement.executeUpdate(sql);
         statement.close();
@@ -272,10 +271,9 @@ public class TppRebulkFilterHelper {
                 + " INNER JOIN " + tempTableName + " s"
                 + " ON t.record_id = s.record_id"
                 + " SET t.record_hash = s.record_hash,"
-                + " t.dt_last_updated = " + ConnectionManager.formatDateString(dataDate, true);
-                //+ " WHERE s.record_exists = true"; //not required
-        //TODO - shouldn't it compare the DATE????
-        //+ " WHERE t.dt_last_updated < " + ConnectionManager.formatDateString(dataDate, true);
+                + " t.dt_last_updated = " + ConnectionManager.formatDateString(dataDate, true)
+                + " WHERE s.record_exists = true"
+                + " AND s.process_record = true";
         statement = connection.createStatement();
         statement.executeUpdate(sql);
         statement.close();
@@ -306,7 +304,7 @@ public class TppRebulkFilterHelper {
                 + "record_id bigint, "
                 + "record_hash char(128), "
                 + "record_exists boolean DEFAULT FALSE, "
-                + "ignore_record boolean DEFAULT FALSE, "
+                + "process_record boolean DEFAULT TRUE, "
                 + "PRIMARY KEY (record_id))";
         statement = connection.createStatement();
         statement.executeUpdate(sql);
@@ -330,8 +328,13 @@ public class TppRebulkFilterHelper {
                 + " INNER JOIN " + permTableName + " t"
                 + " ON t.record_id = s.record_id"
                 + " SET s.record_exists = true, "
-                + " s.ignore_record = IF (s.record_hash = t.record_hash OR t.dt_last_updated > " + formattedDateString + ", true, false)";
-        //TODO - isn't this wrong????
+                + " s.process_record = IF ((t.dt_last_updated = " + formattedDateString + ") OR (s.record_hash != t.record_hash AND t.dt_last_updated < " + formattedDateString + "), true, false)";
+        //the above logic goes:
+        //set process record to true IF
+        //    the table dt_last_updated is the same as the file being processed (i.e. if we failed when processing this batch before and are trying again)
+        //OR
+        //    the table dt_last_updated is older than the file being process and the hash is different (i.e. we have a new file and its hash is different)
+
         statement = connection.createStatement();
         statement.executeUpdate(sql);
         statement.close();

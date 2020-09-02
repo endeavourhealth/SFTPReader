@@ -9,8 +9,10 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.core.csv.CsvHelper;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppFilenameParser;
@@ -69,9 +71,11 @@ public class SRCodeLoader {
                 return i1.compareTo(i2);
             });
 
+            Set<String> odsCodesFinished = new HashSet<>();
             int done = 0;
-            for (Batch b: batches) {
 
+            for (int i=batches.size()-1; i>=0; i--) {
+                Batch b = batches.get(i);
                 List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
                 LOG.debug("Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
 
@@ -80,6 +84,11 @@ public class SRCodeLoader {
                     String odsCode = split.getOrganisationId();
                     if (!Strings.isNullOrEmpty(odsCodeRegex)
                             && !Pattern.matches(odsCodeRegex, odsCode)) {
+                        continue;
+                    }
+
+                    //if we've gone back as far as we want to for this org, then skip it
+                    if (odsCodesFinished.contains(odsCode)) {
                         continue;
                     }
 
@@ -97,6 +106,20 @@ public class SRCodeLoader {
 
                         TppRebulkFilterHelper.filterFileForDuplicateData(odsCode, filePath, TppConstants.COL_ROW_IDENTIFIER_TPP, dataDate, false, edsConfiguration);
                         LOG.debug("    Updated table for " + odsCode);
+
+                        //see if this was a bulk SRCode and if so, then don't bother going back any further for this org
+                        List<FileInfo> listing = FileHelper.listFilesInSharedStorageWithInfo(fileDir);
+                        for (FileInfo info: listing) {
+                            String path = info.getFilePath();
+                            String fileName = FilenameUtils.getName(path);
+                            if (fileName.equalsIgnoreCase(TppConstants.CODE_FILE)) {
+                                long size = info.getSize();
+                                if (size > 150 * 1024 * 1024) {
+                                    LOG.debug("    file size " + FileUtils.byteCountToDisplaySize(size) + " so will stop processing any further files for " + odsCode);
+                                    odsCodesFinished.add(odsCode);
+                                }
+                            }
+                        }
 
                     } else {
                         LOG.debug("    No SRCode for " + odsCode);

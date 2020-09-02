@@ -1188,28 +1188,7 @@ public class MySqlDataLayer implements DataLayerI {
         }
     }
 
-    @Override
-    public void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception {
-        Connection connection = getConnection();
-        PreparedStatement ps = null;
-        try {
-            String sql = "INSERT INTO tpp_organisation_map (ods_code, name) VALUES (?, ?) "
-                    + " ON DUPLICATE KEY UPDATE"
-                    + " name = VALUES(name)";
 
-            ps = connection.prepareStatement(sql);
-            ps.setString(1, mapping.getOdsCode());
-            ps.setString(2, mapping.getName());
-
-            ps.executeUpdate();
-
-        } finally {
-            if (ps != null) {
-                ps.close();
-            }
-            connection.close();
-        }
-    }
 
     @Override
     public TppOrganisationMap getTppOrgNameFromOdsCode(String queryOdsCode) throws Exception {
@@ -1522,6 +1501,58 @@ public class MySqlDataLayer implements DataLayerI {
             ps.executeUpdate();
             ps.close();
             ps = null;
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public Date isPausedNotifyingMessagingApi(String configurationId) throws Exception {
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+
+            String sql = "SELECT dt_paused FROM configuration_paused_notifying WHERE configuration_id = ?";
+            ps = connection.prepareStatement(sql);
+            ps.setString(1, configurationId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new java.util.Date(rs.getTimestamp(1).getTime());
+
+            } else {
+                return null;
+            }
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+    }
+
+    @Override
+    public void addTppOrganisationMappings(List<TppOrganisationMap> mappings) throws Exception {
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "INSERT INTO tpp_organisation_map (ods_code, name) VALUES (?, ?) "
+                    + " ON DUPLICATE KEY UPDATE"
+                    + " name = VALUES(name)";
+
+            ps = connection.prepareStatement(sql);
+
+            for (TppOrganisationMap mapping: mappings) {
+                ps.setString(1, mapping.getOdsCode());
+                ps.setString(2, mapping.getName());
+                ps.addBatch();
+            }
+
+            ps.executeBatch();
 
         } finally {
             if (ps != null) {

@@ -3,6 +3,7 @@ package org.endeavourhealth.sftpreader.model;
 import org.endeavourhealth.sftpreader.SftpFile;
 import org.endeavourhealth.sftpreader.model.db.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -42,7 +43,6 @@ public interface DataLayerI {
     List<EmisOrganisationMap> getEmisOrganisationMapsForOdsCode(String odsCode) throws Exception;
     EmisOrganisationMap getEmisOrganisationMap(String guid) throws Exception;
 
-    void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception;
     TppOrganisationMap getTppOrgNameFromOdsCode(String queryOdsCode) throws Exception;
 
     void addTppOrganisationGmsRegistrationMap(TppOrganisationGmsRegistrationMap map) throws Exception;
@@ -59,4 +59,9 @@ public interface DataLayerI {
     void saveAdastraOdsCode(String configurationId, String filenameOrgCode, String odsCode) throws Exception;
 
     void resetBatch(int batchId) throws Exception;
+
+    Date isPausedNotifyingMessagingApi(String configurationId) throws Exception;
+
+    //void addTppOrganisationMap(TppOrganisationMap mapping) throws Exception;
+    void addTppOrganisationMappings(List<TppOrganisationMap> mappings) throws Exception;
 }

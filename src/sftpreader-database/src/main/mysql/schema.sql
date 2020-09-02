@@ -1,6 +1,7 @@
-create database sftp_reader;
-use sftp_reader;
+CRETE DATABASE sftp_reader;
+USE sftp_reader;
 
+DROP TABLE IF EXISTS configuration_paused_notifying;
 DROP TABLE IF EXISTS configuration_polling_attempt;
 DROP TABLE IF EXISTS unknown_file;
 DROP TABLE IF EXISTS notification_message;
@@ -20,6 +21,7 @@ DROP TABLE IF EXISTS configuration;
 DROP TABLE IF EXISTS interface_file_type;
 DROP TABLE IF EXISTS interface_type;
 DROP TABLE IF EXISTS tpp_organisation_gms_registration_map;
+
 
 
 CREATE TABLE interface_type
@@ -300,3 +302,10 @@ CREATE TABLE tpp_organisation_gms_registration_map (
 CREATE INDEX tpp_organisation_gms_registration_map_organisation_id_ix
   ON tpp_organisation_gms_registration_map
     (organisation_id);
+
+CREATE TABLE configuration_paused_notifying (
+	`configuration_id` varchar(255) NOT NULL,
+    dt_paused datetime DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`configuration_id`)
+);
+

@@ -99,12 +99,8 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
             String localPath = FilenameUtils.concat(batch.getLocalRelativePath(), SPLIT_FOLDER);
             localPath = FilenameUtils.concat(localPath, odsCode);
 
-            BatchSplit batchSplit = new BatchSplit();
-            batchSplit.setBatchId(batch.getBatchId());
-            batchSplit.setLocalRelativePath(localPath);
-            batchSplit.setOrganisationId(odsCode);
 
-            batchSplits.add(batchSplit);
+            createBatchSplitIfNecessary(batchSplits, localPath, odsCode, batch);
 
             //if we're using separate temp storage to our permanent storage, then copy to it
             if (!Strings.isNullOrEmpty(sourcePermDirToCopyTo)) {
@@ -118,6 +114,24 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
                 FileHelper.writeFileToSharedStorage(storageFilePath, splitFile);
             }
         }
+    }
+
+    private void createBatchSplitIfNecessary(List<BatchSplit> batchSplits, String localPath, String orgId, Batch batch) {
+
+        //in Sept 2020 Emis sent two original terms files, so check if we've already created a split before creating another
+        for (BatchSplit split: batchSplits) {
+            if (split.getOrganisationId().equalsIgnoreCase(orgId)
+                    && split.getLocalRelativePath().equalsIgnoreCase(localPath)) {
+                return;
+            }
+        }
+
+        BatchSplit batchSplit = new BatchSplit();
+        batchSplit.setBatchId(batch.getBatchId());
+        batchSplit.setLocalRelativePath(localPath);
+        batchSplit.setOrganisationId(orgId);
+
+        batchSplits.add(batchSplit);
     }
 
 
@@ -146,12 +160,8 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
             }
             String odsCode = org.getOdsCode();
 
-            BatchSplit batchSplit = new BatchSplit();
-            batchSplit.setBatchId(batch.getBatchId());
-            batchSplit.setLocalRelativePath(localPath);
-            batchSplit.setOrganisationId(odsCode);
+            createBatchSplitIfNecessary(batchSplits, localPath, odsCode, batch);
 
-            batchSplits.add(batchSplit);
 
             //if we're using separate temp storage to our permanent storage, then copy to it
             if (!Strings.isNullOrEmpty(sourcePermDirToCopyTo)) {

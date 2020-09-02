@@ -157,8 +157,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 String filePath = splitFile.getAbsolutePath();
                 LocalDateTime dt = TppFilenameParser.parseBatchIdentifier(batch.getBatchIdentifier());
 
-                //TODO - restore when done
-                //TppRebulkFilterHelper.filterFileForDuplicateData(orgId, filePath, uniqueKey, dt, actuallyFilterFile, instanceConfiguration);
+                TppRebulkFilterHelper.filterFileForDuplicateData(orgId, filePath, uniqueKey, dt, actuallyFilterFile, instanceConfiguration);
             }
         }
 
@@ -404,8 +403,11 @@ public class TppBatchSplitter extends SftpBatchSplitter {
         InputStreamReader reader = new InputStreamReader(bis, Charset.forName(TppConstants.REQUIRED_CHARSET));
         CSVParser csvParser = new CSVParser(reader, TppConstants.CSV_FORMAT.withHeader());
 
+        int done = 0;
         try {
             Iterator<CSVRecord> csvIterator = csvParser.iterator();
+
+            List<TppOrganisationMap> batch = new ArrayList<>();
 
             while (csvIterator.hasNext()) {
                 CSVRecord csvRecord = csvIterator.next();
@@ -417,9 +419,26 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                     mapping.setOdsCode(orgOds);
                     mapping.setName(orgName);
 
-                    db.addTppOrganisationMap(mapping);
+                    batch.add(mapping);
+
+                    if (batch.size() >= 100) {
+                        db.addTppOrganisationMappings(batch);
+                        batch.clear();
+                    }
+                }
+
+                done ++;
+                if (done % 10000 == 0) {
+                    LOG.debug("Saved " + done);
                 }
             }
+
+            if (!batch.isEmpty()) {
+                db.addTppOrganisationMappings(batch);
+            }
+
+            LOG.debug("Finished saving " + done + " org records");
+
         } finally {
             csvParser.close();
         }
