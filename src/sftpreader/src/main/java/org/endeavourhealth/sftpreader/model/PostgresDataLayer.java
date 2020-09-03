@@ -820,7 +820,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "INSERT INTO tpp_organisation_map (ods_code, name) VALUES (?, ?) "
+            String sql = "INSERT INTO configuration.tpp_organisation_map (ods_code, name) VALUES (?, ?) "
                     + " ON CONFLICT (ods_code) DO UPDATE SET"
                     + " name = EXCLUDED.name";
 
