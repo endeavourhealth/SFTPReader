@@ -619,6 +619,6 @@ public class SRCodeLoader {
 
         LocalDateTime dataDate = TppFilenameParser.parseBatchIdentifier(dateDateStr);
 
-        testFilterFileForDuplicateDataForRandolph(odsCode, filePath, TppConstants.COL_ROW_IDENTIFIER_TPP, dataDate, false, edsConfiguration);
+        testFilterFileForDuplicateDataForRandolph(odsCode, filePath, TppConstants.COL_ROW_IDENTIFIER_TPP, dataDate, true, edsConfiguration);
     }
 }
