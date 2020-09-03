@@ -232,7 +232,7 @@ public class Main {
 
                 if (args.length > 1
                         && args[1].equalsIgnoreCase("loadTppSRCodeForRandolph")) {
-                    SRCodeLoader.testTppHashTableForRandolph(configuration, "YDDH3_09A", "E87046");
+                    SRCodeLoader.testTppHashTableForRandolph(configuration, "TPP_YDDH3_09A", "E87046");
                     System.exit(0);
                 }
 
@@ -240,7 +240,7 @@ public class Main {
                         && args[1].equalsIgnoreCase("loadTppSRCodeForRandolph2")) {
                     String newFilePath = args[2];
                     String dataDateStr = args[3];
-                    SRCodeLoader.loadTppSRCodeForRandolph2(configuration, "YDDH3_09A", "E87046", newFilePath, dataDateStr);
+                    SRCodeLoader.loadTppSRCodeForRandolph2(configuration, "TPP_YDDH3_09A", "E87046", newFilePath, dataDateStr);
                     System.exit(0);
                 }
 
