@@ -30,7 +30,9 @@ import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.tpp.TppFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppRebulkFilterHelper;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
@@ -225,6 +227,20 @@ public class Main {
                         odsCodeRegex = args[3];
                     }
                     SRCodeLoader.loadTppSRCodetoHahtable(configuration, configurationId, odsCodeRegex);
+                    System.exit(0);
+                }
+
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("loadTppSRCodeForRandolph")) {
+                    SRCodeLoader.testTppHashTableForRandolph(configuration, "YDDH3_09A", "E87046");
+                    System.exit(0);
+                }
+
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("loadTppSRCodeForRandolph2")) {
+                    String newFilePath = args[2];
+                    String dataDateStr = args[3];
+                    SRCodeLoader.loadTppSRCodeForRandolph2(configuration, "YDDH3_09A", "E87046", newFilePath, dataDateStr);
                     System.exit(0);
                 }
 
