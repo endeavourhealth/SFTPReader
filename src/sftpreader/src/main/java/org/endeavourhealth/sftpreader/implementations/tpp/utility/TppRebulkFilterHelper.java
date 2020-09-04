@@ -316,7 +316,8 @@ public class TppRebulkFilterHelper {
                 + " INTO TABLE " + tempTableName
                 + " FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"'"
                 + " LINES TERMINATED BY '\\r\\n'"
-                + " IGNORE 1 LINES";
+                + " IGNORE 1 LINES"
+                + " (record_id, record_hash)"; //must specify the columns we're loading into otherwise the column default values don't get applied
         statement = connection.createStatement();
         statement.executeUpdate(sql);
         statement.close();

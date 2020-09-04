@@ -6,11 +6,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
-import com.google.common.hash.HashCode;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
-import org.apache.commons.csv.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.config.ConfigManager;
@@ -18,47 +13,16 @@ import org.endeavourhealth.common.config.ConfigManagerException;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
-import org.endeavourhealth.common.utility.StringMemorySaver;
 import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
-import org.endeavourhealth.core.csv.CsvHelper;
-import org.endeavourhealth.core.database.rdbms.ConnectionManager;
-import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
-import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
-import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
-import org.endeavourhealth.sftpreader.implementations.emis.EmisBulkDetector;
-import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
-import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
-import org.endeavourhealth.sftpreader.implementations.tpp.TppBulkDetector;
-import org.endeavourhealth.sftpreader.implementations.tpp.TppFilenameParser;
-import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
-import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppRebulkFilterHelper;
-import org.endeavourhealth.sftpreader.implementations.vision.VisionBulkDetector;
-import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
-import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
-import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
-import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
 import org.endeavourhealth.sftpreader.utilities.PgpUtil;
-import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
 import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
-import java.util.regex.Pattern;
 
 
 public class Main {
@@ -226,21 +190,7 @@ public class Main {
                     if (args.length > 3) {
                         odsCodeRegex = args[3];
                     }
-                    SRCodeLoader.loadTppSRCodetoHahtable(configuration, configurationId, odsCodeRegex);
-                    System.exit(0);
-                }
-
-                if (args.length > 1
-                        && args[1].equalsIgnoreCase("loadTppSRCodeForRandolph")) {
-                    SRCodeLoader.testTppHashTableForRandolph(configuration, "TPP_YDDH3_09A", "E87046");
-                    System.exit(0);
-                }
-
-                if (args.length > 1
-                        && args[1].equalsIgnoreCase("loadTppSRCodeForRandolph2")) {
-                    String newFilePath = args[2];
-                    String dataDateStr = args[3];
-                    SRCodeLoader.loadTppSRCodeForRandolph2(configuration, "TPP_YDDH3_09A", "E87046", newFilePath, dataDateStr);
+                    SRCodeLoader.loadTppSRCodeIntoHashTable(configuration, configurationId, odsCodeRegex);
                     System.exit(0);
                 }
 
