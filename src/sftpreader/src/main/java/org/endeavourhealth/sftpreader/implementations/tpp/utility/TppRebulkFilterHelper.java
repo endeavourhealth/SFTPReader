@@ -397,6 +397,10 @@ public class TppRebulkFilterHelper {
         csvPrinter.close();
         csvParser.close();
 
+        if (filePath.contains("E87046")) {
+            System.exit(0);
+        }
+
         //delete original file
         File originalFile = new File(filePath);
         originalFile.delete();
