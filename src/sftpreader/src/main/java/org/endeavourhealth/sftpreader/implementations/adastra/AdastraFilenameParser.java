@@ -65,7 +65,7 @@ public class AdastraFilenameParser extends SftpFilenameParser {
         String fileName = this.remoteFile.getFilename();
 
         //ignore garbage SFTP temp etc. files
-        if (fileName.equalsIgnoreCase("motd.legal-displayed")) {
+        if (fileName.equalsIgnoreCase("motd.legal-displayed")) { //message of the day file
             isFileNeeded = false;
             return;
         }
