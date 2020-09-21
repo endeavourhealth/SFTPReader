@@ -64,6 +64,12 @@ public class AdastraFilenameParser extends SftpFilenameParser {
         // get the four main parts of the filename
         String fileName = this.remoteFile.getFilename();
 
+        //ignore garbage SFTP temp etc. files
+        if (fileName.equalsIgnoreCase("motd.legal-displayed")) {
+            isFileNeeded = false;
+            return;
+        }
+
         //this will be a .csv extract file
         if (!StringUtils.endsWith(fileName, ".csv"))
             throw new SftpFilenameParseException("Filename does not end with .csv");
