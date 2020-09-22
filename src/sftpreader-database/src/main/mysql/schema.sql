@@ -250,6 +250,11 @@ CREATE TABLE notification_message
 
 ALTER TABLE notification_message MODIFY COLUMN notification_message_id INT auto_increment;
 
+CREATE INDEX ix_dds_ui_helper
+ON notification_message (
+	batch_id, batch_split_id, timestamp
+);
+
 CREATE TABLE unknown_file
 (
   unknown_file_id int NOT NULL,
