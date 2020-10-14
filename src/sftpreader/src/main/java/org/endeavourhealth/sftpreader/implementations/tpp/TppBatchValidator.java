@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -81,6 +82,8 @@ public class TppBatchValidator extends SftpBatchValidator {
             try {
                 Iterator<CSVRecord> csvIterator = csvParser.iterator();
 
+                List<String> missingManifestFiles = new ArrayList<>();
+
                 while (csvIterator.hasNext()) {
                     CSVRecord csvRecord = csvIterator.next();
                     String fileName = csvRecord.get("FileName");
@@ -97,11 +100,16 @@ public class TppBatchValidator extends SftpBatchValidator {
                             break;
                         }
                     }
-
                     if (!manifestFileFoundInBatch) {
 
-                        throw new SftpValidationException("SRManifest.csv FileName: "+fileName+" missing from temp folder for batch identifier: " + incompleteBatch.getBatchIdentifier());
+                        missingManifestFiles.add(fileName);
+
+                        //throw new SftpValidationException("SRManifest.csv FileName: "+fileName+" missing from temp folder for batch identifier: " + incompleteBatch.getBatchIdentifier());
                     }
+                }
+                if (missingManifestFiles.size() > 0) {
+
+                    throw new SftpValidationException("SRManifest.csv file(s): "+missingManifestFiles.toString()+" missing from temp folder for batch identifier: " + incompleteBatch.getBatchIdentifier());
                 }
             } finally {
                 csvParser.close();
