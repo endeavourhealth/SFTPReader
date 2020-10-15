@@ -37,7 +37,10 @@ public abstract class SftpPostSplitBatchValidator {
         LocalDateTime incompleteBatchDataDate = parseBatchIdentifier(incompleteBatch);
         LocalDateTime lastCompleteBatchDataDate = parseBatchIdentifier(lastCompleteBatch);
 
-        if (incompleteBatchDataDate.isAfter(lastCompleteBatchDataDate)) {
+        //Vision managed to end up with two batches with the exact same identifier, so
+        //we need to change this check slightly to avoid picking them up (SD-153)
+        //if (incompleteBatchDataDate.isAfter(lastCompleteBatchDataDate)) {
+        if (!incompleteBatchDataDate.isBefore(lastCompleteBatchDataDate)) {
             return;
         }
 

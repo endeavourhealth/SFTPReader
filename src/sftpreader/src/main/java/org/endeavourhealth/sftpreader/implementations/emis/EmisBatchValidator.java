@@ -278,16 +278,21 @@ public class EmisBatchValidator extends SftpBatchValidator {
         for (String fileType : dbConfiguration.getInterfaceFileTypes()) {
             boolean found = false;
 
-            for (BatchFile incompleteBatchFile : incompleteBatch.getBatchFiles())
-                if (fileType.equals(incompleteBatchFile.getFileTypeIdentifier()))
+            for (BatchFile incompleteBatchFile : incompleteBatch.getBatchFiles()) {
+                if (fileType.equals(incompleteBatchFile.getFileTypeIdentifier())) {
                     found = true;
+                }
+            }
 
-            if (!found)
+            if (!found) {
                 throw new SftpValidationException("Could not find file of type " + fileType + " in batch.  Batch identifier = " + incompleteBatch.getBatchIdentifier());
+            }
         }
 
-        if (incompleteBatch.getBatchFiles().size() != dbConfiguration.getInterfaceFileTypes().size())
+        if (incompleteBatch.getBatchFiles().size() != dbConfiguration.getInterfaceFileTypes().size()) {
             throw new SftpValidationException("Incorrect number of files in batch. Batch identifier = " + incompleteBatch.getBatchIdentifier());
+        }
+
     }
 
 
