@@ -682,12 +682,25 @@ public class SftpReaderTask implements Runnable {
 
         List<BatchSplit> splitBatches = sftpBatchSplitter.splitBatch(batch, lastCompleteBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
 
-        for (BatchSplit splitBatch: splitBatches) {
-            splitBatch.setConfigurationId(dbConfiguration.getConfigurationId());
+        String configurationId = dbConfiguration.getConfigurationId();
+        Set<String> odsCodesToIgnore = SftpBatchSplitter.findOdsCodesThatShouldBeIgnored(configurationId);
 
+        for (BatchSplit splitBatch: splitBatches) {
+
+            //if this split is for an ODS code that we know we want to ignore, then just skip adding it to the DB
+            String odsCode = splitBatch.getOrganisationId();
+            if (odsCodesToIgnore.contains(odsCode)) {
+                LOG.info("Skipping split for " + odsCode + " as it should be ignored");
+                continue;
+            }
+
+            //work out if the data for this organisation is a bulk or not
             boolean isBulk = sftpBulkDetector.isBulkExtract(batch, splitBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
+
+            splitBatch.setConfigurationId(configurationId);
             splitBatch.setBulk(isBulk);
 
+            //save to the DB
             db.addBatchSplit(splitBatch);
         }
     }
