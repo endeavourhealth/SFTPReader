@@ -93,6 +93,12 @@ public class BhrutFilenameParser extends SftpFilenameParser {
         }
 
         this.isFileNeeded = true;
+
+        //Any files created before 12th July 2020 are invalid, i.e. when the first valid bulk was created
+        LocalDateTime cutoff = LocalDateTime.parse("12072020", DateTimeFormatter.ofPattern("ddMMyyyy"));
+        if (this.extractDateTime.isBefore(cutoff)) {
+            this.isFileNeeded = false;
+        }
     }
 
     @Override
