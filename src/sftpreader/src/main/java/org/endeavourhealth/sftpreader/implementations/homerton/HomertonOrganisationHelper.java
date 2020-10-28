@@ -8,6 +8,12 @@ public class HomertonOrganisationHelper extends SftpOrganisationHelper {
 
     @Override
     public String findOrganisationNameFromOdsCode(DataLayerI db, String odsCode) {
-        return "RQX";
+
+        if (odsCode.equalsIgnoreCase("RQX")) {
+            return "Homerton University Hospital NHS Foundation Trust";
+
+        } else {
+            return "Unknown Organisation OdsCode received: "+odsCode;
+        }
     }
 }

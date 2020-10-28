@@ -1,44 +1,25 @@
 package org.endeavourhealth.sftpreader.implementations.homerton;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpFilenameParseException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
-import java.time.LocalDate;
+import java.io.File;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 public class HomertonFilenameParser extends SftpFilenameParser {
 
-    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    public static final String FILE_TYPE_PATIENT_FULL = "PATIENTSFULL";
-
-    public static final String FILE_TYPE_ALLERGY = "ALLERGY";
-    public static final String FILE_TYPE_CLINEVENT = "CLINEVENT";
-    public static final String FILE_TYPE_PATIENT = "PATIENT";
-    public static final String FILE_TYPE_PROCEDURE = "PROCEDURE";
-    public static final String FILE_TYPE_DIAGNOSIS = "DIAGNOSIS";
-    public static final String FILE_TYPE_LOCATION = "LOCATION";
-    public static final String FILE_TYPE_LOCATION_GROUP = "LOCATIONGROUP";
-
-    public static final String FILE_TYPE_ENCOUNTER_ALIAS = "ENCALI";
-    public static final String FILE_TYPE_ENCOUNTER_PRSNL_RELTN = "ENCPRSNLRELTN";
-    public static final String FILE_TYPE_ENCOUNTER_SLICE = "ENCNTRSLICE";
-
-    public static final String FILE_TYPE_PERSON_ALIAS = "PERSONALIAS";
-    public static final String FILE_TYPE_PROBLEM = "PROBLEM";
-
-    public static final String FILE_TYPE_ENCOUNTER = "ENCOUNTER";
-    public static final String FILE_TYPE_CODES = "CODES";
-    public static final String FILE_TYPE_CODES_NHS_ALIAS = "CODESNHSALIAS";
-
+    private static final DateTimeFormatter BATCH_IDENTIFIER_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH'.'mm'.'ss");
+    private static final DateTimeFormatter SOURCE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm");
 
     private String fileTypeIdentifier;
-    private LocalDate extractDate;
+    private LocalDateTime extractDateTime;
 
     public HomertonFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
         super(isRawFile, remoteFile, dbConfiguration);
@@ -46,7 +27,7 @@ public class HomertonFilenameParser extends SftpFilenameParser {
 
     @Override
     public String generateBatchIdentifier() {
-        return this.extractDate.format(BATCH_IDENTIFIER_FORMAT);
+        return this.extractDateTime.format(BATCH_IDENTIFIER_FORMAT);
     }
 
     @Override
@@ -64,73 +45,64 @@ public class HomertonFilenameParser extends SftpFilenameParser {
         return false;
     }
 
-    public static LocalDate parseBatchIdentifier(String batchIdentifier) {
-        return LocalDate.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
+    public static LocalDateTime parseBatchIdentifier(String batchIdentifier) {
+        return LocalDateTime.parse(batchIdentifier, BATCH_IDENTIFIER_FORMAT);
     }
 
     @Override
     protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
 
-        //filename is of format:  FILETYPE_EXTRACTEFFECTIVEDATE_EXTRACTRUNDATE
-        //use the EXTRACTEFFECTIVEDATE for batch yyyyMMdd as there will be only one per day based on the stored procedure
-
+        //filename is of format:
+        //PH_D_Person_Demographics.csv  and PH_D_Person_Demographics_Deleted.csv
         String fileName = this.remoteFile.getFilename();
 
         //this will be a .csv extract file
-        if (!StringUtils.endsWith(fileName, ".csv"))
-            throw new SftpFilenameParseException("Filename does not end with .csv");
+        if (!FilenameUtils.getExtension(fileName).equalsIgnoreCase("csv"))
+            throw new SftpFilenameParseException("Filename does not end with .csv: "+fileName);
 
-        String[] parts = fileName.split("_");
+        //filename without extension
+        String fileNameNoExt = FilenameUtils.getBaseName(fileName);
 
-        if (parts.length < 2)
-            throw new SftpFilenameParseException("Homerton batch filename could not be parsed");
+        //has to be at least 3 parts and longer that 5 characters to be valid
+        String[] parts = fileNameNoExt.split("_");
 
-        String filenamePart1 = parts[0];
-        String filenamePart2 = parts[1];
+        if (parts.length < 3 || fileNameNoExt.length() < 6 )
+            throw new SftpFilenameParseException("Unexpected Homerton batch filename format: "+fileName);
 
-        extractDate = LocalDate.parse(filenamePart2, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        //strip out the prefixes such as PH_D_ to get a file type of Person_Demographics for example
+        this.fileTypeIdentifier = fileNameNoExt.substring(5);
 
-        if (filenamePart1.compareToIgnoreCase("ALLERGY") == 0) {
-            fileTypeIdentifier = FILE_TYPE_ALLERGY;
-        } else if (filenamePart1.compareToIgnoreCase("PATIENT") == 0) {
-            fileTypeIdentifier = FILE_TYPE_PATIENT;
-        } else if (filenamePart1.compareToIgnoreCase("PATIENTSFULL") == 0) {
-            fileTypeIdentifier = FILE_TYPE_PATIENT_FULL;
-        } else if (filenamePart1.compareToIgnoreCase("CLINEVENT") == 0) {
-            fileTypeIdentifier = FILE_TYPE_CLINEVENT;
-        } else if (filenamePart1.compareToIgnoreCase("CODES") == 0) {
-            fileTypeIdentifier = FILE_TYPE_CODES;
-        } else if (filenamePart1.compareToIgnoreCase("CODESNHSALIAS") == 0) {
-            fileTypeIdentifier = FILE_TYPE_CODES_NHS_ALIAS;
-        } else if (filenamePart1.compareToIgnoreCase("DIAGNOSIS") == 0) {
-            fileTypeIdentifier = FILE_TYPE_DIAGNOSIS;
-        } else if (filenamePart1.compareToIgnoreCase("ENCOUNTER") == 0) {
-            fileTypeIdentifier = FILE_TYPE_ENCOUNTER;
-        } else if (filenamePart1.compareToIgnoreCase("ENCALI") == 0) {
-            fileTypeIdentifier = FILE_TYPE_ENCOUNTER_ALIAS;
-        } else if (filenamePart1.compareToIgnoreCase("ENCPRSNLRELTN") == 0) {
-            fileTypeIdentifier = FILE_TYPE_ENCOUNTER_PRSNL_RELTN;
-        } else if (filenamePart1.compareToIgnoreCase("ENCNTRSLICE") == 0) {
-            fileTypeIdentifier = FILE_TYPE_ENCOUNTER_SLICE;
-        } else if (filenamePart1.compareToIgnoreCase("LOCATION") == 0) {
-            fileTypeIdentifier = FILE_TYPE_LOCATION;
-        } else if (filenamePart1.compareToIgnoreCase("LOCATIONGROUP") == 0) {
-            fileTypeIdentifier = FILE_TYPE_LOCATION_GROUP;
-        } else if (filenamePart1.compareToIgnoreCase("PERSONALIAS") == 0) {
-            fileTypeIdentifier = FILE_TYPE_PERSON_ALIAS;
-        } else if (filenamePart1.compareToIgnoreCase("PROBLEM") == 0) {
-            fileTypeIdentifier = FILE_TYPE_PROBLEM;
-        } else if (filenamePart1.compareToIgnoreCase("PROCEDURE") == 0) {
-            fileTypeIdentifier = FILE_TYPE_PROCEDURE;
-        } else {
-            throw new SftpFilenameParseException("Homerton batch filename could not be parsed");
+        //batch identifier is the datetime, which is found in the directory structure the files are in
+        String filePath = this.remoteFile.getFullPath();
+        File f = new File(filePath);
+
+        //depending when this parser is called (either pre-splitting or when creating the JSON exchange payload),
+        //the exchange date is at different points in the path and with different format, so we need to work up the path testing each level
+        while (true) {
+
+            f = f.getParentFile();
+            if (f == null) {
+                throw new RuntimeException("Failed to find parent directory with date time as name");
+            }
+
+            try {
+                String dateDir = f.getName();
+                if (isRawFile) {
+                    this.extractDateTime = LocalDateTime.parse(dateDir, SOURCE_DATE_FORMAT);
+                } else {
+                    this.extractDateTime = LocalDateTime.parse(dateDir, BATCH_IDENTIFIER_FORMAT);
+                }
+                break;
+
+            } catch (DateTimeParseException ex) {
+                //let the loop continue
+            }
         }
     }
 
-
     @Override
     public Date getExtractDate() {
-        return java.util.Date.from(extractDate.atStartOfDay()
+        return java.util.Date.from(extractDateTime
                 .atZone(ZoneId.systemDefault())
                 .toInstant());
     }
