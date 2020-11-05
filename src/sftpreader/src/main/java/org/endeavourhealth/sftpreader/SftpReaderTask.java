@@ -822,6 +822,9 @@ public class SftpReaderTask implements Runnable {
         String outboundMessage = null;
 
         try {
+            //TODO - SD-184 - add DPA check here, and if it fails, throw an exception containing "no DPA exists"
+
+
             SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration);
             SftpNotificationCreator.PayloadWrapper messagePayload = sftpNotificationCreator.createNotificationMessage(organisationId, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, unnotifiedBatchSplit);
 
