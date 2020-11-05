@@ -14,6 +14,7 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
 import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
+import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCache;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
@@ -191,6 +192,16 @@ public class Main {
                         odsCodeRegex = args[3];
                     }
                     SRCodeLoader.loadTppSRCodeIntoHashTable(configuration, configurationId, odsCodeRegex);
+                    System.exit(0);
+                }
+
+                //testing SQL connection to DSM
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("checkDpa")) {
+                    String configurationId = args[2];
+                    String odsCode = args[3];
+                    Boolean hasDpa = OrganisationCache.doesOrganisationHaveDPA(odsCode);
+                    LOG.debug("DPA check for " + odsCode + " = " + hasDpa);
                     System.exit(0);
                 }
 
