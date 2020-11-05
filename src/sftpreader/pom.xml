@@ -105,10 +105,11 @@
             <artifactId>utility</artifactId>
         </dependency>
 
-        <dependency>
+        <!--<dependency>
             <groupId>org.endeavourhealth.dataSharingManager</groupId>
             <artifactId>Models</artifactId>
-        </dependency>
+        </dependency>-->
+
         <dependency>
             <groupId>org.endeavourhealth.common</groupId>
             <artifactId>fhir</artifactId>

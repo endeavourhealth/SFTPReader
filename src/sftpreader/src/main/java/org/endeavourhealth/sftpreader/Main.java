@@ -198,8 +198,7 @@ public class Main {
                 //testing SQL connection to DSM
                 if (args.length > 1
                         && args[1].equalsIgnoreCase("checkDpa")) {
-                    String configurationId = args[2];
-                    String odsCode = args[3];
+                    String odsCode = args[2];
                     Boolean hasDpa = OrganisationCache.doesOrganisationHaveDPA(odsCode);
                     LOG.debug("DPA check for " + odsCode + " = " + hasDpa);
                     System.exit(0);
