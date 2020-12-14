@@ -244,7 +244,7 @@ public class Main {
 
             //start both these off, so we know this app is running
             MetricsHelper.startHeartbeat();
-            //ApplicationHeartbeatHelper.start(sftpReaderTaskScheduler); //this cannot work if SFTP Reader cannot access core DB server
+            ApplicationHeartbeatHelper.start(sftpReaderTaskScheduler); //this cannot work if SFTP Reader cannot access core DB server
 
             //and start working
             sftpReaderTaskScheduler.start();
