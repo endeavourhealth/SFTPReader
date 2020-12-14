@@ -241,11 +241,13 @@ public class Main {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown()));
 
             sftpReaderTaskScheduler = new SftpReaderTaskScheduler(configuration);
-            sftpReaderTaskScheduler.start();
 
-            //now we're running, start this
+            //start both these off, so we know this app is running
             MetricsHelper.startHeartbeat();
             ApplicationHeartbeatHelper.start(sftpReaderTaskScheduler);
+
+            //and start working
+            sftpReaderTaskScheduler.start();
 
         } catch (ConfigManagerException cme) {
             printToErrorConsole("Fatal exception occurred initializing ConfigManager", cme);

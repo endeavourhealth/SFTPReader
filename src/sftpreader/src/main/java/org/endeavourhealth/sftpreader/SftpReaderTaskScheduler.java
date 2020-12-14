@@ -6,9 +6,12 @@ import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class SftpReaderTaskScheduler implements ApplicationHeartbeatCallbackI {
@@ -19,7 +22,8 @@ public class SftpReaderTaskScheduler implements ApplicationHeartbeatCallbackI {
 
     private Configuration configuration;
     private List<SftpReaderTaskInfo> tasks;
-    private boolean isRunning = false;
+    private SftpReaderTaskInfo currentRunningTask = null;
+    private Date currentTaskStarted = null;
 
     public SftpReaderTaskScheduler(Configuration configuration) {
         this.configuration = configuration;
@@ -33,23 +37,25 @@ public class SftpReaderTaskScheduler implements ApplicationHeartbeatCallbackI {
 
         while (true) {
 
-            isRunning = true;
             for (SftpReaderTaskInfo task : tasks) {
 
                 if (task.getNextScheduledDate().isBefore(LocalDateTime.now())) {
 
                     LOG.info("Starting SftpReaderTask " + task.getTaskName());
+                    this.currentRunningTask = task;
+                    this.currentTaskStarted = new Date();
 
                     LOG.trace("--------------------------------------------------");
                     task.runTask();
                     LOG.trace("--------------------------------------------------");
 
                     LOG.info("Completed SftpReaderTask " + task.getTaskName());
+                    this.currentRunningTask = null;
+                    this.currentTaskStarted = null;
 
                     LOG.trace("SftpReaderTask " + task.getTaskName() + " next scheduled for " + task.getNextScheduledDate().format(DATE_DISPLAY_FORMAT));
                 }
             }
-            isRunning = false;
 
             Thread.sleep(THREAD_SLEEP_SECONDS);
         }
@@ -76,8 +82,17 @@ public class SftpReaderTaskScheduler implements ApplicationHeartbeatCallbackI {
 
     @Override
     public void populateIsBusy(ApplicationHeartbeat applicationHeartbeat) {
-        applicationHeartbeat.setBusy(new Boolean(this.isRunning));
-        //applicationHeartbeat.setIsBusyDetail(); can't think of anything specific for this
+        if (this.currentRunningTask == null) {
+            applicationHeartbeat.setBusy(Boolean.FALSE);
+            applicationHeartbeat.setIsBusyDetail(null);
+
+        } else {
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+            String detailDesc = "Running " + currentRunningTask.getTaskName() + " since " + dateFormat.format(currentTaskStarted);
+
+            applicationHeartbeat.setBusy(Boolean.TRUE);
+            applicationHeartbeat.setIsBusyDetail(detailDesc);
+        }
     }
 
     @Override
