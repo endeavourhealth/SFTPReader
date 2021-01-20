@@ -88,9 +88,9 @@ public class Main {
                     test7zDecompress(file, password);
                     System.exit(0);
                 }*/
-                if (args[0].equalsIgnoreCase("DecryptGpg")) {
-                    String filePath = args[1];
-                    String configurationId = args[2];
+                if (args[1].equalsIgnoreCase("DecryptGpg")) {
+                    String filePath = args[2];
+                    String configurationId = args[3];
                     decryptGpgFile(filePath, configurationId);
                     System.exit(0);
                 }
