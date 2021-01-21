@@ -908,12 +908,26 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "UPDATE batch SET is_complete = ?, complete_date = ? WHERE batch_id = ?;";
+            String sql = "UPDATE batch"
+                    + " SET is_complete = ?, complete_date = ?, extract_date = ?, extract_cutoff = ?"
+                    + " WHERE batch_id = ?;";
 
             ps = connection.prepareStatement(sql);
-            ps.setBoolean(1, true);
-            ps.setTimestamp(2, new java.sql.Timestamp(new Date().getTime()));
-            ps.setInt(3, batch.getBatchId());
+
+            int col = 1;
+            ps.setBoolean(col++, true);
+            ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+            if (batch.getExtractDate() != null) {
+                ps.setTimestamp(col++, new java.sql.Timestamp(batch.getExtractDate().getTime()));
+            } else {
+                ps.setNull(col++, Types.TIMESTAMP);
+            }
+            if (batch.getExtractCutoff() != null) {
+                ps.setTimestamp(col++, new java.sql.Timestamp(batch.getExtractCutoff().getTime()));
+            } else {
+                ps.setNull(col++, Types.TIMESTAMP);
+            }
+            ps.setInt(col++, batch.getBatchId());
 
             ps.executeUpdate();
 

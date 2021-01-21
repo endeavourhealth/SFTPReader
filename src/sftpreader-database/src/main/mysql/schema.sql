@@ -171,6 +171,8 @@ CREATE TABLE batch
   sequence_number integer,
   is_complete boolean NOT NULL,
   complete_date datetime null,
+  extract_date datetime null,
+  extract_cutoff datetime null;
   CONSTRAINT batch_filesetid_pk PRIMARY KEY (batch_id),
   CONSTRAINT batch_configurationid_interfacetypeid_fk FOREIGN KEY (configuration_id, interface_type_id)
       REFERENCES configuration (configuration_id, interface_type_id) MATCH SIMPLE

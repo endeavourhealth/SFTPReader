@@ -350,13 +350,53 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         return batches;
     }
 
+
+
     public void setBatchAsComplete(Batch batch) throws Exception {
+
+        Connection connection = getConnection();
+        PreparedStatement ps = null;
+        try {
+            String sql = "UPDATE log.batch"
+                    + " SET is_complete = ?, complete_date = ?, extract_date = ?, extract_cutoff = ?"
+                    + " WHERE batch_id = ?;";
+
+            ps = connection.prepareStatement(sql);
+
+            int col = 1;
+            ps.setBoolean(col++, true);
+            ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+            if (batch.getExtractDate() != null) {
+                ps.setTimestamp(col++, new java.sql.Timestamp(batch.getExtractDate().getTime()));
+            } else {
+                ps.setNull(col++, Types.TIMESTAMP);
+            }
+            if (batch.getExtractCutoff() != null) {
+                ps.setTimestamp(col++, new java.sql.Timestamp(batch.getExtractCutoff().getTime()));
+            } else {
+                ps.setNull(col++, Types.TIMESTAMP);
+            }
+            ps.setInt(col++, batch.getBatchId());
+
+            ps.executeUpdate();
+
+        } finally {
+            if (ps != null) {
+                ps.close();
+            }
+            connection.close();
+        }
+
+    }
+    /*public void setBatchAsComplete(Batch batch) throws Exception {
         PgStoredProc pgStoredProc = new PgStoredProc(getConnection())
                 .setName("log.set_batch_as_complete")
                 .addParameter("_batch_id", batch.getBatchId());
 
         pgStoredProc.execute();
-    }
+
+
+    }*/
 
     public void setBatchSequenceNumber(Batch batch, Integer sequenceNumber) throws Exception {
         PgStoredProc pgStoredProc = new PgStoredProc(getConnection())

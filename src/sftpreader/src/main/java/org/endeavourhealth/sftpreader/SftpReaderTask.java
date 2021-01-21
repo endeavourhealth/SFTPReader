@@ -93,8 +93,11 @@ public class SftpReaderTask implements Runnable {
                     break;
                 }
 
+                LOG.trace(">>>Detecting extract date and cutoff " + incompleteBatch.getBatchId());
+                detectExtractDateAndCutoff(incompleteBatch);
+
                 LOG.trace(">>>Splitting batch " + incompleteBatch.getBatchId());
-                splitBatch(incompleteBatch, lastCompleteBatch);
+                splitBatch(incompleteBatch, lastCompleteBatch); //this also performs the bulk detection, after splitting
 
                 LOG.trace(">>>Post-Split Validating batch " + incompleteBatch.getBatchId());
                 postSplitValidateBatch(incompleteBatch, lastCompleteBatch);
@@ -137,6 +140,18 @@ public class SftpReaderTask implements Runnable {
                 }
             }
         }
+    }
+
+    private void detectExtractDateAndCutoff(Batch incompleteBatch) throws Exception {
+
+        SftpBatchDateDetector detector = ImplementationActivator.createSftpDateDetector(dbConfiguration);
+
+        //work out the extract date first - the Barts implementation needs this done first, before the cutoff date can be calculated
+        Date extractDate = detector.detectExtractDate(incompleteBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
+        incompleteBatch.setExtractDate(extractDate);
+
+        Date extractCutoff = detector.detectExtractCutoff(incompleteBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
+        incompleteBatch.setExtractCutoff(extractCutoff);
     }
 
     private void handlePollingException(ConfigurationPollingAttempt attempt, Throwable t) {
@@ -843,8 +858,12 @@ public class SftpReaderTask implements Runnable {
                 String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
                 boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
                 boolean isBulk = unnotifiedBatchSplit.isBulk();
+                Long totalSize = messagePayload.getTotalSize();
+                Batch batch = unnotifiedBatchSplit.getBatch();
+                Date extractDate = batch.getExtractDate();
+                Date extractCutoff = batch.getExtractCutoff();
 
-                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage, isBulk, messagePayload.getTotalSize());
+                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage, isBulk, totalSize, extractDate, extractCutoff);
             }
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),

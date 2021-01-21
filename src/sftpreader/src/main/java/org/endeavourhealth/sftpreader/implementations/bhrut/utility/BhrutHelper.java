@@ -13,43 +13,6 @@ import java.io.File;
 
 public class BhrutHelper {
 
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader(
-            "LineStatus",
-            "EXTERNAL_ID",
-            "PAS_ID",
-            "FORENAME",
-            "SURNAME",
-            "NHS_NUMBER",
-            "GENDER",
-            "BIRTH_DTTM",
-            "DEATH_DTTM",
-            "CAUSEOFDEATH",
-            "CAUSEOFDEATH_1B",
-            "CAUSEOFDEATH_1c",
-            "CAUSEOFDEATH_2",
-            "INFECTION_STATUS",
-            "ADDRESS1",
-            "ADDRESS2",
-            "ADDRESS3",
-            "ADDRESS4",
-            "ADDRESS5",
-            "POSTCODE",
-            "SENSITIVE_PDS_FLAG",
-            "SENSITIVE_LOCAL_FLAG",
-            "HPHONE_NUMBER",
-            "HPHONE_NUMBER_CONSENT",
-            "MPHONE_NUMBER",
-            "MPHONE_NUMBER_CONSENT",
-            "ETHNICITY_CODE",
-            "FOREIGN_LANGUAGE_CODE",
-            "NOK_NAME",
-            "NOKREL_NHSCODE",
-            "REGISTERED_GP_CODE",
-            "REGISTERED_GP_PRACTICE",
-            "REGISTERED_GP_PRACTICE_CODE",
-            "DataUpdateStatus");
-
-    public static final String PATIENT_PMI_FILE_TYPE = "PMI";
 
     /**
      * finds a Bhrut data file in the temporary directory (note that Bhrut files don't get split

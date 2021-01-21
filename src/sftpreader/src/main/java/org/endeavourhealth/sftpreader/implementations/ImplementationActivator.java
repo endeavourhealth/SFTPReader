@@ -131,4 +131,12 @@ public class ImplementationActivator {
         Constructor<SftpBulkDetector> constructor = cls.getConstructor();
         return constructor.newInstance();
     }
+
+    public static SftpBatchDateDetector createSftpDateDetector(DbConfiguration dbConfiguration) throws Exception {
+        String clsName = getClassPackageAndPrefix(dbConfiguration) + "DateDetector";
+
+        Class cls = Class.forName(clsName);
+        Constructor<SftpBatchDateDetector> constructor = cls.getConstructor();
+        return constructor.newInstance();
+    }
 }

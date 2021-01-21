@@ -12,14 +12,13 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class EdsSender {
 
@@ -53,7 +52,9 @@ public class EdsSender {
         return edsEnvelope;
     }
 
-    public static EdsSenderResponse notifyEds(String edsUrl, boolean useKeycloak, String outboundMessage, boolean isBulk, Long fileTotalSize) throws EdsSenderHttpErrorResponseException, IOException
+    public static EdsSenderResponse notifyEds(String edsUrl, boolean useKeycloak, String outboundMessage,
+                                              boolean isBulk, Long fileTotalSize,
+                                              Date extractDate, Date extractCutoff) throws EdsSenderHttpErrorResponseException, IOException
     {
         RequestConfig requestConfig = RequestConfig
                 .custom()
@@ -65,16 +66,23 @@ public class EdsSender {
         try (CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(requestConfig).build()) {
             HttpPost httpPost = new HttpPost(edsUrl);
 
+            //add the headers to our HTTP POST
             if (useKeycloak) {
                 httpPost.addHeader(KeycloakClient.instance().getAuthorizationHeader());
             }
-
             if (isBulk) {
-                //note that the case is lost in HTTP parameters, so there's no point trying to use CamelCase
-                httpPost.addHeader("is-bulk", "true");
+                httpPost.addHeader(HeaderKeys.IsBulk, "true");
             }
             if (fileTotalSize != null) {
-                httpPost.addHeader("file-total-size", "" + fileTotalSize);
+                httpPost.addHeader(HeaderKeys.TotalFileSize, "" + fileTotalSize);
+            }
+            if (extractDate != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(HeaderKeys.DATE_FORMAT);
+                httpPost.addHeader(HeaderKeys.ExtractDate, dateFormat.format(extractDate));
+            }
+            if (extractCutoff != null) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(HeaderKeys.DATE_FORMAT);
+                httpPost.addHeader(HeaderKeys.ExtractCutoff, dateFormat.format(extractCutoff));
             }
 
             httpPost.addHeader("Content-Type", "text/xml");

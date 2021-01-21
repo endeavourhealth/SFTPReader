@@ -7,6 +7,8 @@ import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
+import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraConstants;
+import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvJoiner;
@@ -27,11 +29,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(AdastraBatchSplitter.class);
 
-    private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withDelimiter('|').withQuoteMode(QuoteMode.ALL);
-
     private static final String SPLIT_FOLDER = "Split";
-    private static final String FILE_TYPE_CASE = "CASE";
-    private static final String FILE_TYPE_USERS = "USERS";
 
     /**
      * split Adastra files by the source ODS code. The ODS code is only present in the CASE file so we do that
@@ -90,7 +88,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
             totalFileLen += len;
 
-            if (fileType.equals(FILE_TYPE_CASE)) {
+            if (fileType.equals(AdastraConstants.FILE_ID_CASE)) {
                 caseFileLen = len;
             }
         }
@@ -111,7 +109,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         String firstChars = FileHelper.readFirstCharactersFromSharedStorage(caseFilePath, 1000); //assuming the first row will be <1000 chars
         StringReader stringReader = new StringReader(firstChars);
 
-        CSVParser csvReader = new CSVParser(stringReader, getCsvFormat(FILE_TYPE_CASE));
+        CSVParser csvReader = new CSVParser(stringReader, AdastraHelper.getCsvFormat(AdastraConstants.FILE_ID_CASE));
         try {
             Iterator<CSVRecord> iterator = csvReader.iterator();
 
@@ -186,7 +184,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         Map<String, String> hmCaseToOds = parseCaseFile(caseFilePath);
 
         //split case file by ODS code
-        CsvSplitter csvSplitter = new CsvSplitter(caseFilePath, dstDir, false, getCsvFormat(FILE_TYPE_CASE), "ODSCode");
+        CsvSplitter csvSplitter = new CsvSplitter(caseFilePath, dstDir, false, AdastraHelper.getCsvFormat(AdastraConstants.FILE_ID_CASE), "ODSCode");
         List<File> splitCaseFiles = csvSplitter.go();
 
         //save any new ODS codes so it's expected next time
@@ -220,7 +218,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             String filePath = FilenameUtils.concat(sourcePermDir, fileName);
 
             //skip case and users files
-            if (fileType.equals(FILE_TYPE_CASE)) {
+            if (fileType.equals(AdastraConstants.FILE_ID_CASE)) {
                 //we've already split the case file, but need to ensure that every expected ODS code has a case file
                 for (String odsCode: expectedOdsCodes) {
                     String expectedFile = FilenameUtils.concat(splitTempDir, odsCode);
@@ -231,7 +229,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
                     }
                 }
 
-            } else if (fileType.equals(FILE_TYPE_USERS)) {
+            } else if (fileType.equals(AdastraConstants.FILE_ID_USERS)) {
                 //we don't split the users file, instead creating a duplicate of it for each ODS code
                 for (String odsCode: expectedOdsCodes) {
                     String copyTo = FilenameUtils.concat(splitTempDir, odsCode);
@@ -245,7 +243,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
             } else {
                 //all other files should be split by case ref then re-combined by ODS code
                 String tempSplitDir = FilenameUtils.concat(splitTempDir, fileType);
-                csvSplitter = new CsvSplitter(filePath, new File(tempSplitDir), false, getCsvFormat(fileType), "CaseRef");
+                csvSplitter = new CsvSplitter(filePath, new File(tempSplitDir), false, AdastraHelper.getCsvFormat(fileType), "CaseRef");
                 List<File> splitFiles = csvSplitter.go();
 
                 //hash the split files by their corresponding ODS codes
@@ -281,7 +279,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
 
                     } else {
                         LOG.debug("Combining " + filesToCombine.size() + " " + fileType + " files for " + odsCode + " into " + expectedFileObj);
-                        CsvJoiner joiner = new CsvJoiner(filesToCombine, expectedFileObj, getCsvFormat(fileType));
+                        CsvJoiner joiner = new CsvJoiner(filesToCombine, expectedFileObj, AdastraHelper.getCsvFormat(fileType));
                         joiner.go();
                     }
                 }
@@ -332,7 +330,7 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         Map<String, String> ret = new HashMap<>();
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(caseFilePath);
-        CSVParser parser = new CSVParser(reader, getCsvFormat(FILE_TYPE_CASE));
+        CSVParser parser = new CSVParser(reader, AdastraHelper.getCsvFormat(AdastraConstants.FILE_ID_CASE));
         try {
             Iterator<CSVRecord> iterator = parser.iterator();
             while (iterator.hasNext()) {
@@ -348,171 +346,18 @@ public class AdastraBatchSplitter extends SftpBatchSplitter {
         }
     }
 
-    private static CSVFormat getCsvFormat(String fileTypeIdentifier) throws Exception {
-        String[] cols = getCsvHeaders(fileTypeIdentifier);
-        return CSV_FORMAT.withHeader(cols);
-    }
-
-    private static String[] getCsvHeaders(String fileTypeIdentifier) throws Exception {
-        switch (fileTypeIdentifier) {
-            case "CASE":
-                return new String[]{
-                        "PatientRef",
-                        "PriorityName",
-                        "CaseRef",
-                        "CaseNo",
-                        "StartDateTime",
-                        "EndDateTime",
-                        "LocationName",
-                        "CaseTagName",
-                        "ArrivedPCC",
-                        "UserRef",
-                        "ODSCode"
-                };
-            case "CASEQUESTIONS":
-                return new String[]{
-                        "CaseRef",
-                        "QuestionSetName",
-                        "Question",
-                        "Answer",
-                        "SortOrder"
-                };
-            case "CLINICALCODES":
-                return new String[]{
-                        "CaseRef",
-                        "ConsultationRef",
-                        "ClinicalCode",
-                        "Term"
-                };
-            case "CONSULTATION":
-                return new String[]{
-                        "CaseRef",
-                        "ConsultationRef",
-                        "StartDateTime",
-                        "EndDateTime",
-                        "Location",
-                        "ConsultationCaseType",
-                        "History",
-                        "Examination",
-                        "Diagnosis",
-                        "TreatmentPlan",
-                        "PatientName",
-                        "PatientForename",
-                        "PatientSurname",
-                        "ProviderType",
-                        "GMC",
-                        "UserRef"
-                };
-            case "ELECTRONICPRESCRIPTIONS":
-                return new String[]{
-                        "CaseRef",
-                        "ProviderRef",
-                        "SubmissionTime",
-                        "AuthorisationTime",
-                        "CancellationRequestedTime",
-                        "CancellationConfirmationTime",
-                        "CancellationReasonCode",
-                        "CancellationReasonText",
-                        "PharmacyName",
-                        "PrescriberNumber",
-                        "PrescriberName"
-                };
-            case "NOTES":
-                return new String[]{
-                        "CaseRef",
-                        "PatientRef",
-                        "ReviewDateTime",
-                        "NoteText",
-                        "Obsolete",
-                        "Active",
-                        "UserRef"
-                };
-            case "OUTCOMES":
-                return new String[]{
-                        "CaseRef",
-                        "OutcomeName"
-                };
-            case "PATIENT":
-                return new String[]{
-                        "CaseRef",
-                        "PatientRef",
-                        "Forename",
-                        "Surname",
-                        "DOB",
-                        "NHSNumber",
-                        "NHSNoTraceStatus",
-                        "Language",
-                        "Ethnicity",
-                        "Gender",
-                        "RegistrationType",
-                        "HomeAddressType",
-                        "HomeAddressBuilding",
-                        "HomeAddressStreet",
-                        "HomeAddressTown",
-                        "HomeAddressLocality",
-                        "HomeAddressPostcode",
-                        "CurrentAddressType",
-                        "CurrentAddressBuilding",
-                        "CurrentAddressStreet",
-                        "CurrentAddressTown",
-                        "CurrentAddressLocality",
-                        "CurrentAddressPostcode",
-                        "MobilePhone",
-                        "HomePhone",
-                        "OtherPhone",
-                        "LastEditByUserRef"
-                };
-            case "PRESCRIPTIONS":
-                return new String[]{
-                        "CaseRef",
-                        "ConsultationRef",
-                        "DrugName",
-                        "Preparation",
-                        "Dosage",
-                        "Quantity",
-                        "DMDCode",
-                        "Issue"
-                };
-            case "PROVIDER":
-                return new String[]{
-                        "PatientRef",
-                        "RegistrationStatus",
-                        "GPNationalCode",
-                        "GPName",
-                        "GPPracticeNatCode",
-                        "GPPracticeName",
-                        "GPPracticePostcode",
-                        "CaseRef"
-                };
-            case "USERS":
-                return new String[]{
-                        "UserRef",
-                        "UserName",
-                        "Forename",
-                        "Surname",
-                        "FullName",
-                        "ProviderRef",
-                        "ProviderName",
-                        "ProviderType",
-                        "ProviderGMC",
-                        "ProviderNMC"
-                };
-            default:
-                throw new Exception("Unexpected file type identifier [" + fileTypeIdentifier + "]");
-        }
-    }
 
     private static String findCaseFile(Batch batch, String sourcePermDir, DbConfiguration dbConfiguration) throws Exception {
 
         for (BatchFile batchFile: batch.getBatchFiles()) {
             String fileType = batchFile.getFileTypeIdentifier();
-            if (fileType.equals(FILE_TYPE_CASE)) {
+            if (fileType.equals(AdastraConstants.FILE_ID_CASE)) {
                 String fileName = batchFile.getFilename();
                 return FilenameUtils.concat(sourcePermDir, fileName);
             }
         }
 
-        throw new Exception("Failed to find " + FILE_TYPE_CASE + " file in batch " + batch.getBatchId());
+        throw new Exception("Failed to find " + AdastraConstants.FILE_ID_CASE + " file in batch " + batch.getBatchId());
     }
 
 

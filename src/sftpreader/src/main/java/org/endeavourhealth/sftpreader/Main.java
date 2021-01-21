@@ -64,7 +64,7 @@ public class Main {
 
 
 
-            if (args.length > 0) {
+            if (args.length > 1) {
                 /*if (args[0].equalsIgnoreCase("FixS3")) {
                     String bucket = args[1];
                     String path = args[2];

@@ -4,6 +4,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.bhrut.utility.BhrutConstants;
 import org.endeavourhealth.sftpreader.implementations.bhrut.utility.BhrutHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.Batch;
@@ -31,7 +32,7 @@ public class BhrutBulkDetector extends SftpBulkDetector {
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         String patientPMIFilePath
-                = BhrutHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, BhrutHelper.PATIENT_PMI_FILE_TYPE);
+                = BhrutHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, BhrutConstants.FILE_ID_PMI);
 
         //a bulk will always contain a PMI file
         if (patientPMIFilePath == null) {
@@ -41,7 +42,7 @@ public class BhrutBulkDetector extends SftpBulkDetector {
         //count up all the patient records whilst checking for non-Add rows
         Set<String> patientIds = new HashSet<>();
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(patientPMIFilePath);
-        CSVParser csvParser = new CSVParser(reader, BhrutHelper.CSV_FORMAT);
+        CSVParser csvParser = new CSVParser(reader, BhrutConstants.CSV_FORMAT);
 
         try {
             Iterator<CSVRecord> iterator = csvParser.iterator();
