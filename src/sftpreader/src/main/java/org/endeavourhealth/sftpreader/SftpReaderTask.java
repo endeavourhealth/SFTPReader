@@ -679,7 +679,7 @@ public class SftpReaderTask implements Runnable {
         for (Batch b : hmSortedBatchSequence.keySet()) {
             Integer seq = hmBatchSequence.get(b);
             db.setBatchSequenceNumber(b, seq);
-            LOG.debug("  Batch " + b.getBatchIdentifier() + " sequenced as " + seq);
+            LOG.debug("  Batch " + b.getBatchId() + ", from " + b.getBatchIdentifier() + " sequenced as " + seq);
         }
 
         LOG.trace(" Completed batch sequencing");
