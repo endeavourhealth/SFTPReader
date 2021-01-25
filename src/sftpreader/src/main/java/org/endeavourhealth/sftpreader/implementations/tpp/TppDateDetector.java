@@ -41,8 +41,8 @@ public class TppDateDetector extends SftpBatchDateDetector {
                 continue;
             }
 
-            //the TPPBatchValidator makes sure that the end date is the same for all manifest records, so
-            //we can just use the date from any record (except the one we skip, above)
+            //the TPPBatchValidator makes sure that the end date present and is the same for all manifest records, so
+            //we can just use the date from any record (except the one we skip above)
             return record.getDateTo();
         }
 

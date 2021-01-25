@@ -1,10 +1,14 @@
 package org.endeavourhealth.sftpreader.implementations.vision;
 
+import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
+import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionConstants;
 import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.Batch;
@@ -32,8 +36,8 @@ public class VisionBulkDetector extends SftpBulkDetector {
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
-        String patientFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionHelper.PATIENT_FILE_TYPE);
-        String journalFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionHelper.JOURNAL_FILE_TYPE);
+        String patientFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionConstants.FILE_ID_PATIENT);
+        String journalFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionConstants.FILE_ID_JOURNAL);
 
         //Vision extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null
@@ -45,7 +49,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
         Set<String> patientIds = new HashSet<>();
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(patientFilePath);
-        CSVParser csvParser = new CSVParser(reader, VisionHelper.CSV_FORMAT); //no headers in file
+        CSVParser csvParser = new CSVParser(reader, VisionConstants.CSV_FORMAT); //no headers in file
 
         try {
             Integer columnCount = null;
@@ -83,7 +87,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
 
         int journalRecords = 0;
         reader = FileHelper.readFileReaderFromSharedStorage(journalFilePath);
-        csvParser = new CSVParser(reader, VisionHelper.CSV_FORMAT); //no headers in file
+        csvParser = new CSVParser(reader, VisionConstants.CSV_FORMAT); //no headers in file
         try {
             Integer columnCount = null;
             Iterator<CSVRecord> iterator = csvParser.iterator();
@@ -139,6 +143,33 @@ public class VisionBulkDetector extends SftpBulkDetector {
 
         //LOG.debug("Found " + patientIds.size() + " patients and " + journalRecords + " journal records so treating as bulk");
         return true;
+    }
+
+    /**
+     * for Vision, check the patient and journal files
+     */
+    @Override
+    public boolean hasPatientData(Batch batch, BatchSplit batchSplit, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+
+        Set<String> fileTypeIds = new HashSet<>();
+        fileTypeIds.add(VisionConstants.FILE_ID_PATIENT);
+        fileTypeIds.add(VisionConstants.FILE_ID_JOURNAL);
+
+        for (String fileTypeId: fileTypeIds) {
+
+            String path = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, fileTypeId);
+            if (!Strings.isNullOrEmpty(path)) {
+                //the Vision files don't include the headers, so we need to call this fn to work it out
+                CSVFormat csvFormat = VisionHelper.getCsvFormat(fileTypeId);
+                boolean isEmpty = isFileEmpty(path, csvFormat);
+                if (!isEmpty) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
     }
 
     /**

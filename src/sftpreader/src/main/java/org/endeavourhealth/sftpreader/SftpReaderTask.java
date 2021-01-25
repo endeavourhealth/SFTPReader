@@ -709,11 +709,15 @@ public class SftpReaderTask implements Runnable {
                 continue;
             }
 
+            splitBatch.setConfigurationId(configurationId);
+
             //work out if the data for this organisation is a bulk or not
             boolean isBulk = sftpBulkDetector.isBulkExtract(batch, splitBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
-
-            splitBatch.setConfigurationId(configurationId);
             splitBatch.setBulk(isBulk);
+
+            //work out if our extract actually contains any patient data
+            boolean hasPatientData = sftpBulkDetector.hasPatientData(batch, splitBatch, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration);
+            splitBatch.setHasPatientData(hasPatientData);
 
             //save to the DB
             db.addBatchSplit(splitBatch);
@@ -858,12 +862,13 @@ public class SftpReaderTask implements Runnable {
                 String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
                 boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
                 boolean isBulk = unnotifiedBatchSplit.isBulk();
+                boolean hasPatientData = unnotifiedBatchSplit.isHasPatientData();
                 Long totalSize = messagePayload.getTotalSize();
                 Batch batch = unnotifiedBatchSplit.getBatch();
                 Date extractDate = batch.getExtractDate();
                 Date extractCutoff = batch.getExtractCutoff();
 
-                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage, isBulk, totalSize, extractDate, extractCutoff);
+                edsSenderResponse = EdsSender.notifyEds(edsUrl, useKeycloak, outboundMessage, isBulk, hasPatientData, totalSize, extractDate, extractCutoff);
             }
 
             db.addBatchNotification(unnotifiedBatchSplit.getBatchId(),

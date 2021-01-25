@@ -6,6 +6,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
+import org.endeavourhealth.sftpreader.implementations.emisCustom.utility.EmisCustomConstants;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
@@ -77,7 +78,7 @@ public class EmisCustomBatchValidator extends SftpBatchValidator {
     private void validateRegStatusFile(Batch batch, String srcFile) throws Exception {
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFile);
-        CSVParser parser = new CSVParser(reader, EmisCustomBatchSplitter.CSV_FORMAT.withHeader());
+        CSVParser parser = new CSVParser(reader, EmisCustomConstants.CSV_FORMAT.withHeader());
         Iterator<CSVRecord> iterator = parser.iterator();
 
         try {
@@ -103,7 +104,7 @@ public class EmisCustomBatchValidator extends SftpBatchValidator {
     private void validateOriginalTermsFile(Batch batch, String srcFile) throws Exception {
 
         InputStreamReader reader = FileHelper.readFileReaderFromSharedStorage(srcFile);
-        CSVParser parser = new CSVParser(reader, EmisCustomBatchSplitter.CSV_FORMAT.withHeader());
+        CSVParser parser = new CSVParser(reader, EmisCustomConstants.CSV_FORMAT.withHeader());
         Iterator<CSVRecord> iterator = parser.iterator();
 
         String fixedSrcFile = srcFile + "FIXED";
@@ -119,7 +120,7 @@ public class EmisCustomBatchValidator extends SftpBatchValidator {
             headers[index.intValue()] = headerVal;
         }
 
-        CSVPrinter printer = new CSVPrinter(bufferedWriter, EmisCustomBatchSplitter.CSV_FORMAT.withHeader(headers));
+        CSVPrinter printer = new CSVPrinter(bufferedWriter, EmisCustomConstants.CSV_FORMAT.withHeader(headers));
 
         try {
             printer.flush(); //flush out the headers

@@ -1,35 +1,25 @@
 package org.endeavourhealth.sftpreader.implementations.tpp;
 
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.csv.QuoteMode;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchValidator;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.ManifestRecord;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.*;
 
 public class TppBatchValidator extends SftpBatchValidator {
-
-    private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withQuoteMode(QuoteMode.ALL);
-    private static final String MANIFEST_FILE = "SRManifest.csv";
-    private static final String REQUIRED_CHARSET = "Cp1252";
+    private static final Logger LOG = LoggerFactory.getLogger(TppBatchValidator.class);
 
     public static final String APPOINTMENT_ATTENDEES = "SRAppointmentAttendees";
-
-    private static final Logger LOG = LoggerFactory.getLogger(TppBatchValidator.class);
 
     @Override
     public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
@@ -49,86 +39,95 @@ public class TppBatchValidator extends SftpBatchValidator {
         //make sure that all files listed in the manifest file are present
         checkAllFilesInManifestArePresent(instanceConfiguration, dbConfiguration, incompleteBatch, manifestRecords);
 
+        //ensure our understanding of the SRManifest file is still correct and find the start date for our new extract
+        Date incompleteExtractStartDate = checkAllFilesInManifestHaveSameDates(incompleteBatch, manifestRecords);
+
         //make sure the dates of all records in the manifest file match up with the dates in the previous one
-        //checkManfiestDatesMatch(incompleteBatch, lastCompleteBatch, db, manifestRecords);
+        checkManifestDatesMatch(incompleteBatch, lastCompleteBatch, incompleteExtractStartDate);
 
         return true;
     }
 
-    private void checkManfiestDatesMatch(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration,
-                                         Batch incompleteBatch, Batch lastCompleteBatch, DataLayerI db,
-                                         List<ManifestRecord> newRecords) throws SftpValidationException {
+    /**
+     * makes sure that the start and end date for each manifest record is the same and returns the start date
+     */
+    private Date checkAllFilesInManifestHaveSameDates(Batch incompleteBatch, List<ManifestRecord> manifestRecords) throws SftpValidationException {
+
+        Date dEndFirst = null;
+        String endFileFirst = null;
+        
+        Date dStartFirst = null;
+        String startFileFirst = null;
+
+        for (ManifestRecord newRecord : manifestRecords) {
+            String file = newRecord.getFileNameWithoutExtension();
+            Date dEnd = newRecord.getDateTo();
+            Date dStart = newRecord.getDateFrom();
+
+            //there's something consistently wrong with this one file type, with it not having any dates, so just skip it
+            if (file.equals(APPOINTMENT_ATTENDEES)) {
+                continue;
+            }
+
+            //records should always have an end date
+            if (dEnd == null) {
+                throw new SftpValidationException("No end date in SRManifest for " + file + " in batch " + incompleteBatch.getBatchId());
+            }
+
+            if (dEndFirst == null) {
+                dEndFirst = dEnd;
+                endFileFirst = file;
+
+            } else if (!dEndFirst.equals(dEnd)) {
+                //if we find a record with a different end date, then something is wrong
+                throw new SftpValidationException("Different end dates in SRManifest for " + file + " (" + dEnd + ") and " + endFileFirst + " (" + dEndFirst + ")" + " in batch " + incompleteBatch.getBatchId());
+            }
+            
+            //manifest records only have a start date if they're deltas
+            if (newRecord.isDelta()) {
+                
+                if (dStart == null) {
+                    throw new SftpValidationException("No start date in SRManifest for " + file + " in batch " + incompleteBatch.getBatchId());
+                }
+
+                if (dStartFirst == null) {
+                    dStartFirst = dStart;
+                    startFileFirst = file;
+
+                } else if (!dStartFirst.equals(dStart)) {
+                    //if we find a record with a different start date, then something is wrong
+                    throw new SftpValidationException("Different start dates in SRManifest for " + file + " (" + dStart + ") and " + startFileFirst + " (" + dStartFirst + ")" + " in batch " + incompleteBatch.getBatchId());
+                }
+            }
+        }
+
+        return dStartFirst;
+    }
+
+    private void checkManifestDatesMatch(Batch incompleteBatch, Batch lastCompleteBatch, Date incompleteExtractStartDate) throws SftpValidationException {
 
         //if we're the first batch, then do nothing
         if (lastCompleteBatch == null) {
             return;
         }
-/*
-        //we need to get the manifest records from the previous batch. We don't store the files at the batch level in the permanent storage,
-        //so need to get it from one (any) of the "split" sub-directories
-        int lastBatchId = lastCompleteBatch.getBatchId();
-        List<BatchSplit> splits = db.getBatchSplitsForBatch(lastBatchId);
-        if (splits.isEmpty()) {
-            throw new SftpValidationException("Unexpected zero splits in last complete batch " + lastBatchId);
-        }
-        BatchSplit split = splits.get(0); //doesn't matter which we use, since they all have an identical copy
 
-        String splitDir = getPersonDirectoryPathForSplit(instanceConfiguration, dbConfiguration, split);
-        List<ManifestRecord> lastRecords = readManifestFromDirectory(splitDir);
-
-        //hash the previous one by file name
-        Map<String, ManifestRecord> hmLast = new HashMap<>();
-
-        for (ManifestRecord lastRecord: lastRecords) {
-            String file = lastRecord.getFileNameWithoutExtension();
-            hmLast.put(file, lastRecord);
+        //if we don't have a start date for our extract, we're a bulk or re-bulk so don't need to validate that deltas join up
+        if (incompleteExtractStartDate == null) {
+            return;
         }
 
-        //now check everything in the new file
-        for (ManifestRecord newRecord: newRecords) {
-            String file = newRecord.getFileNameWithoutExtension();
+        Date lastExtractEndDate = lastCompleteBatch.getExtractCutoff();
+        if (lastExtractEndDate == null) {
+            //TODO - restore this after we've set it on all TPP feeds
+            //throw new SftpValidationException("End date of last batch is null, batch ID " + incompleteBatch.getBatchId());
+            LOG.warn("Previous batch " + lastCompleteBatch.getBatchId() + " has null extract cutoff, so cannot check new batch " + incompleteBatch.getBatchId());
+            return;
+        }
 
-            //there's some kind of bug in SystmOne where the manifest record for this one file seems to be
-            //without either start or end date most of the time. Since we don't actually process this file, I think
-            //it reasonable to just skip this file for this validation, since we are still validating 100+ other files.
-            if (file.equals(APPOINTMENT_ATTENDEES)) {
-                continue;
-            }
-            
-            ManifestRecord lastRecord = hmLast.get(file);
-
-            if (lastRecord == null) {
-                //TODO - this means we have a new file, so that's interesting
-
-            } else {
-
-                Date newStart = newRecord.getDateFrom();
-                Date lastEnd = lastRecord.getDateTo();
-
-                //TODO - handle start date being null (i.e. is a bulk?)
-                //TODO - handle end date being null ???
-
-                //TODO - handle "SRAppointmentAttendees" having always null start and end
-
-                if (newStart.equals(lastEnd)) {
-                    //ideally the start date of the new record should match the end date of the last one
-
-                } else if (newS)
-
-            }
-        }*/
-    }
-
-    /**
-     * works out the directory path for the batch's directory in the PERMANENT storage drive
-     */
-    private String getPersonDirectoryPathForSplit(DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, BatchSplit split) {
-
-        String sharedStoragePath = instanceConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/endeavour
-        String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/EMIS001
-        String splitPath = split.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35/Split/{F6F4A970-6C2D-4660-A787-0FE0E6B67DCE}
-
-        return FileHelper.concatFilePath(sharedStoragePath, configurationPath, splitPath);
+        //if the start date of the new extract doesn't match the end date of the last one, then something is wrong
+        if (!lastExtractEndDate.equals(incompleteExtractStartDate)) {
+            throw new SftpValidationException("Start date of new batch (" + incompleteExtractStartDate + ") does not match end date of last batch (" + lastExtractEndDate + ") in new batch " + incompleteBatch.getBatchId());
+        }
     }
 
     /**
@@ -146,7 +145,7 @@ public class TppBatchValidator extends SftpBatchValidator {
 
         //read the manifest file and compare against the contents of the batch. Using the temp directory
         //as all files, including blank ones, will exist in temp storage
-        String manifestFilePath = FilenameUtils.concat(dir, MANIFEST_FILE);
+        String manifestFilePath = FilenameUtils.concat(dir, TppConstants.MANIFEST_FILE);
         File manifestFile = new File(manifestFilePath);
 
         try {
@@ -164,7 +163,7 @@ public class TppBatchValidator extends SftpBatchValidator {
         for (BatchFile file: batchFiles) {
 
             String fileName = file.getFilename();
-            if (fileName.equalsIgnoreCase(MANIFEST_FILE)) {
+            if (fileName.equalsIgnoreCase(TppConstants.MANIFEST_FILE)) {
                 foundManifest = true;
                 break;
             }

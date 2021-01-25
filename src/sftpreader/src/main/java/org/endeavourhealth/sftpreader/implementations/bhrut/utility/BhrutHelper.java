@@ -2,6 +2,8 @@ package org.endeavourhealth.sftpreader.implementations.bhrut.utility;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.sftpreader.implementations.adastra.AdastraFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
@@ -10,54 +12,41 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.io.File;
+import java.util.List;
 
 public class BhrutHelper {
 
 
     /**
-     * finds a Bhrut data file in the temporary directory (note that Bhrut files don't get split
-     * so this is simpler than the equivalent function for Emis)
+     * finds a Bhrut data file in the permanent storage
      */
-    public static String findFileInTempDir(DbInstanceEds instanceConfiguration,
-                                                    DbConfiguration dbConfiguration,
-                                                    Batch batch,
-                                                    String fileIdentifier) throws SftpValidationException {
+    public static String findFileInPermDir(DbInstanceEds instanceConfiguration,
+                                                   DbConfiguration dbConfiguration,
+                                                   Batch batch,
+                                                   String fileIdentifier) throws Exception {
 
-        String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. s3://<bucket>/endeavour
-        String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/BHRUT
-        String batchPath = batch.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35
+        String tempStoragePath = instanceConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/endeavour
+        String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/ADASTRA
+        String batchPath = batch.getLocalRelativePath(); //e.g. 2021-01-21T00.00.02
 
-        String tempPath = FilenameUtils.concat(tempStoragePath, configurationPath);
-        tempPath = FilenameUtils.concat(tempPath, batchPath);
+        String dirPath = FileHelper.concatFilePath(tempStoragePath, configurationPath, batchPath);
 
-        File tempDir = new File(tempPath);
-        if (!tempDir.exists()) {
-            throw new SftpValidationException("Temp directory " + tempDir + " doesn't exist");
+        List<String> files = FileHelper.listFilesInSharedStorage(dirPath);
+
+        if (files == null || files.isEmpty()) {
+            throw new SftpValidationException("Failed to find any files in " + dirPath);
         }
 
-        String filePath = null;
-
-        for (File f: tempDir.listFiles()) {
-            String name = f.getName();
-            String ext = FilenameUtils.getExtension(name);
-            if (ext.equalsIgnoreCase("csv")) {
-
-                RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Vision filename parsing
-                BhrutFilenameParser parser = new BhrutFilenameParser(false, r, dbConfiguration);
-                String fileType = parser.generateFileTypeIdentifier();
-                if (fileType.equals(fileIdentifier)) {
-                    filePath = f.getAbsolutePath();
-                    break;
-                }
+        for (String filePath: files) {
+            String name = FilenameUtils.getName(filePath);
+            RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Vision filename parsing
+            BhrutFilenameParser parser = new BhrutFilenameParser(false, r, dbConfiguration);
+            String fileType = parser.generateFileTypeIdentifier();
+            if (fileType.equals(fileIdentifier)) {
+                return filePath;
             }
         }
 
-        if (filePath == null) {
-            //Bhrut extracts don't always contain all file types, so just return null
-            //throw new SftpValidationException("Failed to find " + fileIdentifier + " file in " + tempDir);
-            return null;
-        }
-
-        return filePath;
+        return null;
     }
 }

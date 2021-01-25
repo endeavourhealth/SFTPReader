@@ -12,6 +12,7 @@ public class BatchSplit {
     private boolean isHaveNotified;
     private Date notificationDate;
     private boolean isBulk;
+    private boolean hasPatientData;
 
     private Batch batch;
 
@@ -93,6 +94,15 @@ public class BatchSplit {
 
     public BatchSplit setBulk(boolean bulk) {
         isBulk = bulk;
+        return this;
+    }
+
+    public boolean isHasPatientData() {
+        return hasPatientData;
+    }
+
+    public BatchSplit setHasPatientData(boolean hasPatientData) {
+        this.hasPatientData = hasPatientData;
         return this;
     }
 }

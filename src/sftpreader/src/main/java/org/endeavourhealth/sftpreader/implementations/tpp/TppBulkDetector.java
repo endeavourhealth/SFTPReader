@@ -1,5 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.tpp;
 
+import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
@@ -11,6 +13,8 @@ import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.ManifestRecord;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppHelper;
+import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionConstants;
+import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
@@ -69,6 +73,27 @@ public class TppBulkDetector extends SftpBulkDetector {
         return filesLookBulk;
     }
 
+    @Override
+    public boolean hasPatientData(Batch batch, BatchSplit batchSplit, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+        Set<String> fileTypeIds = new HashSet<>();
+        fileTypeIds.add(TppConstants.FILE_ID_PATIENT);
+        fileTypeIds.add(TppConstants.FILE_ID_EVENT);
+        fileTypeIds.add(TppConstants.FILE_ID_CODE);
+
+        for (String fileTypeId: fileTypeIds) {
+
+            String path = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, fileTypeId);
+            if (!Strings.isNullOrEmpty(path)) {
+                boolean isEmpty = isFileEmpty(path, TppConstants.CSV_FORMAT.withHeader());
+                if (!isEmpty) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /**
      * we filter content from SRCode files if we've received those records before, but don't do this if it's a bulk
      * extract, so need this fn to test if the extract looks like a bulk. In this case, test both ways of checking
@@ -93,8 +118,8 @@ public class TppBulkDetector extends SftpBulkDetector {
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the files will still be in our temp storage
-        String patientFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.PATIENT_FILE_TYPE);
-        String codeFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.CODE_FILE_TYPE);
+        String patientFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.FILE_ID_PATIENT);
+        String codeFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.FILE_ID_CODE);
 
         //TPP extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null && codeFilePath == null) {
@@ -185,7 +210,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the SRManifest file will still be in our temp storage
-        String manifestPath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.MANIFEST_FILE_TYPE);
+        String manifestPath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.FILE_ID_MANIFEST);
         File f = new File(manifestPath);
         if (!f.exists()) {
             throw new Exception("Failed to find manifest file " + f);

@@ -640,7 +640,8 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "SELECT b.batch_id, b.batch_identifier, b.local_relative_path, b.insert_date, b.sequence_number, b.complete_date,"
+            String sql = "SELECT"
+                    + " b.batch_id, b.batch_identifier, b.local_relative_path, b.insert_date, b.sequence_number, b.complete_date, b.extract_date, b.extract_cutoff, "
                     + " bf.batch_file_id, bf.file_type_identifier, bf.filename, bf.remote_size_bytes, bf.is_downloaded, bf.is_deleted"
                     + " FROM batch b"
                     + " LEFT OUTER JOIN batch_file bf"
@@ -674,7 +675,25 @@ public class MySqlDataLayer implements DataLayerI {
                     sequenceNumber = new Integer(i);
                 }
 
-                Date completeDate = rs.getDate(col++);
+                java.sql.Timestamp ts = null;
+
+                Date completeDate = null;
+                ts = rs.getTimestamp(col++);
+                if (ts != null) {
+                    completeDate = new java.util.Date(ts.getTime());
+                }
+
+                Date extractDate = null;
+                ts = rs.getTimestamp(col++);
+                if (ts != null) {
+                    extractDate = new java.util.Date(ts.getTime());
+                }
+
+                Date extractCutoff = null;
+                ts = rs.getTimestamp(col++);
+                if (ts != null) {
+                    extractCutoff = new java.util.Date(ts.getTime());
+                }
 
                 //because we're doing a left outer join, we'll get multiple rows with the batch details, so use a map to handle the duplicates
                 Batch batch = hmBatches.get(new Integer(batchId));
@@ -686,6 +705,8 @@ public class MySqlDataLayer implements DataLayerI {
                     batch.setInsertDate(insertDate);
                     batch.setSequenceNumber(sequenceNumber);
                     batch.setCompleteDate(completeDate);
+                    batch.setExtractDate(extractDate);
+                    batch.setExtractCutoff(extractCutoff);
 
                     ret.add(batch);
                     hmBatches.put(new Integer(batchId), batch);
@@ -799,7 +820,7 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "SELECT bs.batch_split_id, bs.batch_id, bs.local_relative_path, bs.organisation_id, bs.is_bulk"
+            String sql = "SELECT bs.batch_split_id, bs.batch_id, bs.local_relative_path, bs.organisation_id, bs.is_bulk, bs.has_patient_data"
                     + " FROM batch_split bs"
                     + " INNER JOIN batch b"
                     + " ON b.batch_id = bs.batch_id"
@@ -826,6 +847,7 @@ public class MySqlDataLayer implements DataLayerI {
                 batchSplit.setLocalRelativePath(rs.getString(col++));
                 batchSplit.setOrganisationId(rs.getString(col++));
                 batchSplit.setBulk(rs.getBoolean(col++));
+                batchSplit.setHasPatientData(rs.getBoolean(col++));
 
                 ret.add(batchSplit);
                 batchIds.add(new Integer(batchSplit.getBatchId()));
@@ -1017,7 +1039,7 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "INSERT INTO batch_split (batch_id, configuration_id, local_relative_path, organisation_id, is_bulk) VALUES (?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO batch_split (batch_id, configuration_id, local_relative_path, organisation_id, is_bulk, has_patient_data) VALUES (?, ?, ?, ?, ?, ?)";
 
             ps = connection.prepareStatement(sql);
 
@@ -1027,6 +1049,7 @@ public class MySqlDataLayer implements DataLayerI {
             ps.setString(col++, batchSplit.getLocalRelativePath());
             ps.setString(col++, batchSplit.getOrganisationId());
             ps.setBoolean(col++, batchSplit.isBulk());
+            ps.setBoolean(col++, batchSplit.isHasPatientData());
 
             ps.executeUpdate();
 
@@ -1064,7 +1087,7 @@ public class MySqlDataLayer implements DataLayerI {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
-            String sql = "SELECT batch_split_id, batch_id, configuration_id, local_relative_path, organisation_id, have_notified, notification_date, is_bulk"
+            String sql = "SELECT batch_split_id, batch_id, configuration_id, local_relative_path, organisation_id, have_notified, notification_date, is_bulk, has_patient_data"
                         + " FROM batch_split"
                         + " WHERE batch_id = ?";
             ps = connection.prepareStatement(sql);
@@ -1084,6 +1107,7 @@ public class MySqlDataLayer implements DataLayerI {
                 boolean haveNotified = rs.getBoolean(col++);
                 Date notificationDate = rs.getDate(col++);
                 boolean isBulk = rs.getBoolean(col++);
+                boolean hasPatientData = rs.getBoolean(col++);
 
                 BatchSplit batchSplit = new BatchSplit();
                 batchSplit.setBatchSplitId(batchSplitId);
@@ -1094,6 +1118,7 @@ public class MySqlDataLayer implements DataLayerI {
                 batchSplit.setHaveNotified(haveNotified);
                 batchSplit.setNotificationDate(notificationDate);
                 batchSplit.setBulk(isBulk);
+                batchSplit.setHasPatientData(hasPatientData);
 
                 ret.add(batchSplit);
             }

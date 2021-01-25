@@ -1,9 +1,12 @@
 package org.endeavourhealth.sftpreader.implementations.bhrut;
 
+import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.barts.utility.BartsConstants;
+import org.endeavourhealth.sftpreader.implementations.barts.utility.BartsHelper;
 import org.endeavourhealth.sftpreader.implementations.bhrut.utility.BhrutConstants;
 import org.endeavourhealth.sftpreader.implementations.bhrut.utility.BhrutHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -17,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public class BhrutBulkDetector extends SftpBulkDetector {
@@ -31,8 +35,7 @@ public class BhrutBulkDetector extends SftpBulkDetector {
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
-        String patientPMIFilePath
-                = BhrutHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, BhrutConstants.FILE_ID_PMI);
+        String patientPMIFilePath = BhrutHelper.findFileInPermDir(instanceConfiguration, dbConfiguration, batch, BhrutConstants.FILE_ID_PMI);
 
         //a bulk will always contain a PMI file
         if (patientPMIFilePath == null) {
@@ -71,6 +74,31 @@ public class BhrutBulkDetector extends SftpBulkDetector {
         }
 
         return true;
+    }
+
+    /**
+     * for Bhrut, check just the main file types
+     */
+    @Override
+    public boolean hasPatientData(Batch batch, BatchSplit batchSplit, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+
+        Set<String> fileTypeIds = new HashSet<>();
+        fileTypeIds.add(BhrutConstants.FILE_ID_PMI);
+        fileTypeIds.add(BhrutConstants.FILE_ID_AE_ATTENDANCES);
+        fileTypeIds.add(BhrutConstants.FILE_ID_INPATIENT_SPELLS);
+
+        for (String fileTypeId: fileTypeIds) {
+
+            String path = BhrutHelper.findFileInPermDir(instanceConfiguration, dbConfiguration, batch, fileTypeId);
+            if (!Strings.isNullOrEmpty(path)) {
+                boolean isEmpty = isFileEmpty(path, BhrutConstants.CSV_FORMAT.withHeader());
+                if (!isEmpty) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static void validateDataUpdateStatusStrValue(String actionStr) throws Exception {

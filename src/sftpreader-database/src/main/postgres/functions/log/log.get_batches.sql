@@ -19,7 +19,9 @@ begin
 			b.local_relative_path,
 			b.insert_date,
 			b.sequence_number,
-			b.complete_date
+			b.complete_date,
+			b.extract_date,
+			b.extract_cutoff
 		from log.batch b
 		where b.batch_id in
 		(

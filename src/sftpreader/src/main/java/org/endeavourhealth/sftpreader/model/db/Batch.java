@@ -82,15 +82,17 @@ public class Batch {
         return extractDate;
     }
 
-    public void setExtractDate(Date extractDate) {
+    public Batch setExtractDate(Date extractDate) {
         this.extractDate = extractDate;
+        return this;
     }
 
     public Date getExtractCutoff() {
         return extractCutoff;
     }
 
-    public void setExtractCutoff(Date extractCutoff) {
+    public Batch setExtractCutoff(Date extractCutoff) {
         this.extractCutoff = extractCutoff;
+        return this;
     }
 }

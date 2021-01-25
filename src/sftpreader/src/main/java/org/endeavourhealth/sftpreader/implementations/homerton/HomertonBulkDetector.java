@@ -14,4 +14,10 @@ public class HomertonBulkDetector extends SftpBulkDetector {
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
         return false;
     }
+
+    @Override
+    public boolean hasPatientData(Batch batch, BatchSplit batchSplit, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+        throw new Exception("TODO - calculate if Homerton extract contains patient data");
+        //return false;
+    }
 }

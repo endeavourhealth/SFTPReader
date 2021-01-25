@@ -6,6 +6,7 @@ create or replace function log.add_batch_split
 	_local_relative_path varchar,
 	_organisation_id varchar,
 	_is_bulk boolean,
+	_has_patient_data boolean
 )
 returns void
 as $$
@@ -17,7 +18,8 @@ begin
 		configuration_id,
 		local_relative_path,
 		organisation_id,
-		is_bulk
+		is_bulk,
+		has_patient_data
 	)
 	values
 	(
@@ -25,7 +27,8 @@ begin
 		_configuration_id,
 		_local_relative_path,
 		_organisation_id,
-		_is_bulk
+		_is_bulk,
+		_has_patient_data
 	);
 
 end;

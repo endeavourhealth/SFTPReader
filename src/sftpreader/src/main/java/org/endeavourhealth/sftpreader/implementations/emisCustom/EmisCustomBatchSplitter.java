@@ -6,6 +6,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisBatchSplitter;
+import org.endeavourhealth.sftpreader.implementations.emisCustom.utility.EmisCustomConstants;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.utilities.CsvSplitter;
@@ -20,10 +21,6 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
 
     public static final String SPLIT_FOLDER = "Split";
 
-    public static final CSVFormat CSV_FORMAT = CSVFormat.TDF
-                                                .withEscape((Character)null)
-                                                .withQuote((Character)null)
-                                                .withQuoteMode(QuoteMode.MINIMAL); //ideally want Quote Mode NONE, but validation in the library means we need to use this;
 
     @Override
     public List<BatchSplit> splitBatch(Batch batch, Batch lastCompleteBatch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
@@ -89,7 +86,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private void splitOriginalTermsFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, List<BatchSplit> batchSplits) throws Exception {
 
         //the original terms file doesn't have an org GUID, so split by the ODS code
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, true, CSV_FORMAT.withHeader(), "OrganisationOds");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, true, EmisCustomConstants.CSV_FORMAT.withHeader(), "OrganisationOds");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {
@@ -138,7 +135,7 @@ public class EmisCustomBatchSplitter extends SftpBatchSplitter {
     private void splitRegStatusFile(Batch batch, String srcFile, File dstDir, String sourcePermDirToCopyTo, DataLayerI db, List<BatchSplit> batchSplits) throws Exception {
 
         //split the file by org GUID
-        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, true, CSV_FORMAT.withHeader(), "OrganisationGuid");
+        CsvSplitter csvSplitter = new CsvSplitter(srcFile, dstDir, true, EmisCustomConstants.CSV_FORMAT.withHeader(), "OrganisationGuid");
         List<File> splitFiles = csvSplitter.go();
 
         for (File splitFile: splitFiles) {

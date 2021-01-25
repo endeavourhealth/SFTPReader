@@ -95,6 +95,16 @@ public class Main {
                     System.exit(0);
                 }
 
+                if (args[1].equalsIgnoreCase("PopulateExtractDates")) {
+                    boolean testMode = Boolean.parseBoolean(args[2]);
+                    String configurationId = null;
+                    if (args.length > 3) {
+                        configurationId = args[3];
+                    }
+                    populateExtractDates(testMode, configurationId);
+                    System.exit(0);
+                }
+
                 /*if (args[0].equalsIgnoreCase("TestOriginalTerms")) {
                     testOriginalTerms();
                     System.exit(0);
@@ -259,6 +269,20 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void populateExtractDates(boolean testMode, String configurationId) throws Exception {
+        LOG.debug("Populating Extract Dates for " + configurationId + " test mode = " + testMode);
+        try {
+
+            //get batches
+            //test last data date
+            //test has patient data
+
+            LOG.debug("Finished Populating Extract Dates for " + configurationId + " test mode = " + testMode);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     /*private static void fixTppOutOfOrderData(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
         LOG.debug("fixTppOutOfOrderData for " + configurationId + " testmode = " + testMode + " org regex " + odsCodeRegex);

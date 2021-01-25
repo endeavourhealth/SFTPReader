@@ -3,6 +3,7 @@ package org.endeavourhealth.sftpreader.implementations.vision.utility;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -15,10 +16,103 @@ import java.util.List;
 
 public class VisionHelper {
 
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT;
+    public static CSVFormat getCsvFormat(String fileTypeId) {
+        String[] cols = getCsvHeaders(fileTypeId);
+        return VisionConstants.CSV_FORMAT.withHeader(cols);
+    }
 
-    public static final String PATIENT_FILE_TYPE = "patient_data_extract";
-    public static final String JOURNAL_FILE_TYPE = "journal_data_extract";
+    private static String[] getCsvHeaders(String fileTypeId) {
+
+        if (fileTypeId.equals(VisionConstants.FILE_ID_PATIENT)) {
+            return new String[]{
+                    "PID",
+                    "REFERENCE",
+                    "DATE_OF_BIRTH",
+                    "SEX",
+                    "POSTCODE",
+                    "MARITAL_STATUS",
+                    "GP",
+                    "GP_USUAL",
+                    "ACTIVE",
+                    "REGISTERED_DATE",
+                    "REMOVED_DATE",
+                    "HA",
+                    "PCG",
+                    "SURGERY",
+                    "MILEAGE",
+                    "DISPENSING",
+                    "ETHNIC",
+                    "DATE_OF_DEATH",
+                    "PRACTICE",
+                    "SURNAME",
+                    "FORENAME",
+                    "TITLE",
+                    "NHS_NUMBER",
+                    "ADDRESS",
+                    "ADDRESS_1",
+                    "ADDRESS_2",
+                    "ADDRESS_3",
+                    "ADDRESS_4",
+                    "ADDRESS_5",
+                    "PHONE_NUMBER",
+                    "MOBILE_NUMBER",
+                    "EMAIL",
+                    "PRACT_NUMBER",
+                    "SERVICE_ID",
+                    "ACTION"
+            };
+
+        } else if (fileTypeId.equals(VisionConstants.FILE_ID_JOURNAL)) {
+            return new String[]{
+                    "PID",
+                    "ID",
+                    "DATE",
+                    "RECORDED_DATE",
+                    "CODE",
+                    "SNOMED_CODE",
+                    "BNF_CODE",
+                    "HCP",
+                    "HCP_TYPE",
+                    "GMS",
+                    "EPISODE",
+                    "TEXT",
+                    "RUBRIC",
+                    "DRUG_FORM",
+                    "DRUG_STRENGTH",
+                    "DRUG_PACKSIZE",
+                    "DMD_CODE",
+                    "IMMS_STATUS",
+                    "IMMS_COMPOUND",
+                    "IMMS_SOURCE",
+                    "IMMS_BATCH",
+                    "IMMS_REASON",
+                    "IMMS_METHOD",
+                    "IMMS_SITE",
+                    "ENTITY",
+                    "VALUE1_NAME",
+                    "VALUE1",
+                    "VALUE1_UNITS",
+                    "VALUE2_NAME",
+                    "VALUE2",
+                    "VALUE2_UNITS",
+                    "END_DATE",
+                    "TIME",
+                    "CONTEXT",
+                    "CERTAINTY",
+                    "SEVERITY",
+                    "LINKS",
+                    "LINKS_EXT",
+                    "SERVICE_ID",
+                    "ACTION",
+                    "SUBSET",
+                    "DOCUMENT_ID"
+            };
+
+        } else {
+            //there are a bunch of other Vision files, but I've only given the columns for the ones we need to know
+            throw new RuntimeException("Unexpected file type " + fileTypeId);
+        }
+    }
 
     /**
      * finds a Vision data file in the temporary directory (note that Vision files don't get split

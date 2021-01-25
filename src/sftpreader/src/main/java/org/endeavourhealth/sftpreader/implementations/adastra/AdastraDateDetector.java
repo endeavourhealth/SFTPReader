@@ -44,39 +44,14 @@ public class AdastraDateDetector extends SftpBatchDateDetector {
     public Date detectExtractCutoff(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
         //there is no clear indicator in Adastra data to tell us when an extract is from, and it varies from service to service (see SD-319)
         //so quickly scan through the CASE file to find the most recent datetime
-        String caseFilePath = AdastraHelper.findPreSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, AdastraConstants.FILE_ID_CASE);
+        String caseFilePath = AdastraHelper.findPreSplitFileInPermDir(instanceConfiguration, dbConfiguration, batch, AdastraConstants.FILE_ID_CASE);
         if (Strings.isNullOrEmpty(caseFilePath)) {
             LOG.warn("No CASE file found in Adastra batch " + batch.getBatchId() + " so cannot calculate extract cutoff");
             return null;
         }
 
-        FileInputStream fis = new FileInputStream(caseFilePath);
-        BufferedInputStream bis = new BufferedInputStream(fis);
-        InputStreamReader reader = new InputStreamReader(bis, Charset.defaultCharset());
-
         CSVFormat csvFormat = AdastraHelper.getCsvFormat(AdastraConstants.FILE_ID_CASE);
-        CSVParser csvParser = new CSVParser(reader, csvFormat);
-
-        //date format used in SRManifest
-        DateFormat dateFormat = new SimpleDateFormat(AdastraConstants.DATE_TIME_FORMAT);
-
-        Date ret = null;
-
-        try {
-            Iterator<CSVRecord> csvIterator = csvParser.iterator();
-
-            while (csvIterator.hasNext()) {
-                CSVRecord csvRecord = csvIterator.next();
-
-                ret = findLatestDate(ret, csvRecord, "StartDateTime", dateFormat);
-                ret = findLatestDate(ret, csvRecord, "EndDateTime", dateFormat);
-
-            }
-        } finally {
-            csvParser.close();
-        }
-
-        return ret;
+        return findLatestDateFromFile(caseFilePath, csvFormat, AdastraConstants.DATE_TIME_FORMAT, "StartDateTime", "EndDateTime");
     }
 
 }

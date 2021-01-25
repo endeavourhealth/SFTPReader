@@ -1,5 +1,7 @@
 package org.endeavourhealth.sftpreader.implementations.emis;
 
+import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FilenameUtils;
@@ -7,6 +9,7 @@ import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
+import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.BatchSplit;
@@ -102,5 +105,31 @@ public class EmisBulkDetector extends SftpBulkDetector {
         }
 
         return true;
+    }
+
+    /**
+     * for Emis, check four specific file types to see if there's any patient data.
+     */
+    @Override
+    public boolean hasPatientData(Batch batch, BatchSplit batchSplit, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+
+        Set<String> fileTypeIds = new HashSet<>();
+        fileTypeIds.add(EmisConstants.ADMIN_PATIENT_FILE_TYPE);
+        fileTypeIds.add(EmisConstants.CARE_RECORD_CONSULTATION_FILE_TYPE);
+        fileTypeIds.add(EmisConstants.CARE_RECORD_OBSERVATION_FILE_TYPE);
+        fileTypeIds.add(EmisConstants.PRESCRIBING_ISSUE_RECORD);
+
+        for (String fileTypeId: fileTypeIds) {
+
+            String path = EmisHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, fileTypeId);
+            if (!Strings.isNullOrEmpty(path)) {
+                boolean isEmpty = isFileEmpty(path, EmisConstants.CSV_FORMAT.withHeader());
+                if (!isEmpty) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

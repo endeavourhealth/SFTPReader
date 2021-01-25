@@ -6,27 +6,56 @@ import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.adastra.AdastraFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.tpp.TppFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
-import org.endeavourhealth.sftpreader.model.db.Batch;
-import org.endeavourhealth.sftpreader.model.db.BatchFile;
-import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
-import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.List;
 
 public class AdastraHelper {
     private static final Logger LOG = LoggerFactory.getLogger(AdastraHelper.class);
 
-    public static String findPreSplitFileInTempDir(DbInstanceEds instanceConfiguration,
+    public static String findPreSplitFileInPermDir(DbInstanceEds instanceConfiguration,
+                                                   DbConfiguration dbConfiguration,
+                                                   Batch batch,
+                                                   String fileIdentifier) throws Exception {
+
+        String tempStoragePath = instanceConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/endeavour
+        String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/ADASTRA
+        String batchPath = batch.getLocalRelativePath(); //e.g. 2021-01-21T00.00.02
+
+        String dirPath = FileHelper.concatFilePath(tempStoragePath, configurationPath, batchPath);
+
+        List<String> files = FileHelper.listFilesInSharedStorage(dirPath);
+
+        if (files == null || files.isEmpty()) {
+            throw new SftpValidationException("Failed to find any files in " + dirPath);
+        }
+
+        for (String filePath: files) {
+            String name = FilenameUtils.getName(filePath);
+            RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Adastra filename parsing
+            AdastraFilenameParser parser = new AdastraFilenameParser(false, r, dbConfiguration);
+            String fileType = parser.generateFileTypeIdentifier();
+            if (fileType.equals(fileIdentifier)) {
+                return filePath;
+            }
+        }
+
+        return null;
+    }
+
+    /*public static String findPreSplitFileInTempDir(DbInstanceEds instanceConfiguration,
                                                    DbConfiguration dbConfiguration,
                                                    Batch batch,
                                                    String fileIdentifier) throws SftpValidationException {
 
-        String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. s3://<bucket>/endeavour
+        String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. /sftpreader/temp
         String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/ADASTRA
         String batchPath = batch.getLocalRelativePath(); //e.g. 2021-01-21T00.00.02
 
@@ -38,19 +67,55 @@ public class AdastraHelper {
 
         for (File f: tempDir.listFiles()) {
             String name = f.getName();
-            String ext = FilenameUtils.getExtension(name);
-            if (ext.equalsIgnoreCase("csv")) {
-
-                RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Adastra filename parsing
-                AdastraFilenameParser parser = new AdastraFilenameParser(false, r, dbConfiguration);
-                String fileType = parser.generateFileTypeIdentifier();
-                if (fileType.equals(fileIdentifier)) {
-                    return f.getAbsolutePath();
-                }
+            RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Adastra filename parsing
+            AdastraFilenameParser parser = new AdastraFilenameParser(false, r, dbConfiguration);
+            String fileType = parser.generateFileTypeIdentifier();
+            if (fileType.equals(fileIdentifier)) {
+                return f.getAbsolutePath();
             }
         }
 
         return null;
+    }*/
+
+    /**
+     * finds the file of the given "type" in the temp directory structure, under the "split" directory
+     */
+    public static String findPostSplitFileInTempDir(DbInstanceEds instanceConfiguration,
+                                                    DbConfiguration dbConfiguration,
+                                                    Batch batch,
+                                                    BatchSplit batchSplit,
+                                                    String fileIdentifier) throws SftpValidationException {
+
+        String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. /sftpReader/tmp
+        String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/Adastra/YDDH3_08W
+        String batchSplitPath = batchSplit.getLocalRelativePath(); //e.g. 2019-12-09T00.15.00/Split/E87065/
+
+        String tempPath = FilenameUtils.concat(tempStoragePath, configurationPath);
+        tempPath = FilenameUtils.concat(tempPath, batchSplitPath);
+
+        File tempDir = new File(tempPath);
+        if (!tempDir.exists()) {
+            throw new SftpValidationException("Temp directory " + tempDir + " doesn't exist");
+        }
+
+        String filePath = null;
+
+        for (File f: tempDir.listFiles()) {
+            String name = f.getName();
+            String ext = FilenameUtils.getExtension(name);
+            if (ext.equalsIgnoreCase("csv")) {
+                RemoteFile r = new RemoteFile(f.getAbsolutePath(), -1, null); //size and modification date aren't needed for Adastra filename parsing
+                AdastraFilenameParser parser = new AdastraFilenameParser(false, r, dbConfiguration);
+                String fileType = parser.generateFileTypeIdentifier();
+                if (fileType.equals(fileIdentifier)) {
+                    filePath = f.getAbsolutePath();
+                    break;
+                }
+            }
+        }
+
+        return filePath;
     }
 
 

@@ -37,29 +37,19 @@ public class BartsDateDetector extends SftpBatchDateDetector {
         //because of the mess of CDE and CDS files, we only use a DATE for the barts batch identifer, so shouldn't just
         //use that as the extract date. For the purposes of simplicity, we look for the CDE PPATI file(s) and
         //find the extract date field from that file
-        List<String> ppatiPaths = BartsHelper.findFilesInTempDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_PPATI);
+        List<String> ppatiPaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_PPATI);
 
         Date ret = null;
-        DateFormat dateFormat = new SimpleDateFormat(BartsConstants.CDE_DATE_TIME_FORMAT);
+
+        CSVFormat csvFormat = BartsConstants.CDE_CSV_FORMAT.withHeader();
 
         for (String ppatiPath: ppatiPaths) {
 
-            FileInputStream fis = new FileInputStream(ppatiPath);
-            BufferedInputStream bis = new BufferedInputStream(fis);
-            InputStreamReader reader = new InputStreamReader(bis, Charset.defaultCharset());
-
-            CSVFormat csvFormat = BartsConstants.CDE_CSV_FORMAT;
-            CSVParser csvParser = new CSVParser(reader, csvFormat);
-
-            try {
-                Iterator<CSVRecord> csvIterator = csvParser.iterator();
-
-                while (csvIterator.hasNext()) {
-                    CSVRecord csvRecord = csvIterator.next();
-                    ret = findLatestDate(ret, csvRecord, "EXTRACT_DT_TM", dateFormat);
-                }
-            } finally {
-                csvParser.close();
+            Date fileDate = findLatestDateFromFile(ppatiPath, csvFormat, BartsConstants.CDE_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
+            if (fileDate != null
+                    && (ret == null
+                    || fileDate.after(ret))) {
+                ret = fileDate;
             }
         }
 

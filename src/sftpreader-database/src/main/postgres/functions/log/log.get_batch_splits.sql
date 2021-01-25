@@ -3,7 +3,8 @@ CREATE OR REPLACE FUNCTION log.get_batch_splits
 (
   _batch_split_ids integer[]
 )
-RETURNS SETOF refcursor
+  RETURNS SETOF refcursor
+    LANGUAGE 'plpgsql'
 AS $BODY$
 declare
 	batch_split refcursor;
@@ -17,7 +18,8 @@ begin
 			b.batch_id,
 			b.local_relative_path,
 			b.organisation_id,
-			b.is_bulk
+			b.is_bulk,
+			b.has_patient_data
 		from log.batch_split b
 		where b.batch_split_id in
 		(

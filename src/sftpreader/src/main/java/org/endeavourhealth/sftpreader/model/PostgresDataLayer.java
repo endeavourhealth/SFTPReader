@@ -294,6 +294,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                     .setLocalRelativePath(resultSet.getString("local_relative_path"))
                     .setOrganisationId(resultSet.getString("organisation_id"))
                     .setBulk(resultSet.getBoolean("is_bulk"))
+                    .setHasPatientData(resultSet.getBoolean("has_patient_data"))
                     .setConfigurationId(configurationId));
 
         List<Batch> batches = populateBatches(pgStoredProc);
@@ -327,7 +328,9 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                         .setLocalRelativePath(resultSet.getString("local_relative_path"))
                         .setInsertDate(getDate(resultSet, "insert_date"))
                         .setSequenceNumber(PgResultSet.getInteger(resultSet, "sequence_number"))
-                        .setCompleteDate(getDate(resultSet, "complete_date")));
+                        .setCompleteDate(getDate(resultSet, "complete_date"))
+                        .setExtractDate(getDate(resultSet, "extract_date"))
+                        .setExtractCutoff(getDate(resultSet, "extract_cutoff")));
 
         List<BatchFile> batchFiles = pgStoredProc.executeMultiQuery(resultSet ->
                 new BatchFile()
@@ -350,7 +353,14 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         return batches;
     }
 
-
+    private static Date getDate(ResultSet resultSet, String columnName) throws SQLException {
+        java.sql.Timestamp ts = resultSet.getTimestamp(columnName);
+        if (resultSet.wasNull()) {
+            return null;
+        } else {
+            return new java.util.Date(ts.getTime());
+        }
+    }
 
     public void setBatchAsComplete(Batch batch) throws Exception {
 
@@ -435,7 +445,8 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 .addParameter("_configuration_id", batchSplit.getConfigurationId())
                 .addParameter("_local_relative_path", batchSplit.getLocalRelativePath())
                 .addParameter("_organisation_id", batchSplit.getOrganisationId())
-                .addParameter("_is_bulk", batchSplit.isBulk());
+                .addParameter("_is_bulk", batchSplit.isBulk())
+                .addParameter("_has_patient_data", batchSplit.isHasPatientData());
 
         pgStoredProc.execute();
     }
@@ -502,14 +513,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         }
     }
 
-    private static Date getDate(ResultSet resultSet, String columnName) throws SQLException {
-        Date d = resultSet.getDate(columnName);
-        if (resultSet.wasNull()) {
-            return null;
-        } else {
-            return d;
-        }
-    }
+
 
     public List<BatchSplit> getBatchSplitsForBatch(int queryBatchId) throws Exception {
         Connection connection = null;
@@ -518,7 +522,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
             connection = getConnection();
 
             Statement statement = connection.createStatement();
-            String sql = "SELECT batch_split_id, batch_id, configuration_id, local_relative_path, organisation_id, have_notified, notification_date, is_bulk"
+            String sql = "SELECT batch_split_id, batch_id, configuration_id, local_relative_path, organisation_id, have_notified, notification_date, is_bulk, has_patient_data"
                     + " FROM log.batch_split"
                     + " WHERE batch_id = " + queryBatchId;
             ResultSet rs = statement.executeQuery(sql);
@@ -535,6 +539,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 boolean haveNotified = rs.getBoolean(col++);
                 Date notificationDate = rs.getDate(col++);
                 boolean isBulk = rs.getBoolean(col++);
+                boolean hasPatientData = rs.getBoolean(col++);
 
                 BatchSplit batchSplit = new BatchSplit();
                 batchSplit.setBatchSplitId(batchSplitId);
@@ -545,6 +550,7 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
                 batchSplit.setHaveNotified(haveNotified);
                 batchSplit.setNotificationDate(notificationDate);
                 batchSplit.setBulk(isBulk);
+                batchSplit.setHasPatientData(hasPatientData);
 
                 ret.add(batchSplit);
             }

@@ -53,7 +53,7 @@ public class EdsSender {
     }
 
     public static EdsSenderResponse notifyEds(String edsUrl, boolean useKeycloak, String outboundMessage,
-                                              boolean isBulk, Long fileTotalSize,
+                                              boolean isBulk, boolean hasPatientData, Long fileTotalSize,
                                               Date extractDate, Date extractCutoff) throws EdsSenderHttpErrorResponseException, IOException
     {
         RequestConfig requestConfig = RequestConfig
@@ -72,6 +72,9 @@ public class EdsSender {
             }
             if (isBulk) {
                 httpPost.addHeader(HeaderKeys.IsBulk, "true");
+            }
+            if (!hasPatientData) {
+                httpPost.addHeader(HeaderKeys.HasPatientData, "false"); //only add this flag if NO patient data is found
             }
             if (fileTotalSize != null) {
                 httpPost.addHeader(HeaderKeys.TotalFileSize, "" + fileTotalSize);
