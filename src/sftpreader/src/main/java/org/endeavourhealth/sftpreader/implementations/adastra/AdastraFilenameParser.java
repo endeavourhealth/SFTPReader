@@ -1,5 +1,6 @@
 package org.endeavourhealth.sftpreader.implementations.adastra;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.endeavourhealth.sftpreader.implementations.SftpFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
@@ -19,7 +20,6 @@ public class AdastraFilenameParser extends SftpFilenameParser {
 
     private LocalDateTime extractDateTime;
     private String fileContentTypeIdentifier;
-    private String nacsCode;
     private boolean isFileNeeded;
 
     private static final Logger LOG = LoggerFactory.getLogger(AdastraFilenameParser.class);
@@ -70,6 +70,13 @@ public class AdastraFilenameParser extends SftpFilenameParser {
             return;
         }
 
+        //we get partial files with extension filepart, which are artifacts of copying to our SFTP server, so ignore them
+        String ext = FilenameUtils.getExtension(fileName);
+        if (ext.equalsIgnoreCase("filepart")) {
+            isFileNeeded = false;
+            return;
+        }
+
         //this will be a .csv extract file
         if (!StringUtils.endsWith(fileName, ".csv"))
             throw new SftpFilenameParseException("Filename does not end with .csv");
@@ -85,7 +92,6 @@ public class AdastraFilenameParser extends SftpFilenameParser {
         String nacsCode = parts [1];
         if (StringUtils.isEmpty(nacsCode))
             throw new SftpFilenameParseException("NacsCode is empty");
-        this.nacsCode = nacsCode;
 
         String fileContentType = parts [2];
         if (StringUtils.isEmpty(fileContentType))
