@@ -367,15 +367,19 @@ public class PostgresDataLayer implements DataLayerI, IDBDigestLogger {
         Connection connection = getConnection();
         PreparedStatement ps = null;
         try {
+            //had to change to use SQL to set the complete date because the EC2 server datetime is a minute
+            //behind the database datetime, which is used to set the batch insert date. If we try to set
+            //a batch complete with a complete datetime BEFORE the insert datetime, then one of the constraints is failed
             String sql = "UPDATE log.batch"
-                    + " SET is_complete = ?, complete_date = ?, extract_date = ?, extract_cutoff = ?"
+                    //+ " SET is_complete = ?, complete_date = ?, extract_date = ?, extract_cutoff = ?"
+                    + " SET is_complete = true, complete_date = now(), extract_date = ?, extract_cutoff = ?"
                     + " WHERE batch_id = ?;";
 
             ps = connection.prepareStatement(sql);
 
             int col = 1;
-            ps.setBoolean(col++, true);
-            ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));
+            /*ps.setBoolean(col++, true);
+            ps.setTimestamp(col++, new java.sql.Timestamp(new Date().getTime()));*/
             if (batch.getExtractDate() != null) {
                 ps.setTimestamp(col++, new java.sql.Timestamp(batch.getExtractDate().getTime()));
             } else {
