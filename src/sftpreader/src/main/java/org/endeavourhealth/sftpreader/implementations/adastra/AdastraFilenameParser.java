@@ -103,6 +103,8 @@ public class AdastraFilenameParser extends SftpFilenameParser {
         if (StringUtils.isEmpty(extractDateTime))
             throw new SftpFilenameParseException("Extract date/time is empty");
 
+        //NOTE: Adastra use the time component to differentiate the different feeds, e.g. 20210125000002, 20210125000003
+        //the date component IS the date of the extract, but the time component is NOT.
         this.extractDateTime = LocalDateTime.parse(extractDateTime, DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
         this.isFileNeeded = true;
