@@ -838,7 +838,7 @@ public class SftpReaderTask implements Runnable {
         /*String softwareContentType = dbInstanceConfiguration.getEdsConfiguration().getSoftwareContentType();
         String softwareVersion = dbInstanceConfiguration.getEdsConfiguration().getSoftwareVersion();*/
 
-        String outboundMessage = "''";
+        String outboundMessage = null;
 
         try {
             //TODO - SD-184 - add DPA check here, and if it fails, throw an exception containing "no DPA exists"
