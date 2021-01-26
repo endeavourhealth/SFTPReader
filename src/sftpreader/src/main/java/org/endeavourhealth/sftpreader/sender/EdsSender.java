@@ -23,7 +23,7 @@ import java.util.*;
 public class EdsSender {
 
     private static final String EDS_ENVELOPE_TEMPLATE_FILENAME = "EdsEnvelopeTemplate.xml";
-    private static final int HTTP_REQUEST_TIMEOUT_MILLIS = 30 * 1000;
+    public static final int HTTP_REQUEST_TIMEOUT_MILLIS = 30 * 1000;
 
     private EdsSender() {
     }

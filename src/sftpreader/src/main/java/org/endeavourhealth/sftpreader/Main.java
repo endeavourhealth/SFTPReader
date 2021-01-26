@@ -8,8 +8,10 @@ import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.http.Header;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
+import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
@@ -18,6 +20,8 @@ import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCac
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
+import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
+import org.endeavourhealth.sftpreader.sender.DpaCheck;
 import org.endeavourhealth.sftpreader.utilities.PgpUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +106,12 @@ public class Main {
                         configurationId = args[3];
                     }
                     populateExtractDates(testMode, configurationId);
+                    System.exit(0);
+                }
+
+                if (args[1].equalsIgnoreCase("TestDPA")) {
+                    String odsCode = args[2];
+                    testDpa(odsCode);
                     System.exit(0);
                 }
 
@@ -269,6 +279,44 @@ public class Main {
             System.exit(-1);
         }
 	}
+
+    private static void testDpa(String odsCode) {
+        LOG.debug("Testing DPA for " + odsCode);
+        try {
+
+            DbInstance dbInstanceConfiguration = configuration.getInstanceConfiguration();
+            DbInstanceEds edsConfiguration = dbInstanceConfiguration.getEdsConfiguration();
+
+            if (edsConfiguration.isUseKeycloak()) {
+                LOG.trace("Initialising keycloak at: {}", edsConfiguration.getKeycloakTokenUri());
+
+                try {
+                    KeycloakClient.init(edsConfiguration.getKeycloakTokenUri(),
+                            edsConfiguration.getKeycloakRealm(),
+                            edsConfiguration.getKeycloakUsername(),
+                            edsConfiguration.getKeycloakPassword(),
+                            edsConfiguration.getKeycloakClientId());
+
+                    Header response = KeycloakClient.instance().getAuthorizationHeader();
+                    LOG.trace("Keycloak authorization header is {}: {}", response.getName(), response.getValue());
+
+                } catch (IOException e) {
+                    throw new SftpReaderException("Error initialising keycloak", e);
+                }
+
+            } else {
+                LOG.trace("Keycloak is not enabled");
+            }
+
+            String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
+
+            DpaCheck.checkForDpa(odsCode, edsConfiguration.isUseKeycloak(), edsUrl);
+
+            LOG.debug("Finished Testing DPA for " + odsCode);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
 
     private static void populateExtractDates(boolean testMode, String configurationId) throws Exception {
         LOG.debug("Populating Extract Dates for " + configurationId + " test mode = " + testMode);

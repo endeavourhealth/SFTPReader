@@ -3,19 +3,29 @@ package org.endeavourhealth.sftpreader;
 import com.jcraft.jsch.JSchException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.Header;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.MetricsHelper;
 import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.common.utility.StreamExtension;
+import org.endeavourhealth.core.database.dal.audit.models.HeaderKeys;
 import org.endeavourhealth.sftpreader.implementations.*;
 import org.endeavourhealth.sftpreader.model.ConfigurationLockI;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
+import org.endeavourhealth.sftpreader.sender.DpaCheck;
 import org.endeavourhealth.sftpreader.sender.EdsSender;
 import org.endeavourhealth.sftpreader.sender.EdsSenderHttpErrorResponseException;
 import org.endeavourhealth.sftpreader.sender.EdsSenderResponse;
@@ -27,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -837,12 +848,17 @@ public class SftpReaderTask implements Runnable {
         String softwareVersion = dbConfiguration.getSoftwareVersion();
         /*String softwareContentType = dbInstanceConfiguration.getEdsConfiguration().getSoftwareContentType();
         String softwareVersion = dbInstanceConfiguration.getEdsConfiguration().getSoftwareVersion();*/
+        String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
+        boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
 
         String outboundMessage = null;
 
         try {
-            //TODO - SD-184 - add DPA check here, and if it fails, throw an exception containing "no DPA exists"
-
+            //SD-184 before we start throwing data at DDS we should check if we have a DPA, otherwise it'll be rejected anyway
+            boolean hasDpa = DpaCheck.checkForDpa(organisationId, useKeycloak, edsUrl);
+            if (!hasDpa) {
+                throw new Exception("Skipping posting to Messaging API because no DPA exists");
+            }
 
             SftpNotificationCreator sftpNotificationCreator = ImplementationActivator.createSftpNotificationCreator(dbConfiguration);
             SftpNotificationCreator.PayloadWrapper messagePayload = sftpNotificationCreator.createNotificationMessage(organisationId, db, dbInstanceConfiguration.getEdsConfiguration(), dbConfiguration, unnotifiedBatchSplit);
@@ -859,8 +875,6 @@ public class SftpReaderTask implements Runnable {
             } else {
                 outboundMessage = EdsSender.buildEnvelope(messageId, organisationId, softwareContentType, softwareVersion, messagePayload.getPayload());
 
-                String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
-                boolean useKeycloak = dbInstanceConfiguration.getEdsConfiguration().isUseKeycloak();
                 boolean isBulk = unnotifiedBatchSplit.isBulk();
                 boolean hasPatientData = unnotifiedBatchSplit.isHasPatientData();
                 Long totalSize = messagePayload.getTotalSize();
