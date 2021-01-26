@@ -48,6 +48,7 @@ public abstract class SftpBatchDateDetector {
 
         //date format used in SRManifest
         DateFormat dateFormat = new SimpleDateFormat(dateFormatStr);
+        Date now = new Date();
 
         Date ret = null;
 
@@ -58,7 +59,7 @@ public abstract class SftpBatchDateDetector {
                 CSVRecord csvRecord = csvIterator.next();
 
                 for (String colToCheck: colsToCheck) {
-                    ret = findLatestDateForCell(ret, csvRecord, colToCheck, dateFormat);
+                    ret = findLatestDateForCell(ret, csvRecord, colToCheck, dateFormat, now);
                 }
             }
         } finally {
@@ -68,19 +69,27 @@ public abstract class SftpBatchDateDetector {
         return ret;
     }
 
-    protected Date findLatestDateForCell(Date currentLatest, CSVRecord csvRecord, String colName, DateFormat dateFormat) throws Exception {
+    private Date findLatestDateForCell(Date currentLatest, CSVRecord csvRecord, String colName, DateFormat dateFormat, Date now) throws Exception {
 
         String val = csvRecord.get(colName);
-        if (Strings.isNullOrEmpty(val)) {
+        if (Strings.isNullOrEmpty(val)
+                || val.equals("\u0000")) { //need to check for "NULL" character due to BHRUT using it in place of empty fields
             return currentLatest;
         }
 
         Date d = dateFormat.parse(val);
-        if (currentLatest == null
-                || d.after(currentLatest)) {
-            return d;
-        } else {
+
+        //any future date should be ignored
+        if (d.after(now)) {
             return currentLatest;
         }
+
+        //if the newly found date is older than the last best one we found then stick with the later one
+        if (currentLatest != null
+                && currentLatest.after(d)) {
+            return currentLatest;
+        }
+
+        return d;
     }
 }
