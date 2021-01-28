@@ -17,6 +17,9 @@ import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
 import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
 import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCache;
+import org.endeavourhealth.core.database.rdbms.ConnectionManager;
+import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
+import org.endeavourhealth.sftpreader.implementations.SftpBatchDateDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
@@ -27,6 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 
@@ -310,9 +316,9 @@ public class Main {
 
             String edsUrl = dbInstanceConfiguration.getEdsConfiguration().getEdsUrl();
 
-            DpaCheck.checkForDpa(odsCode, edsConfiguration.isUseKeycloak(), edsUrl);
+            boolean hasDpa = DpaCheck.checkForDpa(odsCode, edsConfiguration.isUseKeycloak(), edsUrl);
 
-            LOG.debug("Finished Testing DPA for " + odsCode);
+            LOG.debug("Finished Testing DPA for " + odsCode + " -> has DPA = " + hasDpa);
         } catch (Throwable t) {
             LOG.error("", t);
         }
@@ -321,10 +327,83 @@ public class Main {
     private static void populateExtractDates(boolean testMode, String configurationId) throws Exception {
         LOG.debug("Populating Extract Dates for " + configurationId + " test mode = " + testMode);
         try {
+            Connection conn = null;
+            PreparedStatement ps = null;
+            try {
+                conn = ConnectionManager.getSftpReaderNonPooledConnection();
 
-            //get batches
-            //test last data date
-            //test has patient data
+                String sql = null;
+                if (ConnectionManager.isPostgreSQL(conn)) {
+                    sql = "UPDATE log.batch SET extract_date = ?, extract_cutoff = ? WHERE batch_id = ?";
+                } else {
+                    sql = "UPDATE batch SET extract_date = ?, extract_cutoff = ? WHERE batch_id = ?";
+                }
+                ps = conn.prepareStatement(sql);
+
+                DbConfiguration dbConfiguration = null;
+                for (DbConfiguration c : configuration.getConfigurations()) {
+                    if (c.getConfigurationId().equals(configurationId)) {
+                        dbConfiguration = c;
+                        break;
+                    }
+                }
+                if (dbConfiguration == null) {
+                    throw new Exception("Failed to find configuration " + configurationId);
+                }
+
+                SftpBatchDateDetector dateDetector = ImplementationActivator.createSftpDateDetector(dbConfiguration);
+
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+                DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+                DataLayerI dataLayer = configuration.getDataLayer();
+                List<Batch> batches = dataLayer.getAllBatches(configurationId);
+                LOG.debug("Found " + batches.size() + " batches");
+
+                //ensure batches are sorted properly
+                batches.sort((o1, o2) -> {
+                    Integer i1 = o1.getSequenceNumber();
+                    Integer i2 = o2.getSequenceNumber();
+                    return i1.compareTo(i2);
+                });
+
+                for (Batch b: batches) {
+
+                    if (!testMode) {
+                        if (b.getExtractDate() != null) {
+                            LOG.debug("Skipping batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " as extract date already set");
+                            continue;
+                        }
+                    }
+
+                    Date extractDate = dateDetector.detectExtractDate(b, configuration.getDataLayer(), edsConfiguration, dbConfiguration);
+                    b.setExtractDate(extractDate);
+
+                    Date extractCutoff = dateDetector.detectExtractCutoff(b, configuration.getDataLayer(), edsConfiguration, dbConfiguration);
+                    b.setExtractCutoff(extractCutoff);
+                    LOG.debug("Batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " has extract date " + simpleDateFormat.format(extractDate) + " and cutoff " + simpleDateFormat.format(extractCutoff));
+
+                    if (!testMode) {
+                        int col = 1;
+                        ps.setTimestamp(col++, new java.sql.Timestamp(extractDate.getTime()));
+                        ps.setTimestamp(col++, new java.sql.Timestamp(extractCutoff.getTime()));
+                        ps.setInt(col++, b.getBatchId());
+                        ps.executeUpdate();
+                        conn.commit();
+                    }
+                }
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+            } finally {
+                if (ps != null) {
+                    ps.close();
+                }
+                conn.close();
+            }
+
 
             LOG.debug("Finished Populating Extract Dates for " + configurationId + " test mode = " + testMode);
         } catch (Throwable t) {
