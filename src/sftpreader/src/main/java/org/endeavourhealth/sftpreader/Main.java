@@ -23,6 +23,7 @@ import org.endeavourhealth.sftpreader.implementations.SftpBatchDateDetector;
 import org.endeavourhealth.sftpreader.implementations.adastra.AdastraDateDetector;
 import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraConstants;
 import org.endeavourhealth.sftpreader.implementations.barts.BartsDateDetector;
+import org.endeavourhealth.sftpreader.implementations.barts.utility.BartsConstants;
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutDateDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppDateDetector;
@@ -418,38 +419,13 @@ public class Main {
                         }
 
                     } else if (dateDetector instanceof AdastraDateDetector) {
-
-                        throw new Exception("TODO");
-       /*                 for (BatchFile batchFile: b.getBatchFiles()) {
-                            String fileId = batchFile.getFileTypeIdentifier();
-                            if (fileId.equals(AdastraConstants.FILE_ID_CASE)) {
-
-                                String fileName = batchFile.getFilename();
-                                String srcPath = FileHelper.concatFilePath(srcDir, fileName);
-                                String dstPath = FileHelper.concatFilePath(dstDir, fileName);
-
-                                try {
-                                    File f = new File(dstPath);
-                                    if (!f.exists()) {
-                                        f.mkdirs();
-                                    }
-
-                                    InputStream is = FileHelper.readFileFromSharedStorage(srcPath);
-                                    Files.copy(is, new File(dstPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                                    is.close();
-                                } catch (Exception i) {
-                                    LOG.error("Failed to copy " + srcPath + " to " + dstPath);
-                                    throw i;
-                                }
-
-                            }
-                        }*/
+                        //probably fine as it checks the PERM dir
 
                     } else if (dateDetector instanceof BartsDateDetector) {
-                        throw new Exception("TODO");
+                        //probably fine as it checks the PERM dir
 
                     } else if (dateDetector instanceof BhrutDateDetector) {
-                        throw new Exception("TODO");
+                        //probably fine as it checks the PERM dir
 
                     } else {
                         //doesn't need any special code
