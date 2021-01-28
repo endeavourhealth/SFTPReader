@@ -20,7 +20,14 @@ import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCac
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchDateDetector;
+import org.endeavourhealth.sftpreader.implementations.adastra.AdastraDateDetector;
+import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraConstants;
+import org.endeavourhealth.sftpreader.implementations.barts.BartsDateDetector;
+import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutDateDetector;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
+import org.endeavourhealth.sftpreader.implementations.tpp.TppDateDetector;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
+import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
@@ -30,8 +37,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -378,17 +388,95 @@ public class Main {
                         }
                     }
 
+                    String permDir = edsConfiguration.getSharedStoragePath();
+                    String tempDir = edsConfiguration.getTempDirectory();
+                    String configurationDir = dbConfiguration.getLocalRootPath();
+                    String batchDir = b.getLocalRelativePath();
+
+                    String srcDir = FileHelper.concatFilePath(permDir, configurationDir, batchDir);
+                    String dstDir = FileHelper.concatFilePath(tempDir, configurationDir, batchDir);
+
+                    //if TPP we need to copy the manifest over
+                    if (dateDetector instanceof TppDateDetector) {
+
+                        String fileName = TppConstants.MANIFEST_FILE;
+                        String srcPath = FileHelper.concatFilePath(srcDir, fileName);
+                        String dstPath = FileHelper.concatFilePath(dstDir, fileName);
+
+                        try {
+                            File f = new File(dstPath);
+                            if (!f.exists()) {
+                                f.mkdirs();
+                            }
+
+                            InputStream is = FileHelper.readFileFromSharedStorage(srcPath);
+                            Files.copy(is, new File(dstPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            is.close();
+                        } catch (Exception i) {
+                            LOG.error("Failed to copy " + srcPath + " to " + dstPath);
+                            throw i;
+                        }
+
+                    } else if (dateDetector instanceof AdastraDateDetector) {
+
+                        throw new Exception("TODO");
+       /*                 for (BatchFile batchFile: b.getBatchFiles()) {
+                            String fileId = batchFile.getFileTypeIdentifier();
+                            if (fileId.equals(AdastraConstants.FILE_ID_CASE)) {
+
+                                String fileName = batchFile.getFilename();
+                                String srcPath = FileHelper.concatFilePath(srcDir, fileName);
+                                String dstPath = FileHelper.concatFilePath(dstDir, fileName);
+
+                                try {
+                                    File f = new File(dstPath);
+                                    if (!f.exists()) {
+                                        f.mkdirs();
+                                    }
+
+                                    InputStream is = FileHelper.readFileFromSharedStorage(srcPath);
+                                    Files.copy(is, new File(dstPath).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                    is.close();
+                                } catch (Exception i) {
+                                    LOG.error("Failed to copy " + srcPath + " to " + dstPath);
+                                    throw i;
+                                }
+
+                            }
+                        }*/
+
+                    } else if (dateDetector instanceof BartsDateDetector) {
+                        throw new Exception("TODO");
+
+                    } else if (dateDetector instanceof BhrutDateDetector) {
+                        throw new Exception("TODO");
+
+                    } else {
+                        //doesn't need any special code
+                    }
+
+
+
+
                     Date extractDate = dateDetector.detectExtractDate(b, configuration.getDataLayer(), edsConfiguration, dbConfiguration);
                     b.setExtractDate(extractDate);
 
                     Date extractCutoff = dateDetector.detectExtractCutoff(b, configuration.getDataLayer(), edsConfiguration, dbConfiguration);
                     b.setExtractCutoff(extractCutoff);
-                    LOG.debug("Batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " has extract date " + simpleDateFormat.format(extractDate) + " and cutoff " + simpleDateFormat.format(extractCutoff));
+                    LOG.debug("Batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " has extract date " + (extractDate != null ? simpleDateFormat.format(extractDate): "null") + " and cutoff " + (extractCutoff != null ? simpleDateFormat.format(extractCutoff) : "null"));
 
                     if (!testMode) {
                         int col = 1;
-                        ps.setTimestamp(col++, new java.sql.Timestamp(extractDate.getTime()));
-                        ps.setTimestamp(col++, new java.sql.Timestamp(extractCutoff.getTime()));
+                        if (extractDate == null) {
+                            ps.setNull(col++, Types.TIMESTAMP);
+                        } else {
+                            ps.setTimestamp(col++, new java.sql.Timestamp(extractDate.getTime()));
+                        }
+                        if (extractCutoff == null) {
+                            ps.setNull(col++, Types.TIMESTAMP);
+                        } else {
+                            ps.setTimestamp(col++, new java.sql.Timestamp(extractCutoff.getTime()));
+                        }
                         ps.setInt(col++, b.getBatchId());
                         ps.executeUpdate();
                         conn.commit();
