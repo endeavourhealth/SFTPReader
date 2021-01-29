@@ -2,6 +2,7 @@ package org.endeavourhealth.sftpreader.implementations.barts.utility;
 
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.sftpreader.implementations.barts.BartsFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutFilenameParser;
 import org.endeavourhealth.sftpreader.model.db.Batch;
@@ -11,7 +12,10 @@ import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.io.File;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class BartsHelper {
@@ -34,16 +38,21 @@ public class BartsHelper {
 
         String dirPath = FileHelper.concatFilePath(tempStoragePath, configurationPath, batchPath);
 
-        List<String> files = FileHelper.listFilesInSharedStorage(dirPath);
-
+        List<FileInfo> files = FileHelper.listFilesInSharedStorageWithInfo(dirPath);
         if (files == null || files.isEmpty()) {
             throw new SftpValidationException("Failed to find any files in " + dirPath);
         }
+
         List<String> ret = new ArrayList<>();
 
-        for (String filePath: files) {
+        for (FileInfo file: files) {
+            String filePath = file.getFilePath();
+            long fileSize = file.getSize();
+            Date fileModified = file.getLastModified();
+            LocalDateTime fileModifiedLocalDateTime = LocalDateTime.ofInstant(fileModified.toInstant(), ZoneId.systemDefault());
+
             String name = FilenameUtils.getName(filePath);
-            RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Vision filename parsing
+            RemoteFile r = new RemoteFile(name, fileSize, fileModifiedLocalDateTime);
             BartsFilenameParser parser = new BartsFilenameParser(false, r, dbConfiguration);
             String fileType = parser.generateFileTypeIdentifier();
             if (fileType.equals(fileIdentifier)) {
