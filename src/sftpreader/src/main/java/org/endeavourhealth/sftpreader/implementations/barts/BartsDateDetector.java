@@ -40,9 +40,12 @@ public class BartsDateDetector extends SftpBatchDateDetector {
         //find the extract date field from that file
         List<String> filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_PPATI);
 
-        //it's very rare, but sometimes there are no PPATI files, so try another file type
+        //it's very rare, but sometimes there are no PPATI files, so try another few file types
         if (filePaths.isEmpty()) {
             filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_ENCNT);
+        }
+        if (filePaths.isEmpty()) {
+            filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_CVREF);
         }
 
         //if still no files, then something is wrong
