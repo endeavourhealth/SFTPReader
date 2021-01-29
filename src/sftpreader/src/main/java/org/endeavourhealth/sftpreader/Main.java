@@ -518,8 +518,6 @@ public class Main {
 
                 SftpBulkDetector bulkDetector = ImplementationActivator.createSftpBulkDetector(dbConfiguration);
 
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
                 DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
                 DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
 
@@ -551,22 +549,7 @@ public class Main {
                         }
                         LOG.debug("Doing " + odsCode);
 
-                        if (!testMode) {
-                            if (b.getExtractDate() != null) {
-                                LOG.debug("Skipping batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " as extract date already set");
-                                continue;
-                            }
-                        }
-
-                        String permDir = edsConfiguration.getSharedStoragePath();
-                        String tempDir = edsConfiguration.getTempDirectory();
-                        String configurationDir = dbConfiguration.getLocalRootPath();
-                        String batchDir = b.getLocalRelativePath();
-
-                        String srcDir = FileHelper.concatFilePath(permDir, configurationDir, batchDir);
-                        String dstDir = FileHelper.concatFilePath(tempDir, configurationDir, batchDir);
-
-                        Boolean hasPatientData = null;
+                        boolean hasPatientData = false;
 
                         //if TPP we need to copy the manifest over
                         if (bulkDetector instanceof AdastraBulkDetector) {
@@ -593,25 +576,15 @@ public class Main {
                         } else {
                             throw new Exception("TODO " + bulkDetector.getClass());
                         }
-/*
-                        LOG.debug("Batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " has extract date " + (extractDate != null ? simpleDateFormat.format(extractDate) : "null") + " and cutoff " + (extractCutoff != null ? simpleDateFormat.format(extractCutoff) : "null"));
+
+                        LOG.debug("Batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " and split " + split.getBatchSplitId() + " has patient data = " + hasPatientData);
 
                         if (!testMode) {
-                            int col = 1;
-                            if (extractDate == null) {
-                                ps.setNull(col++, Types.TIMESTAMP);
-                            } else {
-                                ps.setTimestamp(col++, new java.sql.Timestamp(extractDate.getTime()));
-                            }
-                            if (extractCutoff == null) {
-                                ps.setNull(col++, Types.TIMESTAMP);
-                            } else {
-                                ps.setTimestamp(col++, new java.sql.Timestamp(extractCutoff.getTime()));
-                            }
-                            ps.setInt(col++, b.getBatchId());
+                            ps.setBoolean(1, hasPatientData);
+                            ps.setInt(2, split.getBatchSplitId());
                             ps.executeUpdate();
                             conn.commit();
-                        }*/
+                        }
                     }
                 }
 
