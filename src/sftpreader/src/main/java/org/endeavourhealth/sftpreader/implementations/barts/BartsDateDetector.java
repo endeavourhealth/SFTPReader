@@ -42,9 +42,11 @@ public class BartsDateDetector extends SftpBatchDateDetector {
 
         //it's very rare, but sometimes there are no PPATI files, so try another few file types
         if (filePaths.isEmpty()) {
+            LOG.debug("No PPATI files found, so will look for ENCNT files");
             filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_ENCNT);
         }
         if (filePaths.isEmpty()) {
+            LOG.debug("No ENCNT files found, so will look for CVREF files");
             filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_CVREF);
         }
 
