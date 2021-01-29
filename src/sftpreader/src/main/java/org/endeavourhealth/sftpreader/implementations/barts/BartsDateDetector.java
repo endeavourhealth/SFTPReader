@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.Calendar;
@@ -45,7 +46,15 @@ public class BartsDateDetector extends SftpBatchDateDetector {
 
         for (String ppatiPath: ppatiPaths) {
 
-            Date fileDate = findLatestDateFromFile(ppatiPath, csvFormat, BartsConstants.CDE_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
+            Date fileDate = null;
+            try {
+                fileDate = findLatestDateFromFile(ppatiPath, csvFormat, BartsConstants.CDE_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
+            } catch (ParseException pe) {
+                LOG.error("Error parsing date " + pe.getMessage());
+                LOG.error("Will atttempt using Barts bulk date time format");
+                fileDate = findLatestDateFromFile(ppatiPath, csvFormat, BartsConstants.CDE_BULK_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
+            }
+
             if (fileDate != null
                     && (ret == null
                     || fileDate.after(ret))) {
