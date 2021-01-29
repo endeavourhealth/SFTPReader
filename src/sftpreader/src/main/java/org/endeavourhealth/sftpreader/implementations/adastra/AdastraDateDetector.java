@@ -51,7 +51,11 @@ public class AdastraDateDetector extends SftpBatchDateDetector {
         }
 
         CSVFormat csvFormat = AdastraHelper.getCsvFormat(AdastraConstants.FILE_ID_CASE);
-        return findLatestDateFromFile(caseFilePath, csvFormat, AdastraConstants.DATE_TIME_FORMAT, "StartDateTime", "EndDateTime");
+        Date d = findLatestDateFromFile(caseFilePath, csvFormat, AdastraConstants.DATE_TIME_FORMAT, "StartDateTime", "EndDateTime");
+        if (d == null) {
+            LOG.debug("Null extract cutoff found in file " + caseFilePath + " for batch " + batch.getBatchId());
+        }
+        return d;
     }
 
 }

@@ -38,13 +38,23 @@ public class BartsDateDetector extends SftpBatchDateDetector {
         //because of the mess of CDE and CDS files, we only use a DATE for the barts batch identifer, so shouldn't just
         //use that as the extract date. For the purposes of simplicity, we look for the CDE PPATI file(s) and
         //find the extract date field from that file
-        List<String> ppatiPaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_PPATI);
+        List<String> filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_PPATI);
+
+        //it's very rare, but sometimes there are no PPATI files, so try another file type
+        if (filePaths.isEmpty()) {
+            filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_ENCNT);
+        }
+
+        //if still no files, then something is wrong
+        if (filePaths.isEmpty()) {
+            throw new Exception("Failed to find file to detect extract date in batch " + batch.getBatchId());
+        }
 
         Date ret = null;
 
         CSVFormat csvFormat = BartsConstants.CDE_CSV_FORMAT.withHeader();
 
-        for (String ppatiPath: ppatiPaths) {
+        for (String ppatiPath: filePaths) {
 
             Date fileDate = null;
             try {
