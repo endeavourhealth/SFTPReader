@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
 import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.Header;
@@ -20,8 +21,11 @@ import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCac
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
 import org.endeavourhealth.sftpreader.implementations.ImplementationActivator;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchDateDetector;
+import org.endeavourhealth.sftpreader.implementations.SftpBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.adastra.AdastraBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.adastra.AdastraDateDetector;
 import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraConstants;
+import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraHelper;
 import org.endeavourhealth.sftpreader.implementations.barts.BartsDateDetector;
 import org.endeavourhealth.sftpreader.implementations.barts.utility.BartsConstants;
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutDateDetector;
@@ -45,6 +49,7 @@ import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Pattern;
 
 
 public class Main {
@@ -118,11 +123,19 @@ public class Main {
 
                 if (args[1].equalsIgnoreCase("PopulateExtractDates")) {
                     boolean testMode = Boolean.parseBoolean(args[2]);
-                    String configurationId = null;
-                    if (args.length > 3) {
-                        configurationId = args[3];
-                    }
+                    String configurationId = args[3];
                     populateExtractDates(testMode, configurationId);
+                    System.exit(0);
+                }
+
+                if (args[1].equalsIgnoreCase("PopulateHasPatientData")) {
+                    boolean testMode = Boolean.parseBoolean(args[2]);
+                    String configurationId = args[3];
+                    String odsRegex = null;
+                    if (args.length > 4) {
+                        odsRegex = args[4];
+                    }
+                    populateHasPatientData(testMode, configurationId, odsRegex);
                     System.exit(0);
                 }
 
@@ -456,6 +469,149 @@ public class Main {
                         ps.setInt(col++, b.getBatchId());
                         ps.executeUpdate();
                         conn.commit();
+                    }
+                }
+
+            } catch (Throwable t) {
+                LOG.error("", t);
+            } finally {
+                if (ps != null) {
+                    ps.close();
+                }
+                conn.close();
+            }
+
+
+            LOG.debug("Finished Populating Extract Dates for " + configurationId + " test mode = " + testMode);
+        } catch (Throwable t) {
+            LOG.error("", t);
+        }
+    }
+
+
+    private static void populateHasPatientData(boolean testMode, String configurationId, String odsCodeRegex) throws Exception {
+        LOG.debug("Populating Extract Dates for " + configurationId + " test mode = " + testMode);
+        try {
+            Connection conn = null;
+            PreparedStatement ps = null;
+            try {
+                conn = ConnectionManager.getSftpReaderNonPooledConnection();
+
+                String sql = null;
+                if (ConnectionManager.isPostgreSQL(conn)) {
+                    sql = "UPDATE log.batch_split SET has_patient_data = ? WHERE batch_split_id = ?";
+                } else {
+                    sql = "UPDATE batch_split SET has_patient_data = ? WHERE batch_split_id = ?";
+                }
+                ps = conn.prepareStatement(sql);
+
+                DbConfiguration dbConfiguration = null;
+                for (DbConfiguration c : configuration.getConfigurations()) {
+                    if (c.getConfigurationId().equals(configurationId)) {
+                        dbConfiguration = c;
+                        break;
+                    }
+                }
+                if (dbConfiguration == null) {
+                    throw new Exception("Failed to find configuration " + configurationId);
+                }
+
+                SftpBulkDetector bulkDetector = ImplementationActivator.createSftpBulkDetector(dbConfiguration);
+
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                DbInstance instanceConfiguration = configuration.getInstanceConfiguration();
+                DbInstanceEds edsConfiguration = instanceConfiguration.getEdsConfiguration();
+
+
+                DataLayerI dataLayer = configuration.getDataLayer();
+                List<Batch> batches = dataLayer.getAllBatches(configurationId);
+                LOG.debug("Found " + batches.size() + " batches");
+
+                //ensure batches are sorted properly
+                batches.sort((o1, o2) -> {
+                    Integer i1 = o1.getSequenceNumber();
+                    Integer i2 = o2.getSequenceNumber();
+                    return i1.compareTo(i2);
+                });
+
+                for (Batch b: batches) {
+
+                    List<BatchSplit> splits = dataLayer.getBatchSplitsForBatch(b.getBatchId());
+                    LOG.debug(">>>>>>>>Doing batch " + b.getBatchId() + " from " + b.getBatchIdentifier() + " with " + splits.size() + " splits");
+
+                    for (BatchSplit split: splits) {
+
+                        String odsCode = split.getOrganisationId();
+                        if (!Strings.isNullOrEmpty(odsCodeRegex)
+                                && (Strings.isNullOrEmpty(odsCode)
+                                || !Pattern.matches(odsCodeRegex, odsCode))) {
+                            LOG.debug("Skipping " + odsCode + " due to regex");
+                            continue;
+                        }
+                        LOG.debug("Doing " + odsCode);
+
+                        if (!testMode) {
+                            if (b.getExtractDate() != null) {
+                                LOG.debug("Skipping batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " as extract date already set");
+                                continue;
+                            }
+                        }
+
+                        String permDir = edsConfiguration.getSharedStoragePath();
+                        String tempDir = edsConfiguration.getTempDirectory();
+                        String configurationDir = dbConfiguration.getLocalRootPath();
+                        String batchDir = b.getLocalRelativePath();
+
+                        String srcDir = FileHelper.concatFilePath(permDir, configurationDir, batchDir);
+                        String dstDir = FileHelper.concatFilePath(tempDir, configurationDir, batchDir);
+
+                        Boolean hasPatientData = null;
+
+                        //if TPP we need to copy the manifest over
+                        if (bulkDetector instanceof AdastraBulkDetector) {
+
+                            Set<String> fileTypeIds = new HashSet<>();
+                            fileTypeIds.add(AdastraConstants.FILE_ID_PATIENT);
+                            fileTypeIds.add(AdastraConstants.FILE_ID_CASE);
+
+                            for (String fileTypeId: fileTypeIds) {
+
+                                String path = AdastraHelper.findPostSplitFileInPermDir(edsConfiguration, dbConfiguration, split, fileTypeId);
+                                if (!Strings.isNullOrEmpty(path)) {
+                                    //the Adastra files don't include the headers, so we need to call this fn to work it out
+                                    CSVFormat csvFormat = AdastraHelper.getCsvFormat(fileTypeId);
+                                    boolean isEmpty = SftpBulkDetector.isFileEmpty(path, csvFormat);
+                                    if (!isEmpty) {
+                                        hasPatientData = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+
+                        } else {
+                            throw new Exception("TODO " + bulkDetector.getClass());
+                        }
+/*
+                        LOG.debug("Batch " + b.getBatchId() + ", " + b.getBatchIdentifier() + " has extract date " + (extractDate != null ? simpleDateFormat.format(extractDate) : "null") + " and cutoff " + (extractCutoff != null ? simpleDateFormat.format(extractCutoff) : "null"));
+
+                        if (!testMode) {
+                            int col = 1;
+                            if (extractDate == null) {
+                                ps.setNull(col++, Types.TIMESTAMP);
+                            } else {
+                                ps.setTimestamp(col++, new java.sql.Timestamp(extractDate.getTime()));
+                            }
+                            if (extractCutoff == null) {
+                                ps.setNull(col++, Types.TIMESTAMP);
+                            } else {
+                                ps.setTimestamp(col++, new java.sql.Timestamp(extractCutoff.getTime()));
+                            }
+                            ps.setInt(col++, b.getBatchId());
+                            ps.executeUpdate();
+                            conn.commit();
+                        }*/
                     }
                 }
 

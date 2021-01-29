@@ -50,9 +50,12 @@ public class BartsDateDetector extends SftpBatchDateDetector {
             filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_CVREF);
         }
 
-        //if still no files, then something is wrong
+        //if still no files, then something is wrong (although there are some very old batches like this)
         if (filePaths.isEmpty()) {
-            throw new Exception("Failed to find file to detect extract date in batch " + batch.getBatchId());
+            //TODO - restore exception when bulk populated extract_date column
+            LOG.error("Failed to find file to detect extract date in batch " + batch.getBatchId());
+            //throw new Exception("Failed to find file to detect extract date in batch " + batch.getBatchId());
+            return null;
         }
 
         Date ret = null;

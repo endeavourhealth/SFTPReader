@@ -118,10 +118,11 @@ public class TppBatchValidator extends SftpBatchValidator {
 
         Date lastExtractEndDate = lastCompleteBatch.getExtractCutoff();
         if (lastExtractEndDate == null) {
-            //TODO - restore this after we've set it on all TPP feeds
-            //throw new SftpValidationException("End date of last batch is null, batch ID " + incompleteBatch.getBatchId());
-            LOG.warn("Previous batch " + lastCompleteBatch.getBatchId() + " has null extract cutoff, so cannot check new batch " + incompleteBatch.getBatchId());
-            return;
+            //the last extract date has been set on all "last" batches as of now, so
+            //this exception is safe to go in.
+            throw new SftpValidationException("End date of last batch is null, batch ID " + incompleteBatch.getBatchId());
+            /*LOG.warn("Previous batch " + lastCompleteBatch.getBatchId() + " has null extract cutoff, so cannot check new batch " + incompleteBatch.getBatchId());
+            return;*/
         }
 
         //if the start date of the new extract doesn't match the end date of the last one, then something is wrong

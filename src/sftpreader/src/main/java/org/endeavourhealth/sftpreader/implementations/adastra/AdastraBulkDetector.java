@@ -40,7 +40,7 @@ public class AdastraBulkDetector extends SftpBulkDetector {
 
         for (String fileTypeId: fileTypeIds) {
 
-            String path = AdastraHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, fileTypeId);
+            String path = AdastraHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, fileTypeId);
             if (!Strings.isNullOrEmpty(path)) {
                 //the Adastra files don't include the headers, so we need to call this fn to work it out
                 CSVFormat csvFormat = AdastraHelper.getCsvFormat(fileTypeId);

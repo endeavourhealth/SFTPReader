@@ -25,7 +25,7 @@ public abstract class SftpBulkDetector {
 
 
 
-    protected static boolean isAllFilesEmpty(Collection<String> paths, CSVFormat csvFormat) throws Exception {
+    public static boolean isAllFilesEmpty(Collection<String> paths, CSVFormat csvFormat) throws Exception {
 
         for (String path: paths) {
 
@@ -48,7 +48,7 @@ public abstract class SftpBulkDetector {
      * true if the file contains no data records. If the file contains a header record that's longer
      * than this, then this will not work, but 50KB should be sufficient even for the widest CDS files known
      */
-    protected static boolean isFileEmpty(String path, CSVFormat csvFormat) throws Exception {
+    public static boolean isFileEmpty(String path, CSVFormat csvFormat) throws Exception {
         String data = FileHelper.readFirstCharactersFromSharedStorage(path, 50 * 1024);
         if (Strings.isNullOrEmpty(data)) {
             return true;

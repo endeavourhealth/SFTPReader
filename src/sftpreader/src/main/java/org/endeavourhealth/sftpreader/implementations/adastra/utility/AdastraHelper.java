@@ -83,39 +83,48 @@ public class AdastraHelper {
      */
     public static String findPostSplitFileInTempDir(DbInstanceEds instanceConfiguration,
                                                     DbConfiguration dbConfiguration,
-                                                    Batch batch,
                                                     BatchSplit batchSplit,
-                                                    String fileIdentifier) throws SftpValidationException {
+                                                    String fileIdentifier) throws Exception {
 
         String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. /sftpReader/tmp
+        return findPostSplitFileInDir(tempStoragePath, dbConfiguration, batchSplit, fileIdentifier);
+    }
+
+    public static String findPostSplitFileInPermDir(DbInstanceEds instanceConfiguration,
+                                                    DbConfiguration dbConfiguration,
+                                                    BatchSplit batchSplit,
+                                                    String fileIdentifier) throws Exception {
+
+        String permStoragePath = instanceConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/root
+        return findPostSplitFileInDir(permStoragePath, dbConfiguration, batchSplit, fileIdentifier);
+    }
+
+    private static String findPostSplitFileInDir(String topLevelDir,
+                                                    DbConfiguration dbConfiguration,
+                                                    BatchSplit batchSplit,
+                                                    String fileIdentifier) throws Exception {
+
         String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/Adastra/YDDH3_08W
         String batchSplitPath = batchSplit.getLocalRelativePath(); //e.g. 2019-12-09T00.15.00/Split/E87065/
 
-        String tempPath = FilenameUtils.concat(tempStoragePath, configurationPath);
-        tempPath = FilenameUtils.concat(tempPath, batchSplitPath);
+        String dirPath = FileHelper.concatFilePath(topLevelDir, configurationPath, batchSplitPath);
 
-        File tempDir = new File(tempPath);
-        if (!tempDir.exists()) {
-            throw new SftpValidationException("Temp directory " + tempDir + " doesn't exist");
-        }
+        List<String> filePaths = FileHelper.listFilesInSharedStorage(dirPath);
 
-        String filePath = null;
+        for (String filePath: filePaths) {
 
-        for (File f: tempDir.listFiles()) {
-            String name = f.getName();
-            String ext = FilenameUtils.getExtension(name);
-            if (ext.equalsIgnoreCase("csv")) {
-                RemoteFile r = new RemoteFile(f.getAbsolutePath(), -1, null); //size and modification date aren't needed for Adastra filename parsing
-                AdastraFilenameParser parser = new AdastraFilenameParser(false, r, dbConfiguration);
-                String fileType = parser.generateFileTypeIdentifier();
-                if (fileType.equals(fileIdentifier)) {
-                    filePath = f.getAbsolutePath();
-                    break;
-                }
+            /*String ext = FilenameUtils.getExtension(filePath);
+            if (ext.equalsIgnoreCase("csv")) {*/
+
+            RemoteFile r = new RemoteFile(filePath, -1, null); //size and modification date aren't needed for Adastra filename parsing
+            AdastraFilenameParser parser = new AdastraFilenameParser(false, r, dbConfiguration);
+            String fileType = parser.generateFileTypeIdentifier();
+            if (fileType.equals(fileIdentifier)) {
+                return filePath;
             }
         }
 
-        return filePath;
+        return null;
     }
 
 
