@@ -23,4 +23,8 @@ public class BartsConstants {
     public static final String FILE_ID_CDE_CLEVE = "CLEVE";
     public static final String FILE_ID_CDE_ENCNT = "ENCNT";
     public static final String FILE_ID_CDE_CVREF = "CVREF";
+    public static final String FILE_ID_CDE_OPATT = "OPATT";
+    public static final String FILE_ID_CDE_IPEPI = "IPEPI";
+
+
 }

@@ -24,10 +24,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class BartsDateDetector extends SftpBatchDateDetector {
     private static final Logger LOG = LoggerFactory.getLogger(BartsDateDetector.class);
@@ -38,49 +35,38 @@ public class BartsDateDetector extends SftpBatchDateDetector {
         //because of the mess of CDE and CDS files, we only use a DATE for the barts batch identifer, so shouldn't just
         //use that as the extract date. For the purposes of simplicity, we look for the CDE PPATI file(s) and
         //find the extract date field from that file
-        List<String> filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_PPATI);
+        List<String> fileTypes = new ArrayList<>();
+        fileTypes.add(BartsConstants.FILE_ID_CDE_PPATI);
+        fileTypes.add(BartsConstants.FILE_ID_CDE_ENCNT);
+        fileTypes.add(BartsConstants.FILE_ID_CDE_CVREF);
+        fileTypes.add(BartsConstants.FILE_ID_CDE_OPATT);
+        fileTypes.add(BartsConstants.FILE_ID_CDE_IPEPI);
 
-        //it's very rare, but sometimes there are no PPATI files, so try another few file types
-        if (filePaths.isEmpty()) {
-            LOG.debug("No PPATI files found, so will look for ENCNT files");
-            filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_ENCNT);
-        }
-        if (filePaths.isEmpty()) {
-            LOG.debug("No ENCNT files found, so will look for CVREF files");
-            filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, BartsConstants.FILE_ID_CDE_CVREF);
-        }
+        for (String fileType: fileTypes) {
 
-        //if still no files, then something is wrong (although there are some very old batches like this)
-        if (filePaths.isEmpty()) {
-            //TODO - restore exception when bulk populated extract_date column
-            LOG.error("Failed to find file to detect extract date in batch " + batch.getBatchId());
-            //throw new Exception("Failed to find file to detect extract date in batch " + batch.getBatchId());
-            return null;
-        }
+            List<String> filePaths = BartsHelper.findFilesInPermDir(instanceConfiguration, dbConfiguration, batch, fileType);
+            CSVFormat csvFormat = BartsConstants.CDE_CSV_FORMAT.withHeader();
 
-        Date ret = null;
+            //all CDE files in the same batch will have the same extract date, so as soon as we find one file, just use that and don't look at any others
+            for (String filePath : filePaths) {
 
-        CSVFormat csvFormat = BartsConstants.CDE_CSV_FORMAT.withHeader();
+                Date fileDate = null;
+                try {
+                    fileDate = findLatestDateFromFile(filePath, csvFormat, BartsConstants.CDE_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
+                } catch (ParseException pe) {
+                    LOG.error("Error parsing date " + pe.getMessage());
+                    LOG.error("Will attempt using Barts bulk date time format");
+                    fileDate = findLatestDateFromFile(filePath, csvFormat, BartsConstants.CDE_BULK_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
+                }
 
-        for (String ppatiPath: filePaths) {
-
-            Date fileDate = null;
-            try {
-                fileDate = findLatestDateFromFile(ppatiPath, csvFormat, BartsConstants.CDE_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
-            } catch (ParseException pe) {
-                LOG.error("Error parsing date " + pe.getMessage());
-                LOG.error("Will atttempt using Barts bulk date time format");
-                fileDate = findLatestDateFromFile(ppatiPath, csvFormat, BartsConstants.CDE_BULK_DATE_TIME_FORMAT, "EXTRACT_DT_TM");
-            }
-
-            if (fileDate != null
-                    && (ret == null
-                    || fileDate.after(ret))) {
-                ret = fileDate;
+                if (fileDate != null) {
+                    return fileDate;
+                }
             }
         }
 
-        return ret;
+        LOG.error("Failed to find extract date in batch " + batch.getBatchId());
+        return null;
     }
 
     @Override
