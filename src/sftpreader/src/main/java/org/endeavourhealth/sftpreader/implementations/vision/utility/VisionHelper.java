@@ -3,6 +3,8 @@ package org.endeavourhealth.sftpreader.implementations.vision.utility;
 import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
+import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.sftpreader.implementations.adastra.AdastraFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
@@ -114,51 +116,55 @@ public class VisionHelper {
         }
     }
 
+
     /**
-     * finds a Vision data file in the temporary directory (note that Vision files don't get split
-     * so this is simpler than the equivalent function for Emis)
+     * finds the file of the given "type" in the temp directory structure, under the "split" directory
      */
     public static String findFileInTempDir(DbInstanceEds instanceConfiguration,
                                                     DbConfiguration dbConfiguration,
-                                                    Batch batch,
-                                                    String fileIdentifier) throws SftpValidationException {
+                                                    BatchSplit batchSplit,
+                                                    String fileIdentifier) throws Exception {
 
-        String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. s3://<bucket>/endeavour
-        String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/VISION
-        String batchPath = batch.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35
+        String tempStoragePath = instanceConfiguration.getTempDirectory(); //e.g. /sftpReader/tmp
+        return findFileInDir(tempStoragePath, dbConfiguration, batchSplit, fileIdentifier);
+    }
 
-        String tempPath = FilenameUtils.concat(tempStoragePath, configurationPath);
-        tempPath = FilenameUtils.concat(tempPath, batchPath);
+    public static String findFileInPermDir(DbInstanceEds instanceConfiguration,
+                                                    DbConfiguration dbConfiguration,
+                                                    BatchSplit batchSplit,
+                                                    String fileIdentifier) throws Exception {
 
-        File tempDir = new File(tempPath);
-        if (!tempDir.exists()) {
-            throw new SftpValidationException("Temp directory " + tempDir + " doesn't exist");
-        }
+        String permStoragePath = instanceConfiguration.getSharedStoragePath(); //e.g. s3://<bucket>/root
+        return findFileInDir(permStoragePath, dbConfiguration, batchSplit, fileIdentifier);
+    }
 
-        String filePath = null;
+    private static String findFileInDir(String topLevelDir,
+                                                 DbConfiguration dbConfiguration,
+                                                 BatchSplit batchSplit,
+                                                 String fileIdentifier) throws Exception {
 
-        for (File f: tempDir.listFiles()) {
-            String name = f.getName();
-            String ext = FilenameUtils.getExtension(name);
+        String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/VISION_ODSCODE
+        String batchSplitPath = batchSplit.getLocalRelativePath(); //e.g. 2019-12-09T00.15.00/Split/E87065/
+
+        String dirPath = FileHelper.concatFilePath(topLevelDir, configurationPath, batchSplitPath);
+
+        List<String> filePaths = FileHelper.listFilesInSharedStorage(dirPath);
+
+        for (String filePath: filePaths) {
+
+            String ext = FilenameUtils.getExtension(filePath);
+            //the raw zips will be in the same directory, so explicitly ignore these
             if (ext.equalsIgnoreCase("csv")) {
-
-                RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Vision filename parsing
+                RemoteFile r = new RemoteFile(filePath, -1, null); //size and modification date aren't needed for Vision filename parsing
                 VisionFilenameParser parser = new VisionFilenameParser(false, r, dbConfiguration);
                 String fileType = parser.generateFileTypeIdentifier();
                 if (fileType.equals(fileIdentifier)) {
-                    filePath = f.getAbsolutePath();
-                    break;
+                    return filePath;
                 }
             }
         }
 
-        if (filePath == null) {
-            //Vision extracts don't always contain all file types, so just return null
-            //throw new SftpValidationException("Failed to find " + fileIdentifier + " file in " + tempDir);
-            return null;
-        }
-
-        return filePath;
+        return null;
     }
 
 

@@ -32,10 +32,18 @@ import org.endeavourhealth.sftpreader.implementations.barts.utility.BartsConstan
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutDateDetector;
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.emis.EmisBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
+import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
+import org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustomBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.tpp.TppBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppDateDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppHelper;
+import org.endeavourhealth.sftpreader.implementations.vision.VisionBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionConstants;
+import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
@@ -582,6 +590,66 @@ public class Main {
 
                         } else if (bulkDetector instanceof BhrutBulkDetector) {
                             hasPatientData = bulkDetector.hasPatientData(b, split, dataLayer, edsConfiguration, dbConfiguration);
+
+                        } else if (bulkDetector instanceof EmisBulkDetector) {
+
+                            Set<String> fileTypeIds = new HashSet<>();
+                            fileTypeIds.add(EmisConstants.ADMIN_PATIENT_FILE_TYPE);
+                            fileTypeIds.add(EmisConstants.CARE_RECORD_CONSULTATION_FILE_TYPE);
+                            fileTypeIds.add(EmisConstants.CARE_RECORD_OBSERVATION_FILE_TYPE);
+                            fileTypeIds.add(EmisConstants.PRESCRIBING_ISSUE_RECORD);
+
+                            for (String fileTypeId: fileTypeIds) {
+
+                                String path = EmisHelper.findPostSplitFileInPermanentDir(dataLayer, edsConfiguration, dbConfiguration, b, split.getOrganisationId(), fileTypeId);
+                                if (!Strings.isNullOrEmpty(path)) {
+                                    boolean isEmpty = SftpBulkDetector.isFileEmpty(path, EmisConstants.CSV_FORMAT.withHeader());
+                                    if (!isEmpty) {
+                                        hasPatientData = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                        } else if (bulkDetector instanceof EmisCustomBulkDetector) {
+                            //TODO
+
+                        } else if (bulkDetector instanceof TppBulkDetector) {
+                            Set<String> fileTypeIds = new HashSet<>();
+                            fileTypeIds.add(TppConstants.FILE_ID_PATIENT);
+                            fileTypeIds.add(TppConstants.FILE_ID_EVENT);
+                            fileTypeIds.add(TppConstants.FILE_ID_CODE);
+
+                            for (String fileTypeId: fileTypeIds) {
+
+                                String path = TppHelper.findPostSplitFileInPermDir(edsConfiguration, dbConfiguration, split, fileTypeId);
+                                if (!Strings.isNullOrEmpty(path)) {
+                                    boolean isEmpty = SftpBulkDetector.isFileEmpty(path, TppConstants.CSV_FORMAT.withHeader());
+                                    if (!isEmpty) {
+                                        hasPatientData = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                        } else if (bulkDetector instanceof VisionBulkDetector) {
+                            Set<String> fileTypeIds = new HashSet<>();
+                            fileTypeIds.add(VisionConstants.FILE_ID_PATIENT);
+                            fileTypeIds.add(VisionConstants.FILE_ID_JOURNAL);
+
+                            for (String fileTypeId: fileTypeIds) {
+
+                                String path = VisionHelper.findFileInPermDir(edsConfiguration, dbConfiguration, split, fileTypeId);
+                                if (!Strings.isNullOrEmpty(path)) {
+                                    //the Vision files don't include the headers, so we need to call this fn to work it out
+                                    CSVFormat csvFormat = VisionHelper.getCsvFormat(fileTypeId);
+                                    boolean isEmpty = SftpBulkDetector.isFileEmpty(path, csvFormat);
+                                    if (!isEmpty) {
+                                        hasPatientData = true;
+                                        break;
+                                    }
+                                }
+                            }
 
                         } else {
                             throw new Exception("TODO " + bulkDetector.getClass());

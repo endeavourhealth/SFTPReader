@@ -36,8 +36,8 @@ public class VisionBulkDetector extends SftpBulkDetector {
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
-        String patientFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionConstants.FILE_ID_PATIENT);
-        String journalFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, VisionConstants.FILE_ID_JOURNAL);
+        String patientFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, VisionConstants.FILE_ID_PATIENT);
+        String journalFilePath = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, VisionConstants.FILE_ID_JOURNAL);
 
         //Vision extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null
@@ -157,7 +157,7 @@ public class VisionBulkDetector extends SftpBulkDetector {
 
         for (String fileTypeId: fileTypeIds) {
 
-            String path = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batch, fileTypeId);
+            String path = VisionHelper.findFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, fileTypeId);
             if (!Strings.isNullOrEmpty(path)) {
                 //the Vision files don't include the headers, so we need to call this fn to work it out
                 CSVFormat csvFormat = VisionHelper.getCsvFormat(fileTypeId);

@@ -82,7 +82,7 @@ public class TppBulkDetector extends SftpBulkDetector {
 
         for (String fileTypeId: fileTypeIds) {
 
-            String path = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, fileTypeId);
+            String path = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, fileTypeId);
             if (!Strings.isNullOrEmpty(path)) {
                 boolean isEmpty = isFileEmpty(path, TppConstants.CSV_FORMAT.withHeader());
                 if (!isEmpty) {
@@ -118,8 +118,8 @@ public class TppBulkDetector extends SftpBulkDetector {
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the files will still be in our temp storage
-        String patientFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.FILE_ID_PATIENT);
-        String codeFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.FILE_ID_CODE);
+        String patientFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, TppConstants.FILE_ID_PATIENT);
+        String codeFilePath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, TppConstants.FILE_ID_CODE);
 
         //TPP extracts don't always contain all files, in which case it's definitely not a bulk
         if (patientFilePath == null && codeFilePath == null) {
@@ -210,7 +210,7 @@ public class TppBulkDetector extends SftpBulkDetector {
                                                DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
 
         //the SRManifest file will still be in our temp storage
-        String manifestPath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batch, batchSplit, TppConstants.FILE_ID_MANIFEST);
+        String manifestPath = TppHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, TppConstants.FILE_ID_MANIFEST);
         File f = new File(manifestPath);
         if (!f.exists()) {
             throw new Exception("Failed to find manifest file " + f);
