@@ -19,8 +19,7 @@ import java.util.Set;
 public class AdastraBulkDetector extends SftpBulkDetector {
 
     /**
-     * we have so few Adastra sites, that it's not really necessary to track when bulks arrive, although
-     * it should be possible by copying the same approach as used by the Emiscode 
+     * Adastra don't send any bulk extracts - they just send separate daily extracts going back for a few years
      */
     @Override
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
@@ -41,6 +40,7 @@ public class AdastraBulkDetector extends SftpBulkDetector {
         for (String fileTypeId: fileTypeIds) {
 
             String path = AdastraHelper.findPostSplitFileInTempDir(instanceConfiguration, dbConfiguration, batchSplit, fileTypeId);
+
             if (!Strings.isNullOrEmpty(path)) {
                 //the Adastra files don't include the headers, so we need to call this fn to work it out
                 CSVFormat csvFormat = AdastraHelper.getCsvFormat(fileTypeId);

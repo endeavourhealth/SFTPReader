@@ -115,18 +115,20 @@ public class Main {
                     System.exit(0);
                 }*/
                 if (args[1].equalsIgnoreCase("DecryptGpg")) {
-                    String filePath = args[2];
-                    String configurationId = args[3];
-                    decryptGpgFile(filePath, configurationId);
+                    String configurationId = args[2];
+                    String srcFilePath = args[3];
+                    String dstFilePath = args[4];
+
+                    decryptGpgFile(configurationId, srcFilePath, dstFilePath);
                     System.exit(0);
                 }
 
-                if (args[1].equalsIgnoreCase("PopulateExtractDates")) {
+                /*if (args[1].equalsIgnoreCase("PopulateExtractDates")) {
                     boolean testMode = Boolean.parseBoolean(args[2]);
                     String configurationId = args[3];
                     populateExtractDates(testMode, configurationId);
                     System.exit(0);
-                }
+                }*/
 
                 if (args[1].equalsIgnoreCase("PopulateHasPatientData")) {
                     boolean testMode = Boolean.parseBoolean(args[2]);
@@ -348,7 +350,7 @@ public class Main {
         }
     }
 
-    private static void populateExtractDates(boolean testMode, String configurationId) throws Exception {
+    /*private static void populateExtractDates(boolean testMode, String configurationId) throws Exception {
         LOG.debug("Populating Extract Dates for " + configurationId + " test mode = " + testMode);
         try {
             Connection conn = null;
@@ -486,7 +488,7 @@ public class Main {
         } catch (Throwable t) {
             LOG.error("", t);
         }
-    }
+    }*/
 
 
     private static void populateHasPatientData(boolean testMode, String configurationId, String odsCodeRegex) throws Exception {
@@ -1481,8 +1483,8 @@ public class Main {
         }
     }*/
 
-    private static void decryptGpgFile(String filePath, String configurationId) {
-        LOG.info("Decrypting " + filePath + " from configuration " + configurationId);
+    private static void decryptGpgFile(String configurationId, String srcFilePath, String dstFilePath) {
+        LOG.info("Decrypting " + srcFilePath + " to " + dstFilePath + " from configuration " + configurationId);
         try {
             DbConfiguration dbConfiguration = null;
             for (DbConfiguration c : configuration.getConfigurations()) {
@@ -1495,25 +1497,32 @@ public class Main {
                 throw new Exception("Failed to find configuration " + configurationId);
             }
 
-            InputStream inputStream = FileHelper.readFileFromSharedStorage(filePath);
+            InputStream inputStream = FileHelper.readFileFromSharedStorage(srcFilePath);
 
             String privateKey = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKey();
             String privateKeyPassword = dbConfiguration.getPgpConfiguration().getPgpRecipientPrivateKeyPassword();
             String publicKey = dbConfiguration.getPgpConfiguration().getPgpSenderPublicKey();
 
-            String ext = FilenameUtils.getExtension(filePath);
-            int len = ext.length() + 1;
-            String decryptedTempFile = filePath.substring(0, filePath.length()-len);
+            //delete destination file and make sure directories exist
+            File dstFile = new File(dstFilePath);
+            if (dstFile.exists()) {
+                dstFile.delete();
+            } else {
+                File dstDir = dstFile.getParentFile();
+                if (dstDir.exists()) {
+                    dstDir.mkdirs();
+                }
+            }
 
             try {
-                LOG.info("   Decrypting file to: " + decryptedTempFile);
-                PgpUtil.decryptAndVerify(inputStream, decryptedTempFile, privateKey, privateKeyPassword, publicKey);
+                LOG.debug("Opened input stream");
+                PgpUtil.decryptAndVerify(inputStream, dstFilePath, privateKey, privateKeyPassword, publicKey);
 
             } finally {
                 inputStream.close();
             }
 
-            LOG.info("Finished Decrypting " + filePath + " from configuration " + configurationId);
+            LOG.info("Finished Decrypting " + srcFilePath + " to " + dstFilePath + " from configuration " + configurationId);
         } catch (Throwable t) {
             LOG.error("", t);
         }
