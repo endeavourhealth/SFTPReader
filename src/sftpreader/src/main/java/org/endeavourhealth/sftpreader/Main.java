@@ -26,9 +26,12 @@ import org.endeavourhealth.sftpreader.implementations.adastra.AdastraBulkDetecto
 import org.endeavourhealth.sftpreader.implementations.adastra.AdastraDateDetector;
 import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraConstants;
 import org.endeavourhealth.sftpreader.implementations.adastra.utility.AdastraHelper;
+import org.endeavourhealth.sftpreader.implementations.barts.BartsBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.barts.BartsDateDetector;
 import org.endeavourhealth.sftpreader.implementations.barts.utility.BartsConstants;
+import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutDateDetector;
+import org.endeavourhealth.sftpreader.implementations.bhrut.BhrutFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppDateDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
@@ -560,7 +563,7 @@ public class Main {
                             fileTypeIds.add(AdastraConstants.FILE_ID_PATIENT);
                             fileTypeIds.add(AdastraConstants.FILE_ID_CASE);
 
-                            for (String fileTypeId: fileTypeIds) {
+                            for (String fileTypeId : fileTypeIds) {
 
                                 String path = AdastraHelper.findPostSplitFileInPermDir(edsConfiguration, dbConfiguration, split, fileTypeId);
                                 if (!Strings.isNullOrEmpty(path)) {
@@ -574,6 +577,11 @@ public class Main {
                                 }
                             }
 
+                        } else if (bulkDetector instanceof BartsBulkDetector) {
+                            hasPatientData = bulkDetector.hasPatientData(b, split, dataLayer, edsConfiguration, dbConfiguration);
+
+                        } else if (bulkDetector instanceof BhrutBulkDetector) {
+                            hasPatientData = bulkDetector.hasPatientData(b, split, dataLayer, edsConfiguration, dbConfiguration);
 
                         } else {
                             throw new Exception("TODO " + bulkDetector.getClass());
