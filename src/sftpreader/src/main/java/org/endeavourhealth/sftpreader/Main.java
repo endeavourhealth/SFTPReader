@@ -37,6 +37,7 @@ import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisConstants
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisFixDisabledService;
 import org.endeavourhealth.sftpreader.implementations.emis.utility.EmisHelper;
 import org.endeavourhealth.sftpreader.implementations.emisCustom.EmisCustomBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.emisCustom.utility.EmisCustomConstants;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppBulkDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.TppDateDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
@@ -612,7 +613,19 @@ public class Main {
                             }
 
                         } else if (bulkDetector instanceof EmisCustomBulkDetector) {
-                            //TODO
+                            String tempStoragePath = edsConfiguration.getSharedStoragePath(); //bucket
+                            String configurationPath = dbConfiguration.getLocalRootPath(); //e.g. sftpReader/EMIS_CUSTOM
+                            String batchSplitPath = split.getLocalRelativePath(); //e.g. 2019-02-13T08.30.35/Split/{F6F4A970-6C2D-4660-A787-0FE0E6B67DCE}
+                            String permDirPath = FileHelper.concatFilePath(tempStoragePath, configurationPath, batchSplitPath);
+                            List<String> filePaths = FileHelper.listFilesInSharedStorage(permDirPath);
+                            for (String filePath: filePaths) {
+                                boolean isEmpty = SftpBulkDetector.isFileEmpty(filePath, EmisCustomConstants.CSV_FORMAT.withHeader());
+                                if (!isEmpty) {
+                                    hasPatientData = true;
+                                    break;
+                                }
+                            }
+
 
                         } else if (bulkDetector instanceof TppBulkDetector) {
                             Set<String> fileTypeIds = new HashSet<>();

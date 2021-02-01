@@ -16,6 +16,10 @@ import java.util.Set;
 
 public class EmisCustomBulkDetector extends SftpBulkDetector {
 
+    /**
+     * strictly speaking, the custom extracts are always bulk extracts, since they contain ALL the reg status data or ALL the original terms,
+     * but we don't want to count them towards being counted as bulk extracts from the main feed, so always return false
+     */
     @Override
     public boolean isBulkExtract(Batch batch, BatchSplit batchSplit, DataLayerI db,
                                  DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
