@@ -1509,7 +1509,7 @@ public class Main {
                 dstFile.delete();
             } else {
                 File dstDir = dstFile.getParentFile();
-                if (dstDir.exists()) {
+                if (dstDir != null && !dstDir.exists()) {
                     dstDir.mkdirs();
                 }
             }
