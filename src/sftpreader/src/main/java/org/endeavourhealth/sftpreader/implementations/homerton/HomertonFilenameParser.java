@@ -53,12 +53,8 @@ public class HomertonFilenameParser extends SftpFilenameParser {
     protected void parseFilename(boolean isRawFile) throws SftpFilenameParseException {
 
         //filename is of format:
-        //PH_D_Person_Demographics.csv  and PH_D_Person_Demographics_Deleted.csv
+        //ph_d_person_demographics and ph_d_person_demographics_delete
         String fileName = this.remoteFile.getFilename();
-
-        //this will be a .csv extract file
-        if (!FilenameUtils.getExtension(fileName).equalsIgnoreCase("csv"))
-            throw new SftpFilenameParseException("Filename does not end with .csv: "+fileName);
 
         //filename without extension
         String fileNameNoExt = FilenameUtils.getBaseName(fileName);
@@ -69,7 +65,7 @@ public class HomertonFilenameParser extends SftpFilenameParser {
         if (parts.length < 3 || fileNameNoExt.length() < 6 )
             throw new SftpFilenameParseException("Unexpected Homerton batch filename format: "+fileName);
 
-        //strip out the prefixes such as PH_D_ to get a file type of Person_Demographics for example
+        //strip out the prefixes such as ph_d_ to get a file type of person_demographics for example
         this.fileTypeIdentifier = fileNameNoExt.substring(5);
 
         //batch identifier is the datetime, which is found in the directory structure the files are in
