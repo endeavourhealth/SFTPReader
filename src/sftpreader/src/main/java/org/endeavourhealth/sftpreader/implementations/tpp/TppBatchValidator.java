@@ -126,7 +126,10 @@ public class TppBatchValidator extends SftpBatchValidator {
         }
 
         //if the start date of the new extract doesn't match the end date of the last one, then something is wrong
-        if (!lastExtractEndDate.equals(incompleteExtractStartDate)) {
+        //SD-353 - when TPP re-bulk files, we end up with the start of the new extract being BEFORE the end of the previous delta. No idea
+        //why this is the case, but the data looks OK, so only validate if we have a gap in data.
+        //if (!lastExtractEndDate.equals(incompleteExtractStartDate)) {
+        if (incompleteExtractStartDate.after(lastExtractEndDate)) {
             throw new SftpValidationException("Start date of new batch (" + incompleteExtractStartDate + ") does not match end date of last batch (" + lastExtractEndDate + ") in new batch " + incompleteBatch.getBatchId());
         }
     }
