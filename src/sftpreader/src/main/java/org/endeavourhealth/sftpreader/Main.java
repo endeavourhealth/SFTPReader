@@ -43,6 +43,7 @@ import org.endeavourhealth.sftpreader.implementations.tpp.TppDateDetector;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppHelper;
 import org.endeavourhealth.sftpreader.implementations.vision.VisionBulkDetector;
+import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
 import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionConstants;
 import org.endeavourhealth.sftpreader.implementations.vision.utility.VisionHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
@@ -50,6 +51,7 @@ import org.endeavourhealth.sftpreader.model.db.*;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpReaderException;
 import org.endeavourhealth.sftpreader.sender.DpaCheck;
 import org.endeavourhealth.sftpreader.utilities.PgpUtil;
+import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -209,7 +211,7 @@ public class Main {
                     System.exit(0);
                 }*/
 
-                /*if (args.length > 1
+                if (args.length > 1
                     && args[1].equalsIgnoreCase("CheckForBulks")) {
                     String configurationId = args[2];
                     boolean testMode = Boolean.parseBoolean(args[3]);
@@ -219,7 +221,7 @@ public class Main {
                     }
                     checkForBulks(configurationId, testMode, odsRegex);
                     System.exit(0);
-                }*/
+                }
 
                 /*if (args.length > 1
                         && args[1].equalsIgnoreCase("CopyTppManifestFiles")) {
@@ -1325,7 +1327,7 @@ public class Main {
      * one-off routine to populate the new is_bulk column on the batch_split table so we
      * can work out if we've received bulk data for a service or not
      */
-    /*private static void checkForBulks(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
+    private static void checkForBulks(String configurationId, boolean testMode, String odsCodeRegex) throws Exception {
         LOG.info("Checking for Bulks in " + configurationId);
         if (!Strings.isNullOrEmpty(odsCodeRegex)) {
             LOG.info("Restricting to orgs matching " + odsCodeRegex);
@@ -1443,9 +1445,9 @@ public class Main {
                             RemoteFile r = new RemoteFile(file, -1, null);
                             VisionFilenameParser p = new VisionFilenameParser(isRawFile, r, dbConfiguration);
                             String fileType = p.generateFileTypeIdentifier();
-                            if (fileType.equals(VisionHelper.PATIENT_FILE_TYPE)) {
+                            if (fileType.equals(VisionConstants.FILE_ID_PATIENT)) {
                                 permPatientPath = file;
-                            } else if (fileType.equals(VisionHelper.JOURNAL_FILE_TYPE)) {
+                            } else if (fileType.equals(VisionConstants.FILE_ID_JOURNAL)) {
                                 permJournalPath = file;
                             }
                         }
@@ -1543,7 +1545,7 @@ public class Main {
                 conn.close();
             }
         }
-    }*/
+    }
 
     /*private static void testSplitting(String srcFilePath) {
         LOG.info("Testing splitting of " + srcFilePath);
