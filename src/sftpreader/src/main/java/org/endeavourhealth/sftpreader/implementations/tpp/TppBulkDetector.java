@@ -56,7 +56,7 @@ public class TppBulkDetector extends SftpBulkDetector {
             return manifestIsBulk;
         }
 
-        String msg = "Discrepancy between SRManifest (bulk = " + manifestIsBulk + ") and file content (bulk = " + filesLookBulk + ") for "
+        String msg = "Possible discrepancy between SRManifest (bulk = " + manifestIsBulk + ") and file content (bulk = " + filesLookBulk + ") for "
                 + batchSplit.getOrganisationId() + " batch " + batch.getBatchIdentifier();
         if (!manifestIsBulk) {
             msg += "\r\nSRManifest states " + manifestBulkReason;
@@ -64,13 +64,13 @@ public class TppBulkDetector extends SftpBulkDetector {
         if (!filesLookBulk) {
             msg += "\r\nData not a bulk because " + filesLookBulkReason;
         }
-        msg += "\r\nFile content bulk state will be used";
+        msg += "\r\nManifest content bulk state will be used";
         LOG.warn(msg);
 
         SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
 
-        //trust the files
-        return filesLookBulk;
+        //trust the manifest
+        return manifestIsBulk;
     }
 
     @Override
