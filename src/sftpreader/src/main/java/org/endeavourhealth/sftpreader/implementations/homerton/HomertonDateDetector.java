@@ -1,16 +1,23 @@
 package org.endeavourhealth.sftpreader.implementations.homerton;
 
+import com.google.common.base.Strings;
+import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchDateDetector;
-import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
+import org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonConstants;
+import org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonHelper;
 import org.endeavourhealth.sftpreader.model.DataLayerI;
 import org.endeavourhealth.sftpreader.model.db.Batch;
 import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Date;
 
 public class HomertonDateDetector extends SftpBatchDateDetector {
+
+    private static final Logger LOG = LoggerFactory.getLogger(HomertonDateDetector.class);
 
     @Override
     public Date detectExtractDate(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
@@ -23,7 +30,35 @@ public class HomertonDateDetector extends SftpBatchDateDetector {
 
     @Override
     public Date detectExtractCutoff(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
-        throw new Exception("TODO - calculate Homerton extract cutoff datetime");
-        //return null;
+
+        // there is no clear indicator in Homerton data to tell us when an extract is from so scan the
+        // procedure, .. files
+        // to find the most recent relevant date time
+
+        Date procedureServiceDate = findLatestProcedureDate(batch, db, instanceConfiguration, dbConfiguration);
+        //Date spellDate = findLatestInpatientSpellDate(batch, db, instanceConfiguration, dbConfiguration);
+
+        Date ret = procedureServiceDate;
+
+        return ret;
+    }
+
+    private Date findLatestProcedureDate(Batch batch, DataLayerI db, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration) throws Exception {
+
+        String procedureFilePath
+                = HomertonHelper.findFileInPermDir(instanceConfiguration, dbConfiguration, batch, HomertonConstants.FILE_ID_PROCEDURE);
+        if (Strings.isNullOrEmpty(procedureFilePath)) {
+            LOG.warn("No " + HomertonConstants.FILE_ID_PROCEDURE + " file found in Homerton batch " + batch.getBatchId() + " so cannot calculate extract cutoff");
+            return null;
+        }
+
+        CSVFormat csvFormat = HomertonConstants.CSV_FORMAT.withHeader();
+
+        String[] cols = {
+                "service_start_dt_tm",
+                "service_end_dt_tm"
+        };
+
+        return findLatestDateFromFile(procedureFilePath, csvFormat, HomertonConstants.DATE_TIME_FORMAT, cols);
     }
 }
