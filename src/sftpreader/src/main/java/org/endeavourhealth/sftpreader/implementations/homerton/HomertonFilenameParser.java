@@ -20,6 +20,7 @@ public class HomertonFilenameParser extends SftpFilenameParser {
 
     private String fileTypeIdentifier;
     private LocalDateTime extractDateTime;
+    private boolean isFileNeeded;
 
     public HomertonFilenameParser(boolean isRawFile, RemoteFile remoteFile, DbConfiguration dbConfiguration) {
         super(isRawFile, remoteFile, dbConfiguration);
@@ -37,7 +38,7 @@ public class HomertonFilenameParser extends SftpFilenameParser {
 
     @Override
     public boolean isFileNeeded(){
-        return true;
+        return isFileNeeded;
     }
 
     @Override
@@ -58,6 +59,12 @@ public class HomertonFilenameParser extends SftpFilenameParser {
 
         //filename without extension
         String fileNameNoExt = FilenameUtils.getBaseName(fileName);
+
+        //ignore any rubbish test files
+        if (fileNameNoExt.equalsIgnoreCase("test")) {
+            this.isFileNeeded = false;
+            return;
+        }
 
         //has to be at least 3 parts and longer that 5 characters to be valid
         String[] parts = fileNameNoExt.split("_");
@@ -94,6 +101,8 @@ public class HomertonFilenameParser extends SftpFilenameParser {
                 //let the loop continue
             }
         }
+
+        this.isFileNeeded = true;
     }
 
     @Override

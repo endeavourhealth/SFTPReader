@@ -4,7 +4,7 @@ import org.apache.commons.csv.CSVFormat;
 
 public class HomertonConstants {
 
-    public static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.withHeader();
+    public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();
 
     public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
