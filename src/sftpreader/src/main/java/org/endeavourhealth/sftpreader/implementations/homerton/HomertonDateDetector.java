@@ -1,7 +1,6 @@
 package org.endeavourhealth.sftpreader.implementations.homerton;
 
 import com.google.common.base.Strings;
-import org.apache.commons.csv.CSVFormat;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchDateDetector;
 import org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonConstants;
 import org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonHelper;
@@ -52,13 +51,11 @@ public class HomertonDateDetector extends SftpBatchDateDetector {
             return null;
         }
 
-        CSVFormat csvFormat = HomertonConstants.CSV_FORMAT.withHeader();
-
         String[] cols = {
                 "service_start_dt_tm",
                 "service_end_dt_tm"
         };
 
-        return findLatestDateFromFile(procedureFilePath, csvFormat, HomertonConstants.DATE_TIME_FORMAT, cols);
+        return findLatestDateFromFile(procedureFilePath, HomertonConstants.CSV_FORMAT, HomertonConstants.DATE_TIME_FORMAT, cols);
     }
 }

@@ -11,6 +11,9 @@ import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 
 import java.util.List;
 
+import static org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonConstants.HOMERTON_UNIVERSITY_HOSPITAL_ODS;
+import static org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonConstants.ROYAL_FREE_HOSPITAL_ODS;
+
 public class HomertonHelper {
 
     /**
@@ -35,7 +38,7 @@ public class HomertonHelper {
 
         for (String filePath: files) {
             String name = FilenameUtils.getName(filePath);
-            RemoteFile r = new RemoteFile(name, -1, null); //size and modification date aren't needed for Vision filename parsing
+            RemoteFile r = new RemoteFile(name, -1, null);
             HomertonFilenameParser parser = new HomertonFilenameParser(false, r, dbConfiguration);
             String fileType = parser.generateFileTypeIdentifier();
             if (fileType.equals(fileIdentifier)) {
@@ -73,5 +76,18 @@ public class HomertonHelper {
             }
         }
         return false;
+    }
+
+    public static String getOdsFromOrgName (String orgName) {
+
+        //At the moment, only three organisation names have been detected in the extract data
+        orgName = orgName.trim();
+        switch (orgName) {
+
+            case "Homerton University Hospital" : return HOMERTON_UNIVERSITY_HOSPITAL_ODS;
+            case "Royal Free Hospital p0349" : return ROYAL_FREE_HOSPITAL_ODS;
+            case "Royal Free Hospital p2349" : return ROYAL_FREE_HOSPITAL_ODS;
+            default : return null;
+        }
     }
 }
