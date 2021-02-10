@@ -6,7 +6,7 @@ public class HomertonConstants {
 
     public static final CSVFormat CSV_FORMAT = CSVFormat.RFC4180.withHeader();
 
-    public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    public static final String DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 
     public static final String FILE_ID_PERSON = "person";
     public static final String FILE_ID_CONDITION = "condition";
