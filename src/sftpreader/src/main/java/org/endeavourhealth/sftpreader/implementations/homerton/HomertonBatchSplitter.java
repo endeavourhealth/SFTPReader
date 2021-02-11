@@ -23,12 +23,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonConstants.FILE_ID_PERSON;
+
 public class HomertonBatchSplitter extends SftpBatchSplitter {
 
     private static final Logger LOG = LoggerFactory.getLogger(HomertonBatchSplitter.class);
 
     private static final String SPLIT_COLUMN_ORG = "source_description";
-    private static final String PERSON_SPLIT_COLUMN_ORG = "birth_date_source_description";
+    private static final String PERSON_DOB_SPLIT_COLUMN_ORG = "birth_date_source_description";
+    private static final String PERSON_GENDER_SPLIT_COLUMN_ORG = "gender_source_description";
+    private static final String PERSON_ADDRESS_SPLIT_COLUMN_ORG = "address_source_description";
     private static final String SPLIT_FOLDER = "Split";
     private static Set<String> cachedFilesToNotSplit = null;
 
@@ -44,8 +48,8 @@ public class HomertonBatchSplitter extends SftpBatchSplitter {
         String batchDir = batch.getLocalRelativePath();
 
         //the big CSV files should already be in our temp storage. If so, use those files rather than the ones from permanent storage
-        String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
-        sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
+        //String sourceTempDir = FilenameUtils.concat(tempDir, configurationDir);
+        //sourceTempDir = FilenameUtils.concat(sourceTempDir, batchDir);
 
         String sourcePermDir = FilenameUtils.concat(sharedStorageDir, configurationDir);
         sourcePermDir = FilenameUtils.concat(sourcePermDir, batchDir);
@@ -66,16 +70,19 @@ public class HomertonBatchSplitter extends SftpBatchSplitter {
         //work out which files we want to split
         List<File> filesToSplit = new ArrayList<>();
         List<File> filesToNotSplit = new ArrayList<>();
-        identifyFiles(sourceTempDir, filesToSplit, filesToNotSplit);
+        identifyFiles(sourcePermDir, filesToSplit, filesToNotSplit);
 
         //split the files we can
         for (File f : filesToSplit) {
 
             String fileNameNoExt = FilenameUtils.getBaseName(f.getName());
-            //the person files does not contain source_description so use birth_date_source_description column
-            if (fileNameNoExt.equalsIgnoreCase("person")) {
-                splitFile(f.getAbsolutePath(), dstDir, HomertonConstants.CSV_FORMAT, PERSON_SPLIT_COLUMN_ORG);
+
+            // the person files does not contain source_description so use the dob source description
+            if (fileNameNoExt.endsWith(FILE_ID_PERSON)) {
+
+                splitFile(f.getAbsolutePath(), dstDir, HomertonConstants.CSV_FORMAT, PERSON_DOB_SPLIT_COLUMN_ORG);
             } else {
+
                 splitFile(f.getAbsolutePath(), dstDir, HomertonConstants.CSV_FORMAT, SPLIT_COLUMN_ORG);
             }
         }
@@ -84,6 +91,22 @@ public class HomertonBatchSplitter extends SftpBatchSplitter {
         //the directory listing to tell us what orgs there are
         List<File> orgDirs = new ArrayList<>();
         for (File orgDir : dstDir.listFiles()) {
+
+            //if a directory has been created using the split column name then header data has been detected
+            //in the files row data which is invalid, so simply ignore this directory and continue
+            if (orgDir.getName().equalsIgnoreCase(SPLIT_COLUMN_ORG)
+                    || orgDir.getName().equalsIgnoreCase(PERSON_DOB_SPLIT_COLUMN_ORG)) {
+                continue;
+            }
+
+            //if a file (non directory) exists then the file cannot be split as the column data is blank.
+            //log this event, ignore adding as a directory and continue
+            if (!orgDir.isDirectory()) {
+                LOG.warn("Data file: "+orgDir.getName()+" not fully split as it contains blank org references");
+                continue;
+            }
+
+            //add a valid organisation directory to the list
             orgDirs.add(orgDir);
         }
 
@@ -109,6 +132,8 @@ public class HomertonBatchSplitter extends SftpBatchSplitter {
             int batchId = batch.getBatchId();
             String orgNameDesc = orgDir.getName();    //this is the org text description and path
             String localPath = FileHelper.concatFilePath(batch.getLocalRelativePath(), SPLIT_FOLDER, orgNameDesc);
+
+            LOG.debug("local path for new org name ("+orgNameDesc+") split: "+localPath);
 
             BatchSplit batchSplit = new BatchSplit();
             batchSplit.setBatchId(batchId);
@@ -144,6 +169,7 @@ public class HomertonBatchSplitter extends SftpBatchSplitter {
     }
 
     private void identifyFiles(String sourceTempDir, List<File> filesToSplit, List<File> filesToNotSplit) throws Exception {
+
         for (File tempFile : new File(sourceTempDir).listFiles()) {
 
             //the "Split" sub-directory will be there, so ignore it
@@ -156,16 +182,18 @@ public class HomertonBatchSplitter extends SftpBatchSplitter {
 
             //NOTE - add in any files to not split, such as _deleted files with no source_description column
             if (getFilesToNotSplit().contains(name)) {
-                filesToNotSplit.add(tempFile);
 
+                filesToNotSplit.add(tempFile);
             } else {
                 //if we're not sure, check for the presence of the column that we split by
-                String firstChars = FileHelper.readFirstCharactersFromSharedStorage(tempFile.getAbsolutePath(), 10000);
+                String firstChars = FileHelper.readFirstCharactersFromSharedStorage(tempFile.getAbsolutePath(), 5000);
+
+                //the person file will contain the text source_description so will be added
                 if (firstChars.contains(SPLIT_COLUMN_ORG)) {
-                    //LOG.debug("Will split " + tempFile);
+
                     filesToSplit.add(tempFile);
                 } else {
-                    //LOG.debug("Will not split " + tempFile);
+
                     filesToNotSplit.add(tempFile);
                 }
             }
@@ -184,6 +212,9 @@ public class HomertonBatchSplitter extends SftpBatchSplitter {
     }
 
     private static List<File> splitFile(String sourceFilePath, File dstDir, CSVFormat csvFormat, String... splitColumns) throws Exception {
+
+        LOG.debug("Splitting: "+sourceFilePath);
+
         CsvSplitter csvSplitter = new CsvSplitter(sourceFilePath, dstDir, false, csvFormat, splitColumns);
         return csvSplitter.go();
     }

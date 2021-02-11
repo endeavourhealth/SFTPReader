@@ -8,6 +8,8 @@ import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
 import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -15,6 +17,8 @@ import static org.endeavourhealth.sftpreader.implementations.homerton.utility.Ho
 import static org.endeavourhealth.sftpreader.implementations.homerton.utility.HomertonConstants.ROYAL_FREE_HOSPITAL_ODS;
 
 public class HomertonHelper {
+
+    private static final Logger LOG = LoggerFactory.getLogger(HomertonHelper.class);
 
     /**
      * finds a Homerton data file in the permanent storage
@@ -37,8 +41,8 @@ public class HomertonHelper {
         }
 
         for (String filePath: files) {
-            String name = FilenameUtils.getName(filePath);
-            RemoteFile r = new RemoteFile(name, -1, null);
+
+            RemoteFile r = new RemoteFile(filePath, -1, null);
             HomertonFilenameParser parser = new HomertonFilenameParser(false, r, dbConfiguration);
             String fileType = parser.generateFileTypeIdentifier();
             if (fileType.equals(fileIdentifier)) {

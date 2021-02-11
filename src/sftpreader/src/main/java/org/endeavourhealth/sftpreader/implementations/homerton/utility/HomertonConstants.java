@@ -12,8 +12,7 @@ public class HomertonConstants {
     public static final String FILE_ID_CONDITION = "condition";
     public static final String FILE_ID_PROCEDURE = "procedure";
 
-    public static final String ROYAL_FREE_HOSPITAL_ODS = "5C197";
-    public static final String HOMERTON_UNIVERSITY_HOSPITAL_ODS = "RQXM1";
-
+    public static final String ROYAL_FREE_HOSPITAL_ODS = "RAL";
+    public static final String HOMERTON_UNIVERSITY_HOSPITAL_ODS = "RQX";
 
 }
