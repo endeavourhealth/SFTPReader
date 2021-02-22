@@ -12,6 +12,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.http.Header;
 import org.endeavourhealth.common.config.ConfigManager;
 import org.endeavourhealth.common.config.ConfigManagerException;
+import org.endeavourhealth.common.ods.OdsOrganisation;
+import org.endeavourhealth.common.ods.OdsWebService;
 import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
@@ -57,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
@@ -342,6 +345,11 @@ public class Main {
 
             LOG.debug("Testing alerts channel");
             SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "Test Message from SFTP Reader for Alerts channel");
+
+            LOG.debug("Testing ODS search");
+            Proxy proxy = SlackHelper.getProxy();
+            OdsOrganisation r = OdsWebService.lookupOrganisationViaRest("F84062", proxy);
+            LOG.debug("Got result " + (r == null? "null" : r.getOrganisationName()));
 
 			LOG.info("Finished testing slack");
 
