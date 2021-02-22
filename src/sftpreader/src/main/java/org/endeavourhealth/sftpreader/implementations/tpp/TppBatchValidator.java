@@ -20,6 +20,7 @@ public class TppBatchValidator extends SftpBatchValidator {
     private static final Logger LOG = LoggerFactory.getLogger(TppBatchValidator.class);
 
     public static final String APPOINTMENT_ATTENDEES = "SRAppointmentAttendees";
+    public static final String REFERRAL_CONTACT_EVENT = "SRReferralContactEvent";
 
     @Override
     public boolean validateBatch(Batch incompleteBatch, Batch lastCompleteBatch, DbInstanceEds instanceConfiguration, DbConfiguration dbConfiguration, DataLayerI db) throws SftpValidationException {
@@ -64,8 +65,9 @@ public class TppBatchValidator extends SftpBatchValidator {
             Date dEnd = newRecord.getDateTo();
             Date dStart = newRecord.getDateFrom();
 
-            //there's something consistently wrong with this one file type, with it not having any dates, so just skip it
-            if (file.equals(APPOINTMENT_ATTENDEES)) {
+            //there's something consistently wrong with these couple of file types, with it not having any dates, so just skip it
+            if (file.equals(APPOINTMENT_ATTENDEES)
+                    || file.equals(REFERRAL_CONTACT_EVENT)) {
                 continue;
             }
 

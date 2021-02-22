@@ -16,6 +16,7 @@ import org.endeavourhealth.common.security.keycloak.client.KeycloakClient;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.common.utility.FileInfo;
 import org.endeavourhealth.common.utility.MetricsHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.core.application.ApplicationHeartbeatHelper;
 import org.endeavourhealth.core.database.dal.usermanager.caching.OrganisationCache;
 import org.endeavourhealth.core.database.rdbms.ConnectionManager;
@@ -282,6 +283,12 @@ public class Main {
                     recreateBatchFile2(configurationId);
                     System.exit(0);
                 }*/
+
+                if (args.length > 1
+                        && args[1].equalsIgnoreCase("testSlack")) {
+                    testSlack();
+                    System.exit(0);
+                }
             }
 
             /*if (args.length > 0) {
@@ -324,6 +331,23 @@ public class Main {
             LOG.error("Fatal exception occurred", e);
             System.exit(-1);
         }
+	}
+
+    private static void testSlack() {
+		LOG.info("Testing slack");
+
+		try {
+            LOG.debug("Testing receipts channel");
+			SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderReceipts, "Test Message from SFTP Reader for Receipts channel");
+
+            LOG.debug("Testing alerts channel");
+            SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, "Test Message from SFTP Reader for Alerts channel");
+
+			LOG.info("Finished testing slack");
+
+		} catch (Exception ex) {
+			LOG.error("", ex);
+		}
 	}
 
     private static void testDpa(String odsCode) {
