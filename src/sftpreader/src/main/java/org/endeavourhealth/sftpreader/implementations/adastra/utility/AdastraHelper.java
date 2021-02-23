@@ -1,20 +1,18 @@
 package org.endeavourhealth.sftpreader.implementations.adastra.utility;
 
-import com.google.common.base.Strings;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
 import org.endeavourhealth.sftpreader.implementations.adastra.AdastraFilenameParser;
-import org.endeavourhealth.sftpreader.implementations.emis.EmisFilenameParser;
-import org.endeavourhealth.sftpreader.implementations.tpp.TppFilenameParser;
-import org.endeavourhealth.sftpreader.implementations.vision.VisionFilenameParser;
-import org.endeavourhealth.sftpreader.model.db.*;
+import org.endeavourhealth.sftpreader.model.db.Batch;
+import org.endeavourhealth.sftpreader.model.db.BatchSplit;
+import org.endeavourhealth.sftpreader.model.db.DbConfiguration;
+import org.endeavourhealth.sftpreader.model.db.DbInstanceEds;
 import org.endeavourhealth.sftpreader.model.exceptions.SftpValidationException;
 import org.endeavourhealth.sftpreader.utilities.RemoteFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.List;
 
 public class AdastraHelper {
@@ -184,6 +182,7 @@ public class AdastraHelper {
                         "UserRef"
                 };
             case AdastraConstants.FILE_ID_ELECTRONIC_PRESCRIPTIONS:
+            case AdastraConstants.FILE_ID_Electronic_Prescriptions:
                 return new String[]{
                         "CaseRef",
                         "ProviderRef",

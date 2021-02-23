@@ -15,6 +15,7 @@ public class AdastraConstants {
     public static final String FILE_ID_CLINICAL_CODES = "CLINICALCODES";
     public static final String FILE_ID_CONSULTATION = "CONSULTATION";
     public static final String FILE_ID_ELECTRONIC_PRESCRIPTIONS = "ELECTRONICPRESCRIPTIONS";
+    public static final String FILE_ID_Electronic_Prescriptions = "ElectronicPrescriptions";
     public static final String FILE_ID_NOTES = "NOTES";
     public static final String FILE_ID_OUTCOMES = "OUTCOMES";
     public static final String FILE_ID_PATIENT = "PATIENT";
