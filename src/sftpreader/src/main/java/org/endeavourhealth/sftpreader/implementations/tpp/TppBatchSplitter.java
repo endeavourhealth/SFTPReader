@@ -5,8 +5,10 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.endeavourhealth.common.utility.FileHelper;
+import org.endeavourhealth.common.utility.SlackHelper;
 import org.endeavourhealth.sftpreader.implementations.SftpBatchSplitter;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.ManifestRecord;
 import org.endeavourhealth.sftpreader.implementations.tpp.utility.TppConstants;
@@ -153,6 +155,26 @@ public class TppBatchSplitter extends SftpBatchSplitter {
                 //have a full re-bulk then we still want to update the hash table, but don't want to filter the file.
                 boolean isBulk = TppBulkDetector.isBulkExtractNoAlert(batch, batchSplit, db, instanceConfiguration, dbConfiguration);
                 boolean actuallyFilterFile = !isBulk; //don't actually filter the file if the extract is a bulk
+
+                //tell us this is happening
+                if (actuallyFilterFile) {
+
+                    //we call this fn for every delta, so check the manifest to see if SRCode is telling us it's being re-bulked
+                    boolean srCodeRebulk = false;
+                    File manifestFile = new File(orgDir, TppConstants.MANIFEST_FILE);
+                    List<ManifestRecord> records = ManifestRecord.readManifestFile(manifestFile);
+                    for (ManifestRecord record: records) {
+                        if (record.getFileNameWithExtension().equalsIgnoreCase(fileName)) {
+                            srCodeRebulk = !record.isDelta();
+                        }
+                    }
+
+                    if (srCodeRebulk) {
+                        String fileSizeDesc = FileUtils.byteCountToDisplaySize(splitFile.length());
+                        String msg = "TPP Re-bulk of SRCode detected in " + dbConfiguration.getConfigurationId() + " at " + fileSizeDesc;
+                        SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
+                    }
+                }
 
                 String filePath = splitFile.getAbsolutePath();
                 LocalDateTime dt = TppFilenameParser.parseBatchIdentifier(batch.getBatchIdentifier());
