@@ -504,6 +504,12 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                     continue;
                 }
 
+                //SD-391 - got a very odd looking ODS code change for this practice (changing from a valid active GP Practice ODS code
+                //to one for a closed bankrupt GP practice). Until we get clarity from Emis that the change is correct, suppress this change.
+                if (orgOds.equalsIgnoreCase("E84670")) {
+                    continue;
+                }
+
                 //Validate that the ODS code isn't changing. We want to keep this table updated with name
                 //changes etc., but if the ODS code changes, then we need to understand what's happening and
                 //manually reconfigure the protocol to expect the new ODS code (and potentially move data)
@@ -512,7 +518,7 @@ public class EmisBatchSplitter extends SftpBatchSplitter {
                     String existingOdsCode = existingMapping.getOdsCode();
                     if (!existingOdsCode.equalsIgnoreCase(orgOds)) {
                         //if this happens, we need to work out if it's a permanent ODS code change
-                        //or a weird temporary one like happend for F86644 (which changed to F86644a for a day)
+                        //or a weird temporary one like happened for F86644 (which changed to F86644a for a day)
                         // Only throw exception if org has a sharing agreement hence active
                         if (agreedOrgIds.contains(orgGuid)) {
                             String alert = "ODS code for " + orgName + " has changed from " + existingOdsCode + " to " + orgOds + " and needs manually handling";
