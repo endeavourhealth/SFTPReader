@@ -171,7 +171,7 @@ public class TppBatchSplitter extends SftpBatchSplitter {
 
                     if (srCodeRebulk) {
                         String fileSizeDesc = FileUtils.byteCountToDisplaySize(splitFile.length());
-                        String msg = "TPP Re-bulk of SRCode detected in " + dbConfiguration.getConfigurationId() + " at " + fileSizeDesc;
+                        String msg = "TPP Re-bulk of SRCode detected in " + dbConfiguration.getConfigurationId() + " at " + fileSizeDesc + " for " + batchSplit.getOrganisationId();
                         SlackHelper.sendSlackMessage(SlackHelper.Channel.SftpReaderAlerts, msg);
                     }
                 }
